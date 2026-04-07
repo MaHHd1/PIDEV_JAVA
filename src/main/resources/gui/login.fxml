@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<StackPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="gui.LoginController" styleClass="app-shell">
+    <HBox alignment="CENTER" spacing="28.0" styleClass="login-layout">
+        <VBox maxWidth="420.0" spacing="18.0" styleClass="hero-panel">
+            <Label styleClass="eyebrow" text="Desktop Portal" />
+            <Label styleClass="hero-title" text="Connect to your campus workspace." wrapText="true" />
+            <Label styleClass="hero-copy" text="Role-based access routes administrators, students, and teachers to dedicated dashboards backed by your XAMPP database." wrapText="true" />
+            <VBox spacing="10.0" styleClass="feature-block">
+                <Label styleClass="feature-item" text="Real MySQL authentication" />
+                <Label styleClass="feature-item" text="Smooth JavaFX navigation" />
+                <Label styleClass="feature-item" text="ObservableList powered dashboards" />
+            </VBox>
+        </VBox>
+
+        <VBox maxWidth="380.0" spacing="16.0" styleClass="glass-card">
+            <padding>
+                <Insets bottom="28.0" left="28.0" right="28.0" top="28.0" />
+            </padding>
+            <Label styleClass="card-title" text="Sign In" />
+            <Label styleClass="card-subtitle" text="Use the same credentials as your Symfony platform." wrapText="true" />
+            <TextField fx:id="emailField" promptText="Email address" styleClass="input-field" />
+            <PasswordField fx:id="passwordField" promptText="Password" styleClass="input-field" />
+            <Button maxWidth="1.7976931348623157E308" onAction="#handleLogin" styleClass="primary-button" text="Login" />
+            <Button maxWidth="1.7976931348623157E308" onAction="#openForgotPassword" styleClass="secondary-button" text="Forgot password?" />
+            <Region minHeight="6.0" />
+            <Label fx:id="statusLabel" styleClass="status-label" wrapText="true" />
+        </VBox>
+    </HBox>
+</StackPane>
