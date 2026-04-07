@@ -42,6 +42,7 @@ public class ContenuService implements IService<Contenu> {
 
     @Override
     public void update(Contenu contenu) throws SQLException {
+        requireId(contenu.getId(), "update contenu");
         String sql = "UPDATE contenu SET cours_id = ?, type_contenu = ?, titre = ?, url_contenu = ?, description = ?, "
                 + "duree = ?, ordre_affichage = ?, est_public = ?, date_ajout = ?, nombre_vues = ?, format = ?, "
                 + "ressources = ? WHERE id = ?";
@@ -139,9 +140,7 @@ public class ContenuService implements IService<Contenu> {
 
         int coursId = rs.getInt("cours_id");
         if (!rs.wasNull()) {
-            Cours cours = new Cours();
-            cours.setId(coursId);
-            contenu.setCours(cours);
+            contenu.setCours(new CoursService().getShallowById(coursId));
         }
 
         contenu.setTypeContenu(rs.getString("type_contenu"));
@@ -188,5 +187,11 @@ public class ContenuService implements IService<Contenu> {
                 .map(String::trim)
                 .filter(value -> !value.isEmpty())
                 .collect(Collectors.toCollection(ArrayList::new));
+    }
+
+    private void requireId(Integer id, String action) throws SQLException {
+        if (id == null) {
+            throw new SQLException("Missing contenu id for " + action + ".");
+        }
     }
 }

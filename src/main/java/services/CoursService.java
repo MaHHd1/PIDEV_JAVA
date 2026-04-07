@@ -44,6 +44,7 @@ public class CoursService implements IService<Cours> {
 
     @Override
     public void update(Cours cours) throws SQLException {
+        requireId(cours.getId(), "update cours");
         String sql = "UPDATE cours SET code_cours = ?, titre = ?, description = ?, module_id = ?, niveau = ?, "
                 + "credits = ?, langue = ?, date_creation = ?, date_debut = ?, date_fin = ?, statut = ?, "
                 + "image_cours_url = ?, prerequis = ? WHERE id = ?";
@@ -57,6 +58,10 @@ public class CoursService implements IService<Cours> {
 
     @Override
     public void delete(int id) throws SQLException {
+        ContenuService contenuService = new ContenuService();
+        for (var contenu : contenuService.getByCoursId(id)) {
+            contenuService.delete(contenu.getId());
+        }
         String sql = "DELETE FROM cours WHERE id = ?";
         try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
             ps.setInt(1, id);
@@ -71,7 +76,7 @@ public class CoursService implements IService<Cours> {
             ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    return mapCours(rs);
+                    return mapCours(rs, true);
                 }
             }
         }
@@ -86,7 +91,7 @@ public class CoursService implements IService<Cours> {
         try (PreparedStatement ps = getConnection().prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
-                coursList.add(mapCours(rs));
+                coursList.add(mapCours(rs, false));
             }
         }
 
@@ -101,7 +106,7 @@ public class CoursService implements IService<Cours> {
             ps.setInt(1, moduleId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    coursList.add(mapCours(rs));
+                    coursList.add(mapCours(rs, false));
                 }
             }
         }
@@ -135,7 +140,7 @@ public class CoursService implements IService<Cours> {
         ps.setString(13, serializeList(cours.getPrerequis()));
     }
 
-    private Cours mapCours(ResultSet rs) throws SQLException {
+    Cours mapCours(ResultSet rs, boolean loadRelations) throws SQLException {
         Cours cours = new Cours();
         cours.setId(rs.getInt("id"));
         cours.setCodeCours(rs.getString("code_cours"));
@@ -144,9 +149,7 @@ public class CoursService implements IService<Cours> {
 
         int moduleId = rs.getInt("module_id");
         if (!rs.wasNull()) {
-            Module module = new Module();
-            module.setId(moduleId);
-            cours.setModule(module);
+            cours.setModule(loadRelations ? new ModuleService().getShallowById(moduleId) : shallowModule(moduleId));
         }
 
         cours.setNiveau(rs.getString("niveau"));
@@ -170,7 +173,24 @@ public class CoursService implements IService<Cours> {
         cours.setStatut(rs.getString("statut"));
         cours.setImageCoursUrl(rs.getString("image_cours_url"));
         cours.setPrerequis(deserializeList(rs.getString("prerequis")));
+        if (loadRelations) {
+            ContenuService contenuService = new ContenuService();
+            cours.setContenus(contenuService.getByCoursId(cours.getId()));
+        }
         return cours;
+    }
+
+    Cours getShallowById(int id) throws SQLException {
+        String sql = "SELECT * FROM cours WHERE id = ?";
+        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapCours(rs, false);
+                }
+            }
+        }
+        return null;
     }
 
     private Timestamp timestampOf(LocalDateTime value) {
@@ -199,5 +219,17 @@ public class CoursService implements IService<Cours> {
                 .map(String::trim)
                 .filter(value -> !value.isEmpty())
                 .collect(Collectors.toCollection(ArrayList::new));
+    }
+
+    private Module shallowModule(int id) {
+        Module module = new Module();
+        module.setId(id);
+        return module;
+    }
+
+    private void requireId(Integer id, String action) throws SQLException {
+        if (id == null) {
+            throw new SQLException("Missing cours id for " + action + ".");
+        }
     }
 }
