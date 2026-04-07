@@ -1,78 +1,91 @@
-package com.mehdi.pidev.entity;
+package entities;
 
-import javax.persistence.*;
-import javax.validation.constraints.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Past;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
-@Table(name = "Etudiant")
-@UniqueConstraint(columnNames = {"matricule"}, name = "uk_etudiant_matricule")
+@Table(
+        name = "Etudiant",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_etudiant_matricule", columnNames = "matricule")
+        }
+)
 public class Etudiant extends Utilisateur {
 
     @Column(name = "matricule", length = 50, unique = true, nullable = false)
     @NotBlank(message = "Le matricule est obligatoire.")
-    @Size(min = 5, max = 50, message = "Le matricule doit contenir entre {min} et {max} caractères.")
-    @Pattern(regexp = "^[A-Z0-9-]+$",
-            message = "Le matricule ne peut contenir que des lettres majuscules, chiffres et tirets.")
+    @Size(min = 5, max = 50, message = "Le matricule doit contenir entre {min} et {max} caracteres.")
+    @Pattern(
+            regexp = "^[A-Z0-9-]+$",
+            message = "Le matricule ne peut contenir que des lettres majuscules, chiffres et tirets."
+    )
     private String matricule;
 
     @Column(name = "niveauEtude", length = 100, nullable = false)
-    @NotBlank(message = "Le niveau d'étude est obligatoire.")
-    @Pattern(regexp = "^(Licence 1|Licence 2|Licence 3|Master 1|Master 2|Doctorat)$",
-            message = "Veuillez choisir un niveau d'étude valide.")
+    @NotBlank(message = "Le niveau d'etude est obligatoire.")
+    @Pattern(
+            regexp = "^(Licence 1|Licence 2|Licence 3|Master 1|Master 2|Doctorat)$",
+            message = "Veuillez choisir un niveau d'etude valide."
+    )
     private String niveauEtude;
 
     @Column(name = "specialisation", length = 100, nullable = false)
-    @NotBlank(message = "La spécialisation est obligatoire.")
-    @Size(min = 2, max = 100, message = "La spécialisation doit contenir au moins {min} caractères.")
+    @NotBlank(message = "La specialisation est obligatoire.")
+    @Size(min = 2, max = 100, message = "La specialisation doit contenir entre {min} et {max} caracteres.")
     private String specialisation;
 
     @Column(name = "dateNaissance", nullable = false)
     @NotNull(message = "La date de naissance est obligatoire.")
-    @Past(message = "La date de naissance doit être dans le passé.")
+    @Past(message = "La date de naissance doit etre dans le passe.")
     private LocalDate dateNaissance;
 
     @Column(name = "telephone", length = 20, nullable = false)
-    @NotBlank(message = "Le téléphone est obligatoire.")
-    @Pattern(regexp = "^(\\+?[0-9]{1,3})?[0-9]{8,15}$",
-            message = "Le numéro de téléphone n'est pas valide.")
+    @NotBlank(message = "Le telephone est obligatoire.")
+    @Pattern(
+            regexp = "^(\\+?[0-9]{1,3})?[0-9]{8,15}$",
+            message = "Le numero de telephone n'est pas valide."
+    )
     private String telephone;
 
     @Column(name = "adresse", columnDefinition = "TEXT", nullable = false)
     @NotBlank(message = "L'adresse est obligatoire.")
-    @Size(min = 10, max = 500, message = "L'adresse doit contenir entre {min} et {max} caractères.")
+    @Size(min = 10, max = 500, message = "L'adresse doit contenir entre {min} et {max} caracteres.")
     private String adresse;
 
     @Column(name = "dateInscription", nullable = false)
     private LocalDateTime dateInscription;
 
     @Column(name = "statut", length = 20, nullable = false)
-    @Pattern(regexp = "^(actif|inactif|diplome|suspendu)$",
-            message = "Statut invalide.")
+    @Pattern(regexp = "^(actif|inactif|diplome|suspendu)$", message = "Statut invalide.")
     private String statut = "actif";
 
-    // Relationships
-    @ManyToMany
-    @JoinTable(
-            name = "etudiant_cours",
-            joinColumns = @JoinColumn(name = "etudiant_id"),
-            inverseJoinColumns = @JoinColumn(name = "cours_id")
-    )
-    private List<Cours> coursInscrits = new ArrayList<>();
-
-    // Constructors
     public Etudiant() {
         super();
         this.dateInscription = LocalDateTime.now();
     }
 
-    public Etudiant(String nom, String prenom, String email, String motDePasse,
-                    String matricule, String niveauEtude, String specialisation,
-                    LocalDate dateNaissance, String telephone, String adresse) {
+    public Etudiant(
+            String nom,
+            String prenom,
+            String email,
+            String motDePasse,
+            String matricule,
+            String niveauEtude,
+            String specialisation,
+            LocalDate dateNaissance,
+            String telephone,
+            String adresse
+    ) {
         super(nom, prenom, email, motDePasse);
         this.matricule = matricule;
         this.niveauEtude = niveauEtude;
@@ -84,7 +97,6 @@ public class Etudiant extends Utilisateur {
         this.statut = "actif";
     }
 
-    // Getters and Setters
     public String getMatricule() {
         return matricule;
     }
@@ -149,15 +161,6 @@ public class Etudiant extends Utilisateur {
         this.statut = statut;
     }
 
-    public List<Cours> getCoursInscrits() {
-        return coursInscrits;
-    }
-
-    public void setCoursInscrits(List<Cours> coursInscrits) {
-        this.coursInscrits = coursInscrits;
-    }
-
-    // Helper Methods
     public int getAge() {
         if (dateNaissance == null) {
             return 0;
@@ -165,43 +168,34 @@ public class Etudiant extends Utilisateur {
         return Period.between(dateNaissance, LocalDate.now()).getYears();
     }
 
-    public void addCoursInscrit(Cours cours) {
-        if (!coursInscrits.contains(cours)) {
-            coursInscrits.add(cours);
-            cours.getEtudiants().add(this);
-        }
-    }
-
-    public void removeCoursInscrit(Cours cours) {
-        coursInscrits.remove(cours);
-        cours.getEtudiants().remove(this);
-    }
-
-    public boolean isInscritAuCours(Cours cours) {
-        return coursInscrits.contains(cours);
-    }
-
     public boolean isActif() {
-        return "actif".equals(this.statut);
+        return "actif".equals(statut);
     }
 
     public boolean isDiplome() {
-        return "diplome".equals(this.statut);
+        return "diplome".equals(statut);
     }
 
     public boolean isSuspendu() {
-        return "suspendu".equals(this.statut);
+        return "suspendu".equals(statut);
     }
 
     public String getNiveauEtudeAbrege() {
         switch (niveauEtude) {
-            case "Licence 1": return "L1";
-            case "Licence 2": return "L2";
-            case "Licence 3": return "L3";
-            case "Master 1": return "M1";
-            case "Master 2": return "M2";
-            case "Doctorat": return "PhD";
-            default: return niveauEtude;
+            case "Licence 1":
+                return "L1";
+            case "Licence 2":
+                return "L2";
+            case "Licence 3":
+                return "L3";
+            case "Master 1":
+                return "M1";
+            case "Master 2":
+                return "M2";
+            case "Doctorat":
+                return "PhD";
+            default:
+                return niveauEtude;
         }
     }
 
@@ -216,25 +210,31 @@ public class Etudiant extends Utilisateur {
 
     @Override
     public String toString() {
-        return "Etudiant{" +
-                "id=" + getId() +
-                ", nom='" + getNom() + '\'' +
-                ", prenom='" + getPrenom() + '\'' +
-                ", email='" + getEmail() + '\'' +
-                ", matricule='" + matricule + '\'' +
-                ", niveauEtude='" + niveauEtude + '\'' +
-                ", specialisation='" + specialisation + '\'' +
-                ", telephone='" + telephone + '\'' +
-                ", statut='" + statut + '\'' +
-                ", age=" + getAge() +
-                '}';
+        return "Etudiant{"
+                + "id=" + getId()
+                + ", nom='" + getNom() + '\''
+                + ", prenom='" + getPrenom() + '\''
+                + ", email='" + getEmail() + '\''
+                + ", matricule='" + matricule + '\''
+                + ", niveauEtude='" + niveauEtude + '\''
+                + ", specialisation='" + specialisation + '\''
+                + ", telephone='" + telephone + '\''
+                + ", statut='" + statut + '\''
+                + ", age=" + getAge()
+                + '}';
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Etudiant)) return false;
-        if (!super.equals(o)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Etudiant)) {
+            return false;
+        }
+        if (!super.equals(o)) {
+            return false;
+        }
         Etudiant etudiant = (Etudiant) o;
         return matricule != null && matricule.equals(etudiant.matricule);
     }

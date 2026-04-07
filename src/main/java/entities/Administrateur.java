@@ -1,32 +1,37 @@
-package com.mehdi.pidev.entity;
+package entities;
 
-import javax.persistence.*;
-import javax.validation.constraints.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.PrimaryKeyJoinColumn;
+import javax.persistence.Table;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
 import java.time.LocalDateTime;
-import java.util.Date;
 
 @Entity
 @Table(name = "Administrateur")
-@PrimaryKeyJoinColumn(name = "id") // If using JOINED inheritance strategy
+@PrimaryKeyJoinColumn(name = "id")
 public class Administrateur extends Utilisateur {
 
     @Column(name = "departement", length = 100, nullable = false)
-    @NotBlank(message = "Le département est obligatoire.")
+    @NotBlank(message = "Le departement est obligatoire.")
     @Pattern(
-            regexp = "^(Direction Générale|Scolarité|Ressources Humaines|Finances|Informatique|Communication|Recherche)$",
-            message = "Veuillez choisir un département valide."
+            regexp = "^(Direction Generale|Scolarite|Ressources Humaines|Finances|Informatique|Communication|Recherche)$",
+            message = "Veuillez choisir un departement valide."
     )
     private String departement;
 
     @Column(name = "fonction", length = 100, nullable = false)
     @NotBlank(message = "La fonction est obligatoire.")
-    @Size(min = 3, max = 100, message = "La fonction doit contenir entre {min} et {max} caractères.")
+    @Size(min = 3, max = 100, message = "La fonction doit contenir entre {min} et {max} caracteres.")
     private String fonction;
 
     @Column(name = "telephone", length = 20)
     @Pattern(
             regexp = "^(\\+?[0-9]{1,3})?[0-9]{8,15}$",
-            message = "Le numéro de téléphone n'est pas valide."
+            message = "Le numero de telephone n'est pas valide."
     )
     private String telephone;
 
@@ -37,14 +42,19 @@ public class Administrateur extends Utilisateur {
     @Column(name = "actif", nullable = false)
     private boolean actif = true;
 
-    // Constructors
     public Administrateur() {
         super();
         this.dateNomination = LocalDateTime.now();
     }
 
-    public Administrateur(String nom, String prenom, String email, String motDePasse,
-                          String departement, String fonction) {
+    public Administrateur(
+            String nom,
+            String prenom,
+            String email,
+            String motDePasse,
+            String departement,
+            String fonction
+    ) {
         super(nom, prenom, email, motDePasse);
         this.departement = departement;
         this.fonction = fonction;
@@ -52,7 +62,6 @@ public class Administrateur extends Utilisateur {
         this.actif = true;
     }
 
-    // Getters and Setters
     public String getDepartement() {
         return departement;
     }
@@ -94,17 +103,22 @@ public class Administrateur extends Utilisateur {
     }
 
     @Override
+    public String getType() {
+        return "administrateur";
+    }
+
+    @Override
     public String toString() {
-        return "Administrateur{" +
-                "id=" + getId() +
-                ", nom='" + getNom() + '\'' +
-                ", prenom='" + getPrenom() + '\'' +
-                ", email='" + getEmail() + '\'' +
-                ", departement='" + departement + '\'' +
-                ", fonction='" + fonction + '\'' +
-                ", telephone='" + telephone + '\'' +
-                ", dateNomination=" + dateNomination +
-                ", actif=" + actif +
-                '}';
+        return "Administrateur{"
+                + "id=" + getId()
+                + ", nom='" + getNom() + '\''
+                + ", prenom='" + getPrenom() + '\''
+                + ", email='" + getEmail() + '\''
+                + ", departement='" + departement + '\''
+                + ", fonction='" + fonction + '\''
+                + ", telephone='" + telephone + '\''
+                + ", dateNomination=" + dateNomination
+                + ", actif=" + actif
+                + '}';
     }
 }

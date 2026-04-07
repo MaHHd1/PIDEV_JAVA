@@ -1,14 +1,22 @@
-package com.mehdi.pidev.entity;
+package entities;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Index;
+import javax.persistence.Lob;
+import javax.persistence.Table;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Arrays;
 
 @Entity
-@Table(name = "sessions")
-@Index(columnList = "sessLifetime", name = "sessions_sess_lifetime_idx")
+@Table(
+        name = "sessions",
+        indexes = {
+                @Index(name = "sessions_sess_lifetime_idx", columnList = "sess_lifetime")
+        }
+)
 public class Session {
 
     @Id
@@ -25,7 +33,6 @@ public class Session {
     @Column(name = "sess_time", nullable = false)
     private Integer sessTime;
 
-    // Constructors
     public Session() {
     }
 
@@ -36,7 +43,6 @@ public class Session {
         this.sessTime = sessTime;
     }
 
-    // Getters and Setters
     public String getSessId() {
         return sessId;
     }
@@ -82,7 +88,6 @@ public class Session {
         this.sessTime = sessTime;
     }
 
-    // Helper Methods
     public boolean isExpired() {
         if (sessTime == null || sessLifetime == null) {
             return true;
@@ -105,20 +110,14 @@ public class Session {
         if (sessTime == null) {
             return null;
         }
-        return LocalDateTime.ofInstant(
-                Instant.ofEpochSecond(sessTime),
-                ZoneId.systemDefault()
-        );
+        return LocalDateTime.ofInstant(Instant.ofEpochSecond(sessTime), ZoneId.systemDefault());
     }
 
     public LocalDateTime getExpiresAt() {
         if (sessTime == null || sessLifetime == null) {
             return null;
         }
-        return LocalDateTime.ofInstant(
-                Instant.ofEpochSecond((long) sessTime + sessLifetime),
-                ZoneId.systemDefault()
-        );
+        return LocalDateTime.ofInstant(Instant.ofEpochSecond((long) sessTime + sessLifetime), ZoneId.systemDefault());
     }
 
     public void updateTimestamp() {
@@ -132,8 +131,12 @@ public class Session {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Session)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Session)) {
+            return false;
+        }
         Session session = (Session) o;
         return sessId != null && sessId.equals(session.sessId);
     }
@@ -145,13 +148,13 @@ public class Session {
 
     @Override
     public String toString() {
-        return "Session{" +
-                "sessId='" + sessId + '\'' +
-                ", sessDataSize=" + (sessData != null ? sessData.length : 0) +
-                ", sessLifetime=" + sessLifetime +
-                ", sessTime=" + sessTime +
-                ", expired=" + isExpired() +
-                ", remainingLifetime=" + getRemainingLifetime() +
-                '}';
+        return "Session{"
+                + "sessId='" + sessId + '\''
+                + ", sessDataSize=" + (sessData != null ? sessData.length : 0)
+                + ", sessLifetime=" + sessLifetime
+                + ", sessTime=" + sessTime
+                + ", expired=" + isExpired()
+                + ", remainingLifetime=" + getRemainingLifetime()
+                + '}';
     }
 }
