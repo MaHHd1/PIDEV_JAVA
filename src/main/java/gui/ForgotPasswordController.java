@@ -2,6 +2,7 @@ package gui;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
+import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import services.AuthService;
 import utils.SceneManager;
@@ -15,6 +16,12 @@ public class ForgotPasswordController {
     private TextField emailField;
 
     @FXML
+    private PasswordField newPasswordField;
+
+    @FXML
+    private PasswordField confirmPasswordField;
+
+    @FXML
     private Label feedbackLabel;
 
     private final AuthService authService = new AuthService();
@@ -22,20 +29,35 @@ public class ForgotPasswordController {
     @FXML
     private void handleResetRequest() {
         String email = emailField.getText() != null ? emailField.getText().trim() : "";
-        if (email.isEmpty()) {
-            feedbackLabel.setText("Enter your email first.");
+        String newPassword = newPasswordField.getText() != null ? newPasswordField.getText() : "";
+        String confirmPassword = confirmPasswordField.getText() != null ? confirmPasswordField.getText() : "";
+
+        if (email.isEmpty() || newPassword.isEmpty() || confirmPassword.isEmpty()) {
+            feedbackLabel.setText("Fill email, new password, and confirmation.");
+            return;
+        }
+
+        if (!newPassword.equals(confirmPassword)) {
+            feedbackLabel.setText("Password confirmation does not match.");
+            return;
+        }
+
+        if (newPassword.length() < 8) {
+            feedbackLabel.setText("Password must contain at least 8 characters.");
             return;
         }
 
         try {
-            boolean updated = authService.requestPasswordReset(email);
+            boolean updated = authService.resetPassword(email, newPassword);
             if (updated) {
-                feedbackLabel.setText("Reset request saved in database. Token expires in 30 minutes.");
+                feedbackLabel.setText("Password updated. Reset token data was also refreshed for later implementation.");
+                newPasswordField.clear();
+                confirmPasswordField.clear();
             } else {
                 feedbackLabel.setText("No account found for this email.");
             }
-        } catch (SQLException e) {
-            feedbackLabel.setText("Reset request failed: " + e.getMessage());
+        } catch (SQLException | IOException e) {
+            feedbackLabel.setText("Password reset failed: " + e.getMessage());
         }
     }
 

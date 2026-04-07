@@ -47,6 +47,22 @@ public class AuthService {
         }
     }
 
+    public boolean resetPassword(String email, String newPassword) throws SQLException, IOException {
+        String token = UUID.randomUUID().toString();
+        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(30);
+        String hashedPassword = hashPassword(newPassword);
+        String sql = "UPDATE utilisateur SET mot_de_passe = ?, reset_token = ?, reset_token_expires_at = ? WHERE email = ?";
+
+        try (Connection connection = DBConnection.getInstance().getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, hashedPassword);
+            ps.setString(2, token);
+            ps.setTimestamp(3, Timestamp.valueOf(expiresAt));
+            ps.setString(4, email);
+            return ps.executeUpdate() > 0;
+        }
+    }
+
     private void updateLastLogin(Utilisateur utilisateur) throws SQLException {
         String sql = "UPDATE utilisateur SET last_login = ? WHERE id = ?";
         try (Connection connection = DBConnection.getInstance().getConnection();
