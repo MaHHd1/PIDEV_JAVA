@@ -30,6 +30,7 @@
             <Button maxWidth="1.7976931348623157E308" onAction="#showUsersPage" styleClass="sidebar-button" text="User Info" />
             <Button maxWidth="1.7976931348623157E308" onAction="#showStatsPage" styleClass="sidebar-button" text="Statistics" />
             <Button maxWidth="1.7976931348623157E308" onAction="#showCreatePage" styleClass="sidebar-button" text="Add User" />
+            <Button maxWidth="1.7976931348623157E308" onAction="#showModulesPage" styleClass="sidebar-button" text="Modules" />
             <VBox VBox.vgrow="ALWAYS" />
             <Label styleClass="sidebar-foot" text="Role-based desktop administration" wrapText="true" />
         </VBox>
@@ -189,6 +190,80 @@
                         <Label fx:id="createStatusLabel" styleClass="status-label neutral-status" text="" HBox.hgrow="ALWAYS" wrapText="true" />
                         <Button fx:id="createSubmitButton" onAction="#createUser" styleClass="primary-button compact-button" text="Create User" />
                     </HBox>
+                </VBox>
+            </VBox>
+
+            <VBox fx:id="modulesSection" managed="false" spacing="18.0" visible="false">
+                <VBox fx:id="moduleBrowseSection" spacing="18.0">
+                    <HBox spacing="18.0">
+                        <VBox spacing="10.0" styleClass="hero-banner admin-stats-banner" HBox.hgrow="ALWAYS">
+                            <Label styleClass="eyebrow" text="Gestion Modules" />
+                            <Label styleClass="hero-title small-hero" text="Consultez les modules, ouvrez leurs details et gerez-les depuis une liste plus claire." wrapText="true" />
+                        </VBox>
+                        <VBox alignment="CENTER_RIGHT" spacing="10.0">
+                            <Button onAction="#showModuleCreateForm" styleClass="primary-button compact-button" text="Creer Nouveau Module" />
+                            <Label fx:id="moduleMessageLabel" styleClass="status-label neutral-status" text="" wrapText="true" />
+                        </VBox>
+                    </HBox>
+                    <HBox spacing="18.0" VBox.vgrow="ALWAYS">
+                        <VBox spacing="12.0" styleClass="panel-card modules-list-panel" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+                            <Label styleClass="panel-title" text="Liste des Modules" />
+                            <TableView fx:id="modulesTable" VBox.vgrow="ALWAYS">
+                                <columns>
+                                    <TableColumn fx:id="moduleIdColumn" prefWidth="70.0" text="ID" />
+                                    <TableColumn fx:id="moduleTitleColumn" prefWidth="260.0" text="Titre" />
+                                    <TableColumn fx:id="moduleOrderColumn" prefWidth="90.0" text="Ordre" />
+                                    <TableColumn fx:id="moduleDurationColumn" prefWidth="110.0" text="Duree (h)" />
+                                    <TableColumn fx:id="moduleStatusColumn" prefWidth="110.0" text="Statut" />
+                                    <TableColumn fx:id="moduleActionsColumn" prefWidth="250.0" text="Actions" />
+                                </columns>
+                            </TableView>
+                        </VBox>
+                        <VBox spacing="14.0" styleClass="panel-card modules-detail-panel" HBox.hgrow="NEVER">
+                            <Label styleClass="panel-title" text="Details du Module" />
+                            <Label styleClass="dashboard-subsection" text="Selectionnez un module ou utilisez le bouton Voir dans la ligne." wrapText="true" />
+                            <ListView fx:id="moduleDetailsList" VBox.vgrow="ALWAYS" />
+                            <HBox spacing="10.0">
+                                <Button onAction="#editSelectedModule" styleClass="secondary-button compact-button" text="Modifier" />
+                                <Button onAction="#deleteSelectedModule" styleClass="danger-button compact-button" text="Supprimer" />
+                            </HBox>
+                        </VBox>
+                    </HBox>
+                </VBox>
+
+                <VBox fx:id="moduleEditorSection" managed="false" spacing="18.0" visible="false">
+                    <HBox spacing="18.0">
+                        <VBox spacing="10.0" styleClass="hero-banner create-banner" HBox.hgrow="ALWAYS">
+                            <Label styleClass="eyebrow" text="Edition Module" />
+                            <Label fx:id="moduleFormTitleLabel" styleClass="hero-title small-hero" text="Nouveau Module" wrapText="true" />
+                            <Label styleClass="dashboard-subtitle" text="Remplissez le formulaire pour creer ou modifier un module." wrapText="true" />
+                        </VBox>
+                    </HBox>
+                    <VBox spacing="14.0" styleClass="panel-card module-editor-panel">
+                        <GridPane hgap="16.0" vgap="16.0">
+                            <Label styleClass="detail-key" text="Titre" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                            <TextField fx:id="moduleTitreField" promptText="Ex: Java avance" styleClass="input-field" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                            <Label styleClass="detail-key" text="Ordre d'affichage" GridPane.columnIndex="2" GridPane.rowIndex="0" />
+                            <TextField fx:id="moduleOrdreField" promptText="0" styleClass="input-field" GridPane.columnIndex="3" GridPane.rowIndex="0" />
+                            <Label styleClass="detail-key" text="Description" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                            <TextArea fx:id="moduleDescriptionArea" prefRowCount="4" promptText="Decrivez clairement le module..." wrapText="true" GridPane.columnIndex="1" GridPane.columnSpan="3" GridPane.rowIndex="1" />
+                            <Label styleClass="detail-key" text="Objectifs d'apprentissage" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                            <TextArea fx:id="moduleObjectifsArea" prefRowCount="4" promptText="Ex: comprendre les bases, manipuler les concepts..." wrapText="true" GridPane.columnIndex="1" GridPane.columnSpan="3" GridPane.rowIndex="2" />
+                            <Label styleClass="detail-key" text="Duree estimee (h)" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+                            <TextField fx:id="moduleDureeField" promptText="12" styleClass="input-field" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                            <Label styleClass="detail-key" text="Date publication" GridPane.columnIndex="2" GridPane.rowIndex="3" />
+                            <DatePicker fx:id="moduleDatePublicationPicker" GridPane.columnIndex="3" GridPane.rowIndex="3" />
+                            <Label styleClass="detail-key" text="Statut" GridPane.columnIndex="0" GridPane.rowIndex="4" />
+                            <ComboBox fx:id="moduleStatutCombo" prefWidth="220.0" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+                            <Label styleClass="detail-key" text="Ressources" GridPane.columnIndex="0" GridPane.rowIndex="5" />
+                            <TextArea fx:id="moduleRessourcesArea" prefRowCount="3" promptText="support1.pdf, lien-video, tp-module.zip" wrapText="true" GridPane.columnIndex="1" GridPane.columnSpan="3" GridPane.rowIndex="5" />
+                        </GridPane>
+                        <HBox alignment="CENTER_RIGHT" spacing="12.0">
+                            <Label fx:id="moduleFormStatusLabel" styleClass="status-label neutral-status" text="" HBox.hgrow="ALWAYS" wrapText="true" />
+                            <Button onAction="#cancelModuleForm" styleClass="secondary-button compact-button" text="Retour a la liste" />
+                            <Button onAction="#saveModule" styleClass="primary-button compact-button" text="Enregistrer le module" />
+                        </HBox>
+                    </VBox>
                 </VBox>
             </VBox>
         </StackPane>

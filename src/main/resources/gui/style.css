@@ -285,6 +285,19 @@
     -fx-max-width: 980px;
 }
 
+.modules-list-panel {
+    -fx-min-width: 840px;
+}
+
+.modules-detail-panel {
+    -fx-min-width: 360px;
+    -fx-pref-width: 360px;
+}
+
+.module-editor-panel {
+    -fx-max-width: 1080px;
+}
+
 .detail-key {
     -fx-text-fill: #64748b;
     -fx-font-size: 12px;
@@ -300,6 +313,12 @@
 .table-action-button {
     -fx-font-size: 11px;
     -fx-padding: 8 10 8 10;
+}
+
+.dashboard-subsection {
+    -fx-text-fill: #64748b;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
 }
 
 .neutral-status {

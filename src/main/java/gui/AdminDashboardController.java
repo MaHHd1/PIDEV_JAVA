@@ -3,6 +3,7 @@ package gui;
 import entities.Administrateur;
 import entities.Enseignant;
 import entities.Etudiant;
+import entities.Module;
 import entities.Utilisateur;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -19,12 +20,14 @@ import javafx.scene.control.MenuButton;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TextInputControl;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import services.AuthService;
+import services.ModuleService;
 import services.UtilisateurService;
 import utils.SceneManager;
 import utils.UserSession;
@@ -77,6 +80,9 @@ public class AdminDashboardController {
 
     @FXML
     private VBox createSection;
+
+    @FXML
+    private VBox modulesSection;
 
     @FXML
     private TextField searchField;
@@ -213,14 +219,82 @@ public class AdminDashboardController {
     @FXML
     private javafx.scene.control.Button createSubmitButton;
 
+    @FXML
+    private TableView<Module> modulesTable;
+
+    @FXML
+    private TableColumn<Module, Integer> moduleIdColumn;
+
+    @FXML
+    private TableColumn<Module, String> moduleTitleColumn;
+
+    @FXML
+    private TableColumn<Module, Integer> moduleOrderColumn;
+
+    @FXML
+    private TableColumn<Module, Integer> moduleDurationColumn;
+
+    @FXML
+    private TableColumn<Module, String> moduleStatusColumn;
+
+    @FXML
+    private TableColumn<Module, Void> moduleActionsColumn;
+
+    @FXML
+    private VBox moduleBrowseSection;
+
+    @FXML
+    private ListView<String> moduleDetailsList;
+
+    @FXML
+    private Label moduleMessageLabel;
+
+    @FXML
+    private VBox moduleEditorSection;
+
+    @FXML
+    private Label moduleFormTitleLabel;
+
+    @FXML
+    private TextField moduleTitreField;
+
+    @FXML
+    private TextArea moduleDescriptionArea;
+
+    @FXML
+    private TextField moduleOrdreField;
+
+    @FXML
+    private TextArea moduleObjectifsArea;
+
+    @FXML
+    private TextField moduleDureeField;
+
+    @FXML
+    private DatePicker moduleDatePublicationPicker;
+
+    @FXML
+    private ComboBox<String> moduleStatutCombo;
+
+    @FXML
+    private TextArea moduleRessourcesArea;
+
+    @FXML
+    private Label moduleFormStatusLabel;
+
     private final ObservableList<UtilisateurRow> masterRows = FXCollections.observableArrayList();
     private final ObservableList<String> activityItems = FXCollections.observableArrayList();
     private final ObservableList<StatRow> statRows = FXCollections.observableArrayList();
     private final ObservableList<String> statsInsights = FXCollections.observableArrayList();
     private final FilteredList<UtilisateurRow> filteredRows = new FilteredList<>(masterRows, row -> true);
+    private final ObservableList<Module> moduleRows = FXCollections.observableArrayList();
     private final UtilisateurService utilisateurService = new UtilisateurService();
     private final AuthService authService = new AuthService();
+    private final ModuleService moduleService = new ModuleService();
+    private final gui.ModuleController moduleController = new gui.ModuleController();
     private Utilisateur editingUtilisateur;
+    private Module editingModule;
+    private boolean moduleDemoMode;
 
     @FXML
     private void initialize() {
@@ -228,34 +302,45 @@ public class AdminDashboardController {
         configureUserTable();
         configureStatisticsTable();
         configureCreateForm();
+        configureModuleTable();
         showUsersPage();
         loadDashboardData();
+        loadModulesData();
     }
 
     @FXML
     private void showUsersPage() {
-        setSectionVisibility(true, false, false);
+        setSectionVisibility(true, false, false, false);
         sectionTitleLabel.setText("User Registry");
         sectionSubtitleLabel.setText("Filter, inspect, edit, and remove platform users.");
     }
 
     @FXML
     private void showStatsPage() {
-        setSectionVisibility(false, true, false);
+        setSectionVisibility(false, true, false, false);
         sectionTitleLabel.setText("Statistics");
         sectionSubtitleLabel.setText("Track role distribution and system-level user activity.");
     }
 
     @FXML
     private void showCreatePage() {
-        setSectionVisibility(false, false, true);
+        setSectionVisibility(false, false, true, false);
         sectionTitleLabel.setText("Create User");
         sectionSubtitleLabel.setText("Add a new admin, student, or teacher using typed database-backed input controls.");
     }
 
     @FXML
+    private void showModulesPage() {
+        setSectionVisibility(false, false, false, true);
+        sectionTitleLabel.setText("Modules");
+        sectionSubtitleLabel.setText("Browse modules, inspect their structure, and create new learning modules.");
+        loadModulesData();
+    }
+
+    @FXML
     private void refreshData() {
         loadDashboardData();
+        loadModulesData();
     }
 
     @FXML
@@ -371,11 +456,119 @@ public class AdminDashboardController {
         statsInsightsList.setItems(statsInsights);
     }
 
+    private void configureModuleTable() {
+        moduleIdColumn.setCellValueFactory(new PropertyValueFactory<>("id"));
+        moduleTitleColumn.setCellValueFactory(new PropertyValueFactory<>("titreModule"));
+        moduleOrderColumn.setCellValueFactory(new PropertyValueFactory<>("ordreAffichage"));
+        moduleDurationColumn.setCellValueFactory(new PropertyValueFactory<>("dureeEstimeeHeures"));
+        moduleStatusColumn.setCellValueFactory(new PropertyValueFactory<>("statut"));
+        moduleActionsColumn.setCellFactory(column -> new TableCell<>() {
+            private final javafx.scene.control.Button viewButton = new javafx.scene.control.Button("Voir");
+            private final javafx.scene.control.Button editButton = new javafx.scene.control.Button("Modifier");
+            private final javafx.scene.control.Button deleteButton = new javafx.scene.control.Button("Supprimer");
+            private final HBox box = new HBox(8, viewButton, editButton, deleteButton);
+
+            {
+                viewButton.getStyleClass().addAll("secondary-button", "table-action-button");
+                editButton.getStyleClass().addAll("primary-button", "table-action-button");
+                deleteButton.getStyleClass().addAll("danger-button", "table-action-button");
+
+                viewButton.setOnAction(event -> {
+                    Module module = getTableView().getItems().get(getIndex());
+                    modulesTable.getSelectionModel().select(module);
+                    updateModuleDetails(module);
+                });
+                editButton.setOnAction(event -> editModule(getTableView().getItems().get(getIndex())));
+                deleteButton.setOnAction(event -> deleteModule(getTableView().getItems().get(getIndex())));
+            }
+
+            @Override
+            protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                setGraphic(empty ? null : box);
+            }
+        });
+        modulesTable.setItems(moduleRows);
+        moduleDetailsList.setItems(FXCollections.observableArrayList());
+        modulesTable.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> updateModuleDetails(newValue));
+        moduleController.configureFormDefaults(moduleStatutCombo, moduleDatePublicationPicker);
+        showModuleBrowser();
+    }
+
     private void configureCreateForm() {
         createRoleCombo.setItems(FXCollections.observableArrayList("administrateur", "enseignant", "etudiant"));
         createRoleCombo.setValue("administrateur");
         createRoleCombo.valueProperty().addListener((obs, oldValue, newValue) -> updateCreateFormForRole(newValue));
         updateCreateFormForRole(createRoleCombo.getValue());
+    }
+
+    @FXML
+    private void showModuleCreateForm() {
+        editingModule = null;
+        moduleFormTitleLabel.setText("Nouveau Module");
+        moduleController.clearForm(
+                moduleTitreField,
+                moduleDescriptionArea,
+                moduleOrdreField,
+                moduleObjectifsArea,
+                moduleDureeField,
+                moduleDatePublicationPicker,
+                moduleStatutCombo,
+                moduleRessourcesArea
+        );
+        moduleFormStatusLabel.setText("");
+        showModuleEditor();
+    }
+
+    @FXML
+    private void cancelModuleForm() {
+        showModuleBrowser();
+    }
+
+    @FXML
+    private void saveModule() {
+        String validationMessage = moduleController.validateModuleForm(
+                moduleTitreField,
+                moduleDescriptionArea,
+                moduleOrdreField,
+                moduleObjectifsArea,
+                moduleDureeField,
+                moduleStatutCombo
+        );
+        if (validationMessage != null) {
+            moduleFormStatusLabel.setText(validationMessage);
+            return;
+        }
+
+        try {
+            Module module = moduleController.buildModule(
+                    editingModule,
+                    moduleTitreField,
+                    moduleDescriptionArea,
+                    moduleOrdreField,
+                    moduleObjectifsArea,
+                    moduleDureeField,
+                    moduleDatePublicationPicker,
+                    moduleStatutCombo,
+                    moduleRessourcesArea
+            );
+
+            if (moduleDemoMode) {
+                saveModuleInDemoMode(module);
+            } else if (editingModule == null) {
+                moduleService.create(module);
+            } else {
+                moduleService.update(module);
+            }
+
+            moduleMessageLabel.setText(editingModule == null
+                    ? "Module cree avec succes."
+                    : "Module modifie avec succes.");
+            loadModulesData();
+            showModuleBrowser();
+        } catch (SQLException e) {
+            moduleFormStatusLabel.setText("Erreur module: " + e.getMessage());
+        }
     }
 
     private void updateCreateFormForRole(String role) {
@@ -688,13 +881,15 @@ public class AdminDashboardController {
         return builder.toString();
     }
 
-    private void setSectionVisibility(boolean usersVisible, boolean statsVisible, boolean createVisible) {
+    private void setSectionVisibility(boolean usersVisible, boolean statsVisible, boolean createVisible, boolean modulesVisible) {
         usersSection.setVisible(usersVisible);
         usersSection.setManaged(usersVisible);
         statsSection.setVisible(statsVisible);
         statsSection.setManaged(statsVisible);
         createSection.setVisible(createVisible);
         createSection.setManaged(createVisible);
+        modulesSection.setVisible(modulesVisible);
+        modulesSection.setManaged(modulesVisible);
     }
 
     private void showError(String title, String message) {
@@ -816,6 +1011,68 @@ public class AdminDashboardController {
         }
     }
 
+    private void loadModulesData() {
+        try {
+            List<Module> modules = moduleService.getAll();
+            moduleDemoMode = modules.isEmpty();
+            moduleRows.setAll(moduleDemoMode ? buildDemoModules() : modules);
+            if (moduleDemoMode) {
+                moduleMessageLabel.setText("Mode demo module actif.");
+            } else {
+                moduleMessageLabel.setText("");
+            }
+        } catch (SQLException e) {
+            moduleDemoMode = true;
+            moduleRows.setAll(buildDemoModules());
+            moduleMessageLabel.setText("Mode demo module: " + e.getMessage());
+        }
+
+        if (!moduleRows.isEmpty()) {
+            modulesTable.getSelectionModel().select(0);
+        } else {
+            updateModuleDetails(null);
+        }
+    }
+
+    private void updateModuleDetails(Module module) {
+        if (module == null) {
+            moduleDetailsList.getItems().setAll("Aucun module selectionne.");
+            return;
+        }
+        moduleDetailsList.getItems().setAll(
+                "Titre: " + module.getTitreModule(),
+                "Description: " + safeValue(module.getDescription()),
+                "Ordre: " + module.getOrdreAffichage(),
+                "Objectifs: " + safeValue(module.getObjectifsApprentissage()),
+                "Duree estimee: " + (module.getDureeEstimeeHeures() != null ? module.getDureeEstimeeHeures() + " h" : "-"),
+                "Publication: " + formatDateTime(module.getDatePublication()),
+                "Statut: " + safeValue(module.getStatut()),
+                "Ressources: " + (module.getRessourcesComplementaires() == null || module.getRessourcesComplementaires().isEmpty()
+                        ? "-"
+                        : String.join(", ", module.getRessourcesComplementaires()))
+        );
+    }
+
+    @FXML
+    private void editSelectedModule() {
+        Module selectedModule = modulesTable.getSelectionModel().getSelectedItem();
+        if (selectedModule == null) {
+            moduleMessageLabel.setText("Selectionnez un module a modifier.");
+            return;
+        }
+        editModule(selectedModule);
+    }
+
+    @FXML
+    private void deleteSelectedModule() {
+        Module selectedModule = modulesTable.getSelectionModel().getSelectedItem();
+        if (selectedModule == null) {
+            moduleMessageLabel.setText("Selectionnez un module a supprimer.");
+            return;
+        }
+        deleteModule(selectedModule);
+    }
+
     private void populateDemoDashboard(String reason) {
         masterRows.clear();
         statRows.clear();
@@ -924,5 +1181,121 @@ public class AdminDashboardController {
         etudiant.setLastLogin(LocalDateTime.now().minusHours(6));
         etudiant.setStatut("actif");
         return etudiant;
+    }
+
+    private List<Module> buildDemoModules() {
+        Module module1 = new Module();
+        module1.setId(1);
+        module1.setTitreModule("Introduction Java");
+        module1.setDescription("Bases du langage Java, syntaxe, classes et objets.");
+        module1.setOrdreAffichage(1);
+        module1.setObjectifsApprentissage("Comprendre les fondamentaux de Java et manipuler les classes.");
+        module1.setDureeEstimeeHeures(12);
+        module1.setDatePublication(LocalDate.now().minusDays(12).atStartOfDay());
+        module1.setStatut("publie");
+        module1.setRessourcesComplementaires(List.of("support-java.pdf", "tp-introduction.zip"));
+
+        Module module2 = new Module();
+        module2.setId(2);
+        module2.setTitreModule("UML et Analyse");
+        module2.setDescription("Diagrammes UML, cas d'utilisation et modelisation des besoins.");
+        module2.setOrdreAffichage(2);
+        module2.setObjectifsApprentissage("Savoir modeliser une application avant implementation.");
+        module2.setDureeEstimeeHeures(8);
+        module2.setDatePublication(LocalDate.now().minusDays(5).atStartOfDay());
+        module2.setStatut("brouillon");
+        module2.setRessourcesComplementaires(List.of("uml-guide.pdf"));
+
+        return List.of(module1, module2);
+    }
+
+    private void showModuleBrowser() {
+        editingModule = null;
+        moduleBrowseSection.setVisible(true);
+        moduleBrowseSection.setManaged(true);
+        moduleEditorSection.setVisible(false);
+        moduleEditorSection.setManaged(false);
+        moduleFormTitleLabel.setText("Nouveau Module");
+        moduleController.clearForm(
+                moduleTitreField,
+                moduleDescriptionArea,
+                moduleOrdreField,
+                moduleObjectifsArea,
+                moduleDureeField,
+                moduleDatePublicationPicker,
+                moduleStatutCombo,
+                moduleRessourcesArea
+        );
+        moduleFormStatusLabel.setText("");
+    }
+
+    private void showModuleEditor() {
+        moduleBrowseSection.setVisible(false);
+        moduleBrowseSection.setManaged(false);
+        moduleEditorSection.setVisible(true);
+        moduleEditorSection.setManaged(true);
+    }
+
+    private void saveModuleInDemoMode(Module module) {
+        if (editingModule == null) {
+            int nextId = moduleRows.stream()
+                    .map(Module::getId)
+                    .filter(id -> id != null)
+                    .max(Integer::compareTo)
+                    .orElse(0) + 1;
+            module.setId(nextId);
+            moduleRows.add(module);
+        } else {
+            modulesTable.refresh();
+        }
+    }
+
+    private String safeValue(String value) {
+        return value == null || value.isBlank() ? "-" : value;
+    }
+
+    private void editModule(Module selectedModule) {
+        editingModule = selectedModule;
+        moduleFormTitleLabel.setText("Modifier Module");
+        moduleController.populateForm(
+                selectedModule,
+                moduleTitreField,
+                moduleDescriptionArea,
+                moduleOrdreField,
+                moduleObjectifsArea,
+                moduleDureeField,
+                moduleDatePublicationPicker,
+                moduleStatutCombo,
+                moduleRessourcesArea
+        );
+        moduleFormStatusLabel.setText("");
+        showModuleEditor();
+    }
+
+    private void deleteModule(Module selectedModule) {
+        Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmation.setTitle("Supprimer Module");
+        confirmation.setHeaderText("Supprimer le module " + safeValue(selectedModule.getTitreModule()) + " ?");
+        confirmation.setContentText("Cette action supprimera le module selectionne.");
+
+        Optional<ButtonType> result = confirmation.showAndWait();
+        if (result.isEmpty() || result.get() != ButtonType.OK) {
+            return;
+        }
+
+        if (moduleDemoMode) {
+            moduleRows.remove(selectedModule);
+            updateModuleDetails(modulesTable.getSelectionModel().getSelectedItem());
+            moduleMessageLabel.setText("Module demo supprime.");
+            return;
+        }
+
+        try {
+            moduleService.delete(selectedModule.getId());
+            loadModulesData();
+            moduleMessageLabel.setText("Module supprime avec succes.");
+        } catch (SQLException e) {
+            moduleMessageLabel.setText("Suppression impossible: " + e.getMessage());
+        }
     }
 }
