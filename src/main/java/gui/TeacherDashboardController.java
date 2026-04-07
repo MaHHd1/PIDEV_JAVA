@@ -12,6 +12,7 @@ import utils.SceneManager;
 import utils.UserSession;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 
 public class TeacherDashboardController {
 
@@ -45,28 +46,30 @@ public class TeacherDashboardController {
         teachingList.setItems(teachingItems);
 
         Utilisateur utilisateur = UserSession.getCurrentUser();
-        if (utilisateur instanceof Enseignant) {
-            Enseignant enseignant = (Enseignant) utilisateur;
-            welcomeLabel.setText("Hello, " + enseignant.getPrenom());
-            roleLabel.setText("Teacher dashboard");
-            currentUserNameLabel.setText(enseignant.getNomComplet());
-            currentUserRoleLabel.setText(enseignant.getType());
-            profileMenuButton.setText(buildInitials(enseignant));
+        Enseignant enseignant = utilisateur instanceof Enseignant ? (Enseignant) utilisateur : buildDemoTeacher();
+        welcomeLabel.setText("Hello, " + enseignant.getPrenom());
+        roleLabel.setText("Teacher dashboard");
+        currentUserNameLabel.setText(enseignant.getNomComplet());
+        currentUserRoleLabel.setText(enseignant.getType());
+        profileMenuButton.setText(buildInitials(enseignant));
 
-            profileItems.setAll(
-                    "Name: " + enseignant.getNomComplet(),
-                    "Email: " + enseignant.getEmail(),
-                    "Teacher ID: " + enseignant.getMatriculeEnseignant(),
-                    "Diploma: " + enseignant.getDiplome(),
-                    "Speciality: " + enseignant.getSpecialite(),
-                    "Contract: " + enseignant.getTypeContrat()
-            );
-        }
+        profileItems.setAll(
+                "Name: " + enseignant.getNomComplet(),
+                "Email: " + enseignant.getEmail(),
+                "Teacher ID: " + enseignant.getMatriculeEnseignant(),
+                "Diploma: " + enseignant.getDiplome(),
+                "Speciality: " + enseignant.getSpecialite(),
+                "Contract: " + enseignant.getTypeContrat(),
+                "Experience: " + (enseignant.getAnneesExperience() != null ? enseignant.getAnneesExperience() : 0) + " years",
+                "Hourly rate: " + (enseignant.getTauxHoraire() != null ? enseignant.getTauxHoraire() : BigDecimal.ZERO) + " TND",
+                "Status: " + enseignant.getStatut()
+        );
 
         teachingItems.setAll(
-                "Review teaching availability",
-                "Prepare your active course material",
-                "Track upcoming student interactions",
+                "Java avancé - 24 students - next session Tuesday 10:00",
+                "Spring Boot APIs - content review pending",
+                "Correct quiz results for module Integration Continue",
+                "Publish new PDF support for UML modelling",
                 "Refresh academic content and announcements"
         );
     }
@@ -83,5 +86,22 @@ public class TeacherDashboardController {
         String nom = utilisateur.getNom() != null && !utilisateur.getNom().isBlank()
                 ? utilisateur.getNom().substring(0, 1).toUpperCase() : "";
         return prenom + nom;
+    }
+
+    private Enseignant buildDemoTeacher() {
+        Enseignant enseignant = new Enseignant();
+        enseignant.setId(2001L);
+        enseignant.setNom("Ben Salem");
+        enseignant.setPrenom("Yasmine");
+        enseignant.setEmail("yasmine.bensalem@demo.tn");
+        enseignant.setMatriculeEnseignant("ENS-JAVA-24");
+        enseignant.setDiplome("Doctorat");
+        enseignant.setSpecialite("Genie Logiciel");
+        enseignant.setTypeContrat("CDI");
+        enseignant.setAnneesExperience(8);
+        enseignant.setTauxHoraire(new BigDecimal("95.00"));
+        enseignant.setDisponibilites("Lundi au jeudi 08:00-16:00");
+        enseignant.setStatut("actif");
+        return enseignant;
     }
 }

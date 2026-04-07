@@ -34,6 +34,7 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -306,9 +307,10 @@ public class AdminDashboardController {
     private void configureCurrentUserHeader() {
         Utilisateur currentUser = UserSession.getCurrentUser();
         if (currentUser == null) {
-            currentUserNameLabel.setText("Guest");
-            currentUserRoleLabel.setText("-");
-            profileMenuButton.setText("G");
+            Administrateur demoAdmin = buildDemoAdmin();
+            currentUserNameLabel.setText(demoAdmin.getNomComplet());
+            currentUserRoleLabel.setText(demoAdmin.getType());
+            profileMenuButton.setText(buildInitials(demoAdmin));
             return;
         }
 
@@ -517,9 +519,15 @@ public class AdminDashboardController {
     private void loadDashboardData() {
         try {
             List<Utilisateur> utilisateurs = utilisateurService.getAllUtilisateurs();
+            if (utilisateurs.isEmpty()) {
+                utilisateurs = buildDemoUsers();
+                activityItems.setAll("Demo mode enabled: no users found in database.");
+            }
             masterRows.clear();
             statRows.clear();
-            activityItems.clear();
+            if (activityItems.isEmpty()) {
+                activityItems.clear();
+            }
             statsInsights.clear();
 
             long students = 0;
@@ -566,10 +574,15 @@ public class AdminDashboardController {
             statsInsights.add("Admin workspace includes create, edit, view, and delete flows.");
             statsInsights.add("Profile menu is available from the top bar.");
 
-            activityItems.add("Live registry loaded from database");
-            activityItems.add("Profile actions are available from the user circle");
-            activityItems.add("Sidebar switches between users, statistics, and create page");
-            activityItems.add("ObservableList keeps the admin workspace reactive");
+            if (activityItems.isEmpty()) {
+                activityItems.add("Live registry loaded from database");
+                activityItems.add("Profile actions are available from the user circle");
+                activityItems.add("Sidebar switches between users, statistics, and create page");
+                activityItems.add("ObservableList keeps the admin workspace reactive");
+            } else {
+                activityItems.add("Create form stays available for desktop UI testing");
+                activityItems.add("Table actions remain clickable in demo mode");
+            }
 
             applyFilters();
             if (!usersTable.getItems().isEmpty()) {
@@ -578,8 +591,7 @@ public class AdminDashboardController {
                 updateDetails(null);
             }
         } catch (SQLException e) {
-            activityItems.setAll("Failed to load admin dashboard: " + e.getMessage());
-            statsInsights.setAll("Statistics unavailable: " + e.getMessage());
+            populateDemoDashboard("Demo mode enabled: " + e.getMessage());
         }
     }
 
@@ -802,5 +814,115 @@ public class AdminDashboardController {
         if (administrateur.getDateNomination() == null) {
             administrateur.setDateNomination(LocalDateTime.now());
         }
+    }
+
+    private void populateDemoDashboard(String reason) {
+        masterRows.clear();
+        statRows.clear();
+        activityItems.clear();
+        statsInsights.clear();
+
+        List<Utilisateur> utilisateurs = buildDemoUsers();
+        long students = utilisateurs.stream().filter(user -> "etudiant".equalsIgnoreCase(user.getType())).count();
+        long teachers = utilisateurs.stream().filter(user -> "enseignant".equalsIgnoreCase(user.getType())).count();
+        long admins = utilisateurs.stream().filter(user -> "administrateur".equalsIgnoreCase(user.getType())).count();
+
+        for (Utilisateur utilisateur : utilisateurs) {
+            masterRows.add(new UtilisateurRow(utilisateur));
+        }
+
+        totalUsersLabel.setText(String.valueOf(utilisateurs.size()));
+        studentsCountLabel.setText(String.valueOf(students));
+        teachersCountLabel.setText(String.valueOf(teachers));
+        adminsCountLabel.setText(String.valueOf(admins));
+
+        statRows.addAll(
+                new StatRow("Total users", String.valueOf(utilisateurs.size())),
+                new StatRow("Administrators", String.valueOf(admins)),
+                new StatRow("Teachers", String.valueOf(teachers)),
+                new StatRow("Students", String.valueOf(students)),
+                new StatRow("Active profiles", "3")
+        );
+
+        statsInsights.add("Scene Builder preview data is loaded.");
+        statsInsights.add("Admin table includes one admin, one teacher, and one student.");
+        statsInsights.add("Create form can be tested without depending on MySQL.");
+        statsInsights.add(reason);
+
+        activityItems.add("Demo admin registry loaded");
+        activityItems.add("Preview details are available for each role");
+        activityItems.add("Search and role filters can be tested immediately");
+        activityItems.add("Switch between pages to validate layout spacing");
+
+        applyFilters();
+        if (!usersTable.getItems().isEmpty()) {
+            usersTable.getSelectionModel().select(0);
+        } else {
+            updateDetails(null);
+        }
+    }
+
+    private List<Utilisateur> buildDemoUsers() {
+        List<Utilisateur> utilisateurs = new ArrayList<>();
+        utilisateurs.add(buildDemoAdmin());
+        utilisateurs.add(buildDemoTeacher());
+        utilisateurs.add(buildDemoStudent());
+        return utilisateurs;
+    }
+
+    private Administrateur buildDemoAdmin() {
+        Administrateur administrateur = new Administrateur();
+        administrateur.setId(1001L);
+        administrateur.setNom("Mansouri");
+        administrateur.setPrenom("Salma");
+        administrateur.setEmail("salma.mansouri@demo.tn");
+        administrateur.setMotDePasse("DemoAdmin123");
+        administrateur.setDepartement("Informatique");
+        administrateur.setFonction("Responsable Pedagogique");
+        administrateur.setTelephone("70111222");
+        administrateur.setDateCreation(LocalDateTime.now().minusMonths(10));
+        administrateur.setDateNomination(LocalDateTime.now().minusMonths(8));
+        administrateur.setLastLogin(LocalDateTime.now().minusHours(2));
+        administrateur.setActif(true);
+        return administrateur;
+    }
+
+    private Enseignant buildDemoTeacher() {
+        Enseignant enseignant = new Enseignant();
+        enseignant.setId(2001L);
+        enseignant.setNom("Ben Salem");
+        enseignant.setPrenom("Yasmine");
+        enseignant.setEmail("yasmine.bensalem@demo.tn");
+        enseignant.setMotDePasse("DemoTeacher123");
+        enseignant.setMatriculeEnseignant("ENS-JAVA-24");
+        enseignant.setDiplome("Doctorat");
+        enseignant.setSpecialite("Genie Logiciel");
+        enseignant.setTypeContrat("CDI");
+        enseignant.setAnneesExperience(8);
+        enseignant.setDisponibilites("Lundi au jeudi 08:00-16:00");
+        enseignant.setStatut("actif");
+        enseignant.setDateCreation(LocalDateTime.now().minusMonths(6));
+        enseignant.setLastLogin(LocalDateTime.now().minusDays(1));
+        return enseignant;
+    }
+
+    private Etudiant buildDemoStudent() {
+        Etudiant etudiant = new Etudiant();
+        etudiant.setId(3001L);
+        etudiant.setNom("Trabelsi");
+        etudiant.setPrenom("Amine");
+        etudiant.setEmail("amine.trabelsi@demo.tn");
+        etudiant.setMotDePasse("DemoStudent123");
+        etudiant.setMatricule("ETU-GL-2401");
+        etudiant.setNiveauEtude("Master 1");
+        etudiant.setSpecialisation("Genie Logiciel");
+        etudiant.setTelephone("22123456");
+        etudiant.setAdresse("Tunis, Centre Urbain Nord");
+        etudiant.setDateNaissance(LocalDate.of(2002, 5, 14));
+        etudiant.setDateInscription(LocalDateTime.now().minusMonths(7));
+        etudiant.setDateCreation(LocalDateTime.now().minusMonths(7));
+        etudiant.setLastLogin(LocalDateTime.now().minusHours(6));
+        etudiant.setStatut("actif");
+        return etudiant;
     }
 }

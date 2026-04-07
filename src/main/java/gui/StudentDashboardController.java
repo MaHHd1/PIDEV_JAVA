@@ -12,6 +12,8 @@ import utils.SceneManager;
 import utils.UserSession;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public class StudentDashboardController {
 
@@ -45,28 +47,29 @@ public class StudentDashboardController {
         focusList.setItems(focusItems);
 
         Utilisateur utilisateur = UserSession.getCurrentUser();
-        if (utilisateur instanceof Etudiant) {
-            Etudiant etudiant = (Etudiant) utilisateur;
-            welcomeLabel.setText("Hello, " + etudiant.getPrenom());
-            roleLabel.setText("Student dashboard");
-            currentUserNameLabel.setText(etudiant.getNomComplet());
-            currentUserRoleLabel.setText(etudiant.getType());
-            profileMenuButton.setText(buildInitials(etudiant));
+        Etudiant etudiant = utilisateur instanceof Etudiant ? (Etudiant) utilisateur : buildDemoStudent();
+        welcomeLabel.setText("Hello, " + etudiant.getPrenom());
+        roleLabel.setText("Student dashboard");
+        currentUserNameLabel.setText(etudiant.getNomComplet());
+        currentUserRoleLabel.setText(etudiant.getType());
+        profileMenuButton.setText(buildInitials(etudiant));
 
-            profileItems.setAll(
-                    "Name: " + etudiant.getNomComplet(),
-                    "Email: " + etudiant.getEmail(),
-                    "Matricule: " + etudiant.getMatricule(),
-                    "Level: " + etudiant.getNiveauEtude(),
-                    "Specialisation: " + etudiant.getSpecialisation(),
-                    "Status: " + etudiant.getStatut()
-            );
-        }
+        profileItems.setAll(
+                "Name: " + etudiant.getNomComplet(),
+                "Email: " + etudiant.getEmail(),
+                "Matricule: " + etudiant.getMatricule(),
+                "Level: " + etudiant.getNiveauEtude(),
+                "Specialisation: " + etudiant.getSpecialisation(),
+                "Phone: " + etudiant.getTelephone(),
+                "Status: " + etudiant.getStatut(),
+                "Registration: " + etudiant.getDateInscription()
+        );
 
         focusItems.setAll(
-                "Review your latest course activity",
-                "Track your academic profile details",
-                "Continue from your current specialization",
+                "POO Java - chapter 4 completed",
+                "Base de donnees - practical work due Friday",
+                "Web services - project sprint in progress",
+                "UML - review sequence diagrams before next lab",
                 "Prepare for upcoming platform modules"
         );
     }
@@ -83,5 +86,22 @@ public class StudentDashboardController {
         String nom = utilisateur.getNom() != null && !utilisateur.getNom().isBlank()
                 ? utilisateur.getNom().substring(0, 1).toUpperCase() : "";
         return prenom + nom;
+    }
+
+    private Etudiant buildDemoStudent() {
+        Etudiant etudiant = new Etudiant();
+        etudiant.setId(3001L);
+        etudiant.setNom("Trabelsi");
+        etudiant.setPrenom("Amine");
+        etudiant.setEmail("amine.trabelsi@demo.tn");
+        etudiant.setMatricule("ETU-GL-2401");
+        etudiant.setNiveauEtude("Master 1");
+        etudiant.setSpecialisation("Genie Logiciel");
+        etudiant.setDateNaissance(LocalDate.of(2002, 5, 14));
+        etudiant.setTelephone("22123456");
+        etudiant.setAdresse("Tunis, Centre Urbain Nord");
+        etudiant.setDateInscription(LocalDateTime.now().minusMonths(7));
+        etudiant.setStatut("actif");
+        return etudiant;
     }
 }
