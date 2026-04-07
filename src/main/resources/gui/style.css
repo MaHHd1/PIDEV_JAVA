@@ -78,6 +78,17 @@
     -fx-font-size: 14px;
 }
 
+.inline-field {
+    -fx-pref-width: 290;
+}
+
+.inline-combo {
+    -fx-background-color: #f4f7fb;
+    -fx-background-radius: 14;
+    -fx-border-color: #dbe3ee;
+    -fx-border-radius: 14;
+}
+
 .input-field:focused {
     -fx-border-color: #1d4ed8;
     -fx-background-color: white;
@@ -184,6 +195,32 @@
 .side-panel {
     -fx-min-width: 280px;
     -fx-pref-width: 300px;
+}
+
+.admin-main-panel {
+    -fx-min-width: 760px;
+}
+
+.details-panel {
+    -fx-min-width: 360px;
+    -fx-pref-width: 360px;
+}
+
+.detail-key {
+    -fx-text-fill: #64748b;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+}
+
+.detail-value {
+    -fx-text-fill: #0f172a;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+}
+
+.table-action-button {
+    -fx-font-size: 11px;
+    -fx-padding: 8 10 8 10;
 }
 
 .table-view,

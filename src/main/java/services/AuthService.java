@@ -85,4 +85,25 @@ public class AuthService {
             return false;
         }
     }
+
+    public String hashPassword(String rawPassword) throws IOException {
+        ProcessBuilder processBuilder = new ProcessBuilder(
+                PHP_EXECUTABLE,
+                "-r",
+                "echo password_hash($argv[1], PASSWORD_BCRYPT);",
+                rawPassword
+        );
+
+        Process process = processBuilder.start();
+        try {
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                throw new IOException("PHP password hashing failed with exit code " + exitCode);
+            }
+            return new String(process.getInputStream().readAllBytes()).trim();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Password hashing interrupted.", e);
+        }
+    }
 }
