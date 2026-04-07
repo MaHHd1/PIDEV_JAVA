@@ -271,7 +271,7 @@ public class UtilisateurService {
         }
     }
 
-    private String baseSelectSql() {
+    protected String baseSelectSql() {
         return "SELECT u.*, "
                 + "e.matricule AS e_matricule, e.niveau_etude AS e_niveau_etude, e.specialisation AS e_specialisation, "
                 + "e.date_naissance AS e_date_naissance, e.telephone AS e_telephone, e.adresse AS e_adresse, "

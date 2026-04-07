@@ -4,6 +4,7 @@ import entities.Etudiant;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -89,5 +90,18 @@ public class EtudiantService extends UtilisateurService implements IService<Etud
             }
         }
         return etudiants;
+    }
+
+    public Etudiant getByMatricule(String matricule) throws SQLException {
+        String sql = baseSelectSql() + " WHERE e.matricule = ?";
+        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+            ps.setString(1, matricule);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return (Etudiant) mapUtilisateur(rs);
+                }
+            }
+        }
+        return null;
     }
 }
