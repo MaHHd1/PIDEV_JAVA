@@ -4,29 +4,26 @@ import entities.Administrateur;
 import entities.Enseignant;
 import entities.Etudiant;
 import entities.Utilisateur;
-import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
-import javafx.geometry.Insets;
 import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
-import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
+import javafx.scene.control.MenuButton;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import services.AuthService;
 import services.UtilisateurService;
 import utils.SceneManager;
@@ -45,7 +42,19 @@ public class AdminDashboardController {
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     @FXML
-    private Label welcomeLabel;
+    private Label sectionTitleLabel;
+
+    @FXML
+    private Label sectionSubtitleLabel;
+
+    @FXML
+    private Label currentUserNameLabel;
+
+    @FXML
+    private Label currentUserRoleLabel;
+
+    @FXML
+    private MenuButton profileMenuButton;
 
     @FXML
     private Label totalUsersLabel;
@@ -58,6 +67,15 @@ public class AdminDashboardController {
 
     @FXML
     private Label adminsCountLabel;
+
+    @FXML
+    private VBox usersSection;
+
+    @FXML
+    private VBox statsSection;
+
+    @FXML
+    private VBox createSection;
 
     @FXML
     private TextField searchField;
@@ -119,33 +137,119 @@ public class AdminDashboardController {
     @FXML
     private ListView<String> activityList;
 
+    @FXML
+    private TableView<StatRow> statisticsTable;
+
+    @FXML
+    private TableColumn<StatRow, String> metricColumn;
+
+    @FXML
+    private TableColumn<StatRow, String> valueColumn;
+
+    @FXML
+    private ListView<String> statsInsightsList;
+
+    @FXML
+    private ComboBox<String> createRoleCombo;
+
+    @FXML
+    private TextField createNomField;
+
+    @FXML
+    private TextField createPrenomField;
+
+    @FXML
+    private TextField createEmailField;
+
+    @FXML
+    private TextField createPasswordField;
+
+    @FXML
+    private Label createIdentifierLabel;
+
+    @FXML
+    private TextField createIdentifierField;
+
+    @FXML
+    private Label createFieldOneLabel;
+
+    @FXML
+    private TextField createFieldOneField;
+
+    @FXML
+    private Label createFieldTwoLabel;
+
+    @FXML
+    private TextField createFieldTwoField;
+
+    @FXML
+    private Label createFieldThreeLabel;
+
+    @FXML
+    private TextField createFieldThreeField;
+
+    @FXML
+    private Label createFieldFourLabel;
+
+    @FXML
+    private TextField createFieldFourField;
+
+    @FXML
+    private Label createDateLabel;
+
+    @FXML
+    private DatePicker createDatePicker;
+
+    @FXML
+    private Label createAreaLabel;
+
+    @FXML
+    private TextArea createAreaField;
+
+    @FXML
+    private Label createStatusLabel;
+
+    @FXML
+    private javafx.scene.control.Button createSubmitButton;
+
     private final ObservableList<UtilisateurRow> masterRows = FXCollections.observableArrayList();
     private final ObservableList<String> activityItems = FXCollections.observableArrayList();
+    private final ObservableList<StatRow> statRows = FXCollections.observableArrayList();
+    private final ObservableList<String> statsInsights = FXCollections.observableArrayList();
     private final FilteredList<UtilisateurRow> filteredRows = new FilteredList<>(masterRows, row -> true);
     private final UtilisateurService utilisateurService = new UtilisateurService();
     private final AuthService authService = new AuthService();
+    private Utilisateur editingUtilisateur;
 
     @FXML
     private void initialize() {
-        idColumn.setCellValueFactory(new PropertyValueFactory<>("id"));
-        fullNameColumn.setCellValueFactory(new PropertyValueFactory<>("fullName"));
-        emailColumn.setCellValueFactory(new PropertyValueFactory<>("email"));
-        roleColumn.setCellValueFactory(new PropertyValueFactory<>("type"));
-        identifierColumn.setCellValueFactory(new PropertyValueFactory<>("identifier"));
-        statusColumn.setCellValueFactory(new PropertyValueFactory<>("status"));
-        lastLoginColumn.setCellValueFactory(new PropertyValueFactory<>("lastLogin"));
-
-        configureFilters();
-        configureActionsColumn();
-        configureTableBinding();
-
-        activityList.setItems(activityItems);
-
-        Utilisateur currentUser = UserSession.getCurrentUser();
-        welcomeLabel.setText(currentUser != null ? "Welcome back, " + currentUser.getPrenom() : "Welcome back");
-
-        usersTable.getSelectionModel().selectedItemProperty().addListener((obs, oldRow, newRow) -> updateDetails(newRow));
+        configureCurrentUserHeader();
+        configureUserTable();
+        configureStatisticsTable();
+        configureCreateForm();
+        showUsersPage();
         loadDashboardData();
+    }
+
+    @FXML
+    private void showUsersPage() {
+        setSectionVisibility(true, false, false);
+        sectionTitleLabel.setText("User Registry");
+        sectionSubtitleLabel.setText("Filter, inspect, edit, and remove platform users.");
+    }
+
+    @FXML
+    private void showStatsPage() {
+        setSectionVisibility(false, true, false);
+        sectionTitleLabel.setText("Statistics");
+        sectionSubtitleLabel.setText("Track role distribution and system-level user activity.");
+    }
+
+    @FXML
+    private void showCreatePage() {
+        setSectionVisibility(false, false, true);
+        sectionTitleLabel.setText("Create User");
+        sectionSubtitleLabel.setText("Add a new admin, student, or teacher using typed database-backed input controls.");
     }
 
     @FXML
@@ -154,46 +258,88 @@ public class AdminDashboardController {
     }
 
     @FXML
-    private void createUser() {
-        try {
-            UserDialogData dialogData = buildDialogData(null);
-            Optional<ButtonType> result = dialogData.dialog.showAndWait();
-            if (result.isPresent() && result.get() == dialogData.saveButton) {
-                Utilisateur utilisateur = dialogData.form.toNewUtilisateur();
-                utilisateurService.createUtilisateur(utilisateur);
-                activityItems.setAll("User created: " + utilisateur.getNomComplet());
-                loadDashboardData();
-            }
-        } catch (IOException | SQLException e) {
-            showError("Create failed", e.getMessage());
-        }
-    }
-
-    @FXML
-    private void logout() throws IOException {
+    private void handleProfileLogout() throws IOException {
         UserSession.clear();
         SceneManager.switchScene("/gui/login.fxml", "Campus Access");
     }
 
-    private void configureFilters() {
-        roleFilterCombo.setItems(FXCollections.observableArrayList("All", "administrateur", "enseignant", "etudiant"));
-        roleFilterCombo.setValue("All");
+    @FXML
+    private void createUser() {
+        String role = createRoleCombo.getValue();
+        if (role == null || createNomField.getText().trim().isEmpty() || createPrenomField.getText().trim().isEmpty()
+                || createEmailField.getText().trim().isEmpty() || createPasswordField.getText().trim().isEmpty()) {
+            if (editingUtilisateur == null || createPasswordField.getText().trim().isEmpty()) {
+                if (editingUtilisateur != null && !createPasswordField.getText().trim().isEmpty()) {
+                    createStatusLabel.setText("Fill the required fields before saving.");
+                }
+            }
+        }
 
-        searchField.textProperty().addListener((obs, oldValue, newValue) -> applyFilters());
-        roleFilterCombo.valueProperty().addListener((obs, oldValue, newValue) -> applyFilters());
+        if (role == null || createNomField.getText().trim().isEmpty() || createPrenomField.getText().trim().isEmpty()
+                || createEmailField.getText().trim().isEmpty()
+                || (editingUtilisateur == null && createPasswordField.getText().trim().isEmpty())) {
+            createStatusLabel.setText(editingUtilisateur == null
+                    ? "Fill the required fields before creating a user."
+                    : "Fill the required fields before saving.");
+            return;
+        }
+
+        try {
+            if (editingUtilisateur == null) {
+                String hashedPassword = authService.hashPassword(createPasswordField.getText().trim());
+                Utilisateur utilisateur = buildUtilisateurFromCreateForm(role, hashedPassword);
+                utilisateurService.createUtilisateur(utilisateur);
+                createStatusLabel.setText("User created successfully: " + utilisateur.getNomComplet());
+            } else {
+                applyCreateFormToExisting(editingUtilisateur);
+                utilisateurService.updateUtilisateur(editingUtilisateur);
+                createStatusLabel.setText("User updated successfully: " + editingUtilisateur.getNomComplet());
+            }
+            clearCreateForm();
+            loadDashboardData();
+            showUsersPage();
+        } catch (IOException | SQLException e) {
+            createStatusLabel.setText((editingUtilisateur == null ? "Create failed: " : "Update failed: ") + e.getMessage());
+        }
     }
 
-    private void configureTableBinding() {
+    private void configureCurrentUserHeader() {
+        Utilisateur currentUser = UserSession.getCurrentUser();
+        if (currentUser == null) {
+            currentUserNameLabel.setText("Guest");
+            currentUserRoleLabel.setText("-");
+            profileMenuButton.setText("G");
+            return;
+        }
+
+        currentUserNameLabel.setText(currentUser.getNomComplet());
+        currentUserRoleLabel.setText(currentUser.getType());
+        profileMenuButton.setText(buildInitials(currentUser));
+    }
+
+    private void configureUserTable() {
+        idColumn.setCellValueFactory(new PropertyValueFactory<>("id"));
+        fullNameColumn.setCellValueFactory(new PropertyValueFactory<>("fullName"));
+        emailColumn.setCellValueFactory(new PropertyValueFactory<>("email"));
+        roleColumn.setCellValueFactory(new PropertyValueFactory<>("type"));
+        identifierColumn.setCellValueFactory(new PropertyValueFactory<>("identifier"));
+        statusColumn.setCellValueFactory(new PropertyValueFactory<>("status"));
+        lastLoginColumn.setCellValueFactory(new PropertyValueFactory<>("lastLogin"));
+
+        roleFilterCombo.setItems(FXCollections.observableArrayList("All", "administrateur", "enseignant", "etudiant"));
+        roleFilterCombo.setValue("All");
+        searchField.textProperty().addListener((obs, oldValue, newValue) -> applyFilters());
+        roleFilterCombo.valueProperty().addListener((obs, oldValue, newValue) -> applyFilters());
+
         SortedList<UtilisateurRow> sortedRows = new SortedList<>(filteredRows);
         sortedRows.comparatorProperty().bind(usersTable.comparatorProperty());
         usersTable.setItems(sortedRows);
-    }
+        usersTable.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> updateDetails(newValue));
 
-    private void configureActionsColumn() {
         actionsColumn.setCellFactory(column -> new TableCell<>() {
-            private final Button viewButton = new Button("View");
-            private final Button editButton = new Button("Modify");
-            private final Button deleteButton = new Button("Delete");
+            private final javafx.scene.control.Button viewButton = new javafx.scene.control.Button("View");
+            private final javafx.scene.control.Button editButton = new javafx.scene.control.Button("Modify");
+            private final javafx.scene.control.Button deleteButton = new javafx.scene.control.Button("Delete");
             private final HBox box = new HBox(8, viewButton, editButton, deleteButton);
 
             {
@@ -201,9 +347,9 @@ public class AdminDashboardController {
                 editButton.getStyleClass().addAll("primary-button", "table-action-button");
                 deleteButton.getStyleClass().addAll("danger-button", "table-action-button");
 
-                viewButton.setOnAction(event -> showUserDetailsDialog(getCurrentRow()));
-                editButton.setOnAction(event -> editUser(getCurrentRow()));
-                deleteButton.setOnAction(event -> deleteUser(getCurrentRow()));
+                viewButton.setOnAction(event -> showUserDetailsDialog(getTableView().getItems().get(getIndex())));
+                editButton.setOnAction(event -> editUser(getTableView().getItems().get(getIndex())));
+                deleteButton.setOnAction(event -> deleteUser(getTableView().getItems().get(getIndex())));
             }
 
             @Override
@@ -211,11 +357,143 @@ public class AdminDashboardController {
                 super.updateItem(item, empty);
                 setGraphic(empty ? null : box);
             }
-
-            private UtilisateurRow getCurrentRow() {
-                return getTableView().getItems().get(getIndex());
-            }
         });
+
+        activityList.setItems(activityItems);
+    }
+
+    private void configureStatisticsTable() {
+        metricColumn.setCellValueFactory(new PropertyValueFactory<>("metric"));
+        valueColumn.setCellValueFactory(new PropertyValueFactory<>("value"));
+        statisticsTable.setItems(statRows);
+        statsInsightsList.setItems(statsInsights);
+    }
+
+    private void configureCreateForm() {
+        createRoleCombo.setItems(FXCollections.observableArrayList("administrateur", "enseignant", "etudiant"));
+        createRoleCombo.setValue("administrateur");
+        createRoleCombo.valueProperty().addListener((obs, oldValue, newValue) -> updateCreateFormForRole(newValue));
+        updateCreateFormForRole(createRoleCombo.getValue());
+    }
+
+    private void updateCreateFormForRole(String role) {
+        if ("etudiant".equals(role)) {
+            createIdentifierLabel.setText("Matricule");
+            createFieldOneLabel.setText("Niveau");
+            createFieldTwoLabel.setText("Specialisation");
+            createFieldThreeLabel.setText("Telephone");
+            createFieldFourLabel.setText("Statut");
+            createDateLabel.setText("Date naissance");
+            createAreaLabel.setText("Adresse");
+            createFieldFourLabel.setVisible(true);
+            createFieldFourField.setVisible(true);
+            createDateLabel.setVisible(true);
+            createDatePicker.setVisible(true);
+            createAreaLabel.setVisible(true);
+            createAreaField.setVisible(true);
+            createFieldFourField.setText("actif");
+            createDatePicker.setValue(LocalDate.of(2000, 1, 1));
+            createAreaField.setText("Desktop created student");
+            return;
+        }
+
+        if ("enseignant".equals(role)) {
+            createIdentifierLabel.setText("Teacher ID");
+            createFieldOneLabel.setText("Diploma");
+            createFieldTwoLabel.setText("Speciality");
+            createFieldThreeLabel.setText("Contract");
+            createFieldFourLabel.setText("Experience");
+            createDateLabel.setText("Unused");
+            createAreaLabel.setText("Disponibilites");
+            createFieldFourLabel.setVisible(true);
+            createFieldFourField.setVisible(true);
+            createDateLabel.setVisible(false);
+            createDatePicker.setVisible(false);
+            createAreaLabel.setVisible(true);
+            createAreaField.setVisible(true);
+            createFieldFourField.setText("0");
+            createAreaField.setText("");
+            return;
+        }
+
+        createIdentifierLabel.setText("Departement");
+        createFieldOneLabel.setText("Fonction");
+        createFieldTwoLabel.setText("Telephone");
+        createFieldThreeLabel.setText("Actif");
+        createFieldFourLabel.setVisible(false);
+        createFieldFourField.setVisible(false);
+        createDateLabel.setVisible(false);
+        createDatePicker.setVisible(false);
+        createAreaLabel.setVisible(false);
+        createAreaField.setVisible(false);
+        createFieldThreeField.setText("true");
+    }
+
+    private Utilisateur buildUtilisateurFromCreateForm(String role, String hashedPassword) {
+        if ("etudiant".equals(role)) {
+            Etudiant etudiant = new Etudiant();
+            fillBase(etudiant, hashedPassword);
+            etudiant.setMatricule(createIdentifierField.getText().trim());
+            etudiant.setNiveauEtude(createFieldOneField.getText().trim());
+            etudiant.setSpecialisation(createFieldTwoField.getText().trim());
+            etudiant.setTelephone(createFieldThreeField.getText().trim());
+            etudiant.setStatut(defaultIfBlank(createFieldFourField.getText(), "actif"));
+            etudiant.setDateNaissance(createDatePicker.getValue() != null ? createDatePicker.getValue() : LocalDate.of(2000, 1, 1));
+            etudiant.setAdresse(defaultIfBlank(createAreaField.getText(), "Desktop created student"));
+            etudiant.setDateInscription(LocalDateTime.now());
+            return etudiant;
+        }
+
+        if ("enseignant".equals(role)) {
+            Enseignant enseignant = new Enseignant();
+            fillBase(enseignant, hashedPassword);
+            enseignant.setMatriculeEnseignant(createIdentifierField.getText().trim());
+            enseignant.setDiplome(createFieldOneField.getText().trim());
+            enseignant.setSpecialite(createFieldTwoField.getText().trim());
+            enseignant.setTypeContrat(createFieldThreeField.getText().trim());
+            enseignant.setAnneesExperience(parseInteger(createFieldFourField.getText(), 0));
+            enseignant.setDisponibilites(defaultIfBlank(createAreaField.getText(), ""));
+            enseignant.setStatut("actif");
+            return enseignant;
+        }
+
+        Administrateur administrateur = new Administrateur();
+        fillBase(administrateur, hashedPassword);
+        administrateur.setDepartement(createIdentifierField.getText().trim());
+        administrateur.setFonction(createFieldOneField.getText().trim());
+        administrateur.setTelephone(createFieldTwoField.getText().trim());
+        administrateur.setActif(Boolean.parseBoolean(defaultIfBlank(createFieldThreeField.getText(), "true")));
+        administrateur.setDateNomination(LocalDateTime.now());
+        return administrateur;
+    }
+
+    private void fillBase(Utilisateur utilisateur, String hashedPassword) {
+        utilisateur.setNom(createNomField.getText().trim());
+        utilisateur.setPrenom(createPrenomField.getText().trim());
+        utilisateur.setEmail(createEmailField.getText().trim());
+        utilisateur.setMotDePasse(hashedPassword);
+        utilisateur.setDateCreation(LocalDateTime.now());
+        utilisateur.setLastLogin(null);
+        utilisateur.setResetToken(null);
+        utilisateur.setResetTokenExpiresAt(null);
+    }
+
+    private void clearCreateForm() {
+        editingUtilisateur = null;
+        createNomField.clear();
+        createPrenomField.clear();
+        createEmailField.clear();
+        createPasswordField.clear();
+        createIdentifierField.clear();
+        createFieldOneField.clear();
+        createFieldTwoField.clear();
+        createFieldThreeField.clear();
+        createFieldFourField.clear();
+        createAreaField.clear();
+        createDatePicker.setValue(null);
+        createRoleCombo.setDisable(false);
+        createSubmitButton.setText("Create User");
+        updateCreateFormForRole(createRoleCombo.getValue());
     }
 
     private void applyFilters() {
@@ -223,10 +501,7 @@ public class AdminDashboardController {
         String roleFilter = roleFilterCombo.getValue();
 
         filteredRows.setPredicate(row -> {
-            boolean matchesRole = roleFilter == null
-                    || "All".equalsIgnoreCase(roleFilter)
-                    || row.getType().equalsIgnoreCase(roleFilter);
-
+            boolean matchesRole = roleFilter == null || "All".equalsIgnoreCase(roleFilter) || row.getType().equalsIgnoreCase(roleFilter);
             boolean matchesSearch = search.isEmpty()
                     || String.valueOf(row.getId()).contains(search)
                     || row.getFullName().toLowerCase().contains(search)
@@ -235,7 +510,6 @@ public class AdminDashboardController {
                     || row.getIdentifier().toLowerCase().contains(search)
                     || row.getStatus().toLowerCase().contains(search)
                     || row.getExtraInfo().toLowerCase().contains(search);
-
             return matchesRole && matchesSearch;
         });
     }
@@ -244,20 +518,33 @@ public class AdminDashboardController {
         try {
             List<Utilisateur> utilisateurs = utilisateurService.getAllUtilisateurs();
             masterRows.clear();
+            statRows.clear();
             activityItems.clear();
+            statsInsights.clear();
 
             long students = 0;
             long teachers = 0;
             long admins = 0;
+            long activeCount = 0;
 
             for (Utilisateur utilisateur : utilisateurs) {
                 masterRows.add(new UtilisateurRow(utilisateur));
+
                 if ("etudiant".equalsIgnoreCase(utilisateur.getType())) {
                     students++;
+                    if (((Etudiant) utilisateur).isActif()) {
+                        activeCount++;
+                    }
                 } else if ("enseignant".equalsIgnoreCase(utilisateur.getType())) {
                     teachers++;
+                    if (((Enseignant) utilisateur).isActif()) {
+                        activeCount++;
+                    }
                 } else if ("administrateur".equalsIgnoreCase(utilisateur.getType())) {
                     admins++;
+                    if (((Administrateur) utilisateur).isActif()) {
+                        activeCount++;
+                    }
                 }
             }
 
@@ -266,10 +553,23 @@ public class AdminDashboardController {
             teachersCountLabel.setText(String.valueOf(teachers));
             adminsCountLabel.setText(String.valueOf(admins));
 
+            statRows.addAll(
+                    new StatRow("Total users", String.valueOf(utilisateurs.size())),
+                    new StatRow("Administrators", String.valueOf(admins)),
+                    new StatRow("Teachers", String.valueOf(teachers)),
+                    new StatRow("Students", String.valueOf(students)),
+                    new StatRow("Active profiles", String.valueOf(activeCount))
+            );
+
+            statsInsights.add("User registry is synchronized with MySQL.");
+            statsInsights.add("Filtering supports role and free-text search.");
+            statsInsights.add("Admin workspace includes create, edit, view, and delete flows.");
+            statsInsights.add("Profile menu is available from the top bar.");
+
             activityItems.add("Live registry loaded from database");
-            activityItems.add("Dynamic search and role filtering are active");
-            activityItems.add("Create, view, modify, and delete actions are available");
-            activityItems.add("ObservableList drives the table and admin activity feed");
+            activityItems.add("Profile actions are available from the user circle");
+            activityItems.add("Sidebar switches between users, statistics, and create page");
+            activityItems.add("ObservableList keeps the admin workspace reactive");
 
             applyFilters();
             if (!usersTable.getItems().isEmpty()) {
@@ -279,6 +579,7 @@ public class AdminDashboardController {
             }
         } catch (SQLException e) {
             activityItems.setAll("Failed to load admin dashboard: " + e.getMessage());
+            statsInsights.setAll("Statistics unavailable: " + e.getMessage());
         }
     }
 
@@ -313,6 +614,33 @@ public class AdminDashboardController {
         alert.showAndWait();
     }
 
+    private void editUser(UtilisateurRow row) {
+        editingUtilisateur = row.getUtilisateur();
+        populateCreateFormForEdit(editingUtilisateur);
+        createRoleCombo.setDisable(true);
+        createSubmitButton.setText("Save Changes");
+        createStatusLabel.setText("Editing " + editingUtilisateur.getNomComplet() + ". Leave password empty to keep it unchanged.");
+        showCreatePage();
+    }
+
+    private void deleteUser(UtilisateurRow row) {
+        Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmation.setTitle("Delete User");
+        confirmation.setHeaderText("Delete " + row.getFullName() + "?");
+        confirmation.setContentText("This action removes the user from the base table and the role-specific table.");
+
+        Optional<ButtonType> result = confirmation.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            try {
+                utilisateurService.deleteUtilisateur((int) row.getId());
+                activityItems.setAll("User deleted: " + row.getFullName());
+                loadDashboardData();
+            } catch (SQLException e) {
+                showError("Delete failed", e.getMessage());
+            }
+        }
+    }
+
     private String buildDetailedText(Utilisateur utilisateur) {
         StringBuilder builder = new StringBuilder();
         builder.append("ID: ").append(utilisateur.getId()).append('\n');
@@ -335,7 +663,6 @@ public class AdminDashboardController {
             builder.append("Teacher ID: ").append(enseignant.getMatriculeEnseignant()).append('\n');
             builder.append("Diploma: ").append(enseignant.getDiplome()).append('\n');
             builder.append("Speciality: ").append(enseignant.getSpecialite()).append('\n');
-            builder.append("Experience: ").append(enseignant.getAnneesExperience()).append('\n');
             builder.append("Contract: ").append(enseignant.getTypeContrat()).append('\n');
             builder.append("Status: ").append(enseignant.getStatut());
         } else if (utilisateur instanceof Administrateur) {
@@ -349,98 +676,13 @@ public class AdminDashboardController {
         return builder.toString();
     }
 
-    private void editUser(UtilisateurRow row) {
-        try {
-            UserDialogData dialogData = buildDialogData(row.getUtilisateur());
-            Optional<ButtonType> result = dialogData.dialog.showAndWait();
-            if (result.isPresent() && result.get() == dialogData.saveButton) {
-                dialogData.form.applyToExisting();
-                utilisateurService.updateUtilisateur(dialogData.form.existingUtilisateur);
-                activityItems.setAll("User updated: " + dialogData.form.existingUtilisateur.getNomComplet());
-                loadDashboardData();
-            }
-        } catch (IOException | SQLException e) {
-            showError("Update failed", e.getMessage());
-        }
-    }
-
-    private void deleteUser(UtilisateurRow row) {
-        Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
-        confirmation.setTitle("Delete User");
-        confirmation.setHeaderText("Delete " + row.getFullName() + "?");
-        confirmation.setContentText("This action removes the user from the base table and the role-specific table.");
-
-        Optional<ButtonType> result = confirmation.showAndWait();
-        if (result.isPresent() && result.get() == ButtonType.OK) {
-            try {
-                utilisateurService.deleteUtilisateur((int) row.getId());
-                activityItems.setAll("User deleted: " + row.getFullName());
-                loadDashboardData();
-            } catch (SQLException e) {
-                showError("Delete failed", e.getMessage());
-            }
-        }
-    }
-
-    private UserDialogData buildDialogData(Utilisateur utilisateur) throws IOException {
-        boolean creating = utilisateur == null;
-        UserForm form = new UserForm(utilisateur);
-
-        Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle(creating ? "Create User" : "Modify User");
-        dialog.setHeaderText(creating ? "Create a new platform user" : "Update " + utilisateur.getNomComplet());
-
-        ButtonType saveButton = new ButtonType(creating ? "Create" : "Save", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(saveButton, ButtonType.CANCEL);
-
-        GridPane grid = new GridPane();
-        grid.setHgap(12);
-        grid.setVgap(12);
-        grid.setPadding(new Insets(16));
-
-        int rowIndex = 0;
-        addField(grid, "Nom", form.nomField, rowIndex++);
-        addField(grid, "Prenom", form.prenomField, rowIndex++);
-        addField(grid, "Email", form.emailField, rowIndex++);
-        if (creating) {
-            addField(grid, "Role", form.roleCombo, rowIndex++);
-        }
-        addField(grid, creating ? "Password" : "New password", form.passwordField, rowIndex++);
-
-        int dynamicStartRow = rowIndex;
-        Runnable renderFields = () -> {
-            grid.getChildren().removeIf(node -> {
-                Integer row = GridPane.getRowIndex(node);
-                return row != null && row >= dynamicStartRow;
-            });
-            form.renderTypeFields(grid, dynamicStartRow);
-        };
-
-        if (creating) {
-            form.roleCombo.valueProperty().addListener((obs, oldValue, newValue) -> renderFields.run());
-        }
-        renderFields.run();
-
-        dialog.getDialogPane().setContent(grid);
-        dialog.getDialogPane().lookupButton(saveButton).disableProperty().bind(
-                Bindings.createBooleanBinding(
-                        () -> form.nomField.getText().trim().isEmpty()
-                                || form.prenomField.getText().trim().isEmpty()
-                                || form.emailField.getText().trim().isEmpty()
-                                || (creating && form.passwordField.getText().trim().isEmpty()),
-                        form.nomField.textProperty(),
-                        form.prenomField.textProperty(),
-                        form.emailField.textProperty(),
-                        form.passwordField.textProperty()
-                )
-        );
-
-        return new UserDialogData(dialog, saveButton, form);
-    }
-
-    private void addField(GridPane grid, String label, javafx.scene.Node node, int row) {
-        grid.add(new Label(label), 0, row);
-        grid.add(node, 1, row);
+    private void setSectionVisibility(boolean usersVisible, boolean statsVisible, boolean createVisible) {
+        usersSection.setVisible(usersVisible);
+        usersSection.setManaged(usersVisible);
+        statsSection.setVisible(statsVisible);
+        statsSection.setManaged(statsVisible);
+        createSection.setVisible(createVisible);
+        createSection.setManaged(createVisible);
     }
 
     private void showError(String title, String message) {
@@ -455,197 +697,110 @@ public class AdminDashboardController {
         return value != null ? value.format(DATE_TIME_FORMATTER) : "-";
     }
 
-    private final class UserForm {
-        private final Utilisateur existingUtilisateur;
-        private final TextField nomField;
-        private final TextField prenomField;
-        private final TextField emailField;
-        private final ComboBox<String> roleCombo;
-        private final TextField passwordField;
-
-        private final TextField identifierField = new TextField();
-        private final TextField infoFieldOne = new TextField();
-        private final TextField infoFieldTwo = new TextField();
-        private final TextField infoFieldThree = new TextField();
-        private final DatePicker datePicker = new DatePicker();
-
-        private UserForm(Utilisateur utilisateur) {
-            this.existingUtilisateur = utilisateur;
-            this.nomField = new TextField(utilisateur != null ? utilisateur.getNom() : "");
-            this.prenomField = new TextField(utilisateur != null ? utilisateur.getPrenom() : "");
-            this.emailField = new TextField(utilisateur != null ? utilisateur.getEmail() : "");
-            this.roleCombo = new ComboBox<>(FXCollections.observableArrayList("administrateur", "enseignant", "etudiant"));
-            this.passwordField = new TextField();
-
-            if (utilisateur != null) {
-                roleCombo.setValue(utilisateur.getType());
-                preloadExistingValues(utilisateur);
-            } else {
-                roleCombo.setValue("administrateur");
-                preloadDefaults("administrateur");
-            }
-        }
-
-        private void preloadExistingValues(Utilisateur utilisateur) {
-            if (utilisateur instanceof Etudiant) {
-                Etudiant etudiant = (Etudiant) utilisateur;
-                identifierField.setText(etudiant.getMatricule());
-                infoFieldOne.setText(etudiant.getNiveauEtude());
-                infoFieldTwo.setText(etudiant.getSpecialisation());
-                infoFieldThree.setText(etudiant.getTelephone());
-                datePicker.setValue(etudiant.getDateNaissance());
-            } else if (utilisateur instanceof Enseignant) {
-                Enseignant enseignant = (Enseignant) utilisateur;
-                identifierField.setText(enseignant.getMatriculeEnseignant());
-                infoFieldOne.setText(enseignant.getDiplome());
-                infoFieldTwo.setText(enseignant.getSpecialite());
-                infoFieldThree.setText(enseignant.getTypeContrat());
-            } else if (utilisateur instanceof Administrateur) {
-                Administrateur administrateur = (Administrateur) utilisateur;
-                identifierField.setText(administrateur.getDepartement());
-                infoFieldOne.setText(administrateur.getFonction());
-                infoFieldTwo.setText(administrateur.getTelephone());
-                infoFieldThree.setText(administrateur.isActif() ? "true" : "false");
-            }
-        }
-
-        private void preloadDefaults(String role) {
-            if ("etudiant".equals(role)) {
-                datePicker.setValue(LocalDate.of(2000, 1, 1));
-            }
-        }
-
-        private void renderTypeFields(GridPane grid, int rowIndex) {
-            String role = roleCombo.getValue();
-            if ("etudiant".equals(role)) {
-                addField(grid, "Matricule", identifierField, rowIndex++);
-                addField(grid, "Niveau", infoFieldOne, rowIndex++);
-                addField(grid, "Specialisation", infoFieldTwo, rowIndex++);
-                addField(grid, "Telephone", infoFieldThree, rowIndex++);
-                addField(grid, "Date naissance", datePicker, rowIndex);
-                return;
-            }
-            if ("enseignant".equals(role)) {
-                addField(grid, "Teacher ID", identifierField, rowIndex++);
-                addField(grid, "Diploma", infoFieldOne, rowIndex++);
-                addField(grid, "Speciality", infoFieldTwo, rowIndex++);
-                addField(grid, "Contract", infoFieldThree, rowIndex);
-                return;
-            }
-            addField(grid, "Departement", identifierField, rowIndex++);
-            addField(grid, "Fonction", infoFieldOne, rowIndex++);
-            addField(grid, "Telephone", infoFieldTwo, rowIndex++);
-            addField(grid, "Actif", infoFieldThree, rowIndex);
-        }
-
-        private Utilisateur toNewUtilisateur() throws IOException {
-            String hashedPassword = authService.hashPassword(passwordField.getText().trim());
-            String role = roleCombo.getValue();
-
-            if ("etudiant".equals(role)) {
-                Etudiant etudiant = new Etudiant();
-                fillBase(etudiant, hashedPassword);
-                etudiant.setMatricule(identifierField.getText().trim());
-                etudiant.setNiveauEtude(infoFieldOne.getText().trim());
-                etudiant.setSpecialisation(infoFieldTwo.getText().trim());
-                etudiant.setTelephone(infoFieldThree.getText().trim());
-                etudiant.setAdresse("Desktop created user");
-                etudiant.setDateNaissance(datePicker.getValue() != null ? datePicker.getValue() : LocalDate.of(2000, 1, 1));
-                etudiant.setDateInscription(LocalDateTime.now());
-                etudiant.setStatut("actif");
-                return etudiant;
-            }
-
-            if ("enseignant".equals(role)) {
-                Enseignant enseignant = new Enseignant();
-                fillBase(enseignant, hashedPassword);
-                enseignant.setMatriculeEnseignant(identifierField.getText().trim());
-                enseignant.setDiplome(infoFieldOne.getText().trim());
-                enseignant.setSpecialite(infoFieldTwo.getText().trim());
-                enseignant.setTypeContrat(infoFieldThree.getText().trim());
-                enseignant.setAnneesExperience(0);
-                enseignant.setStatut("actif");
-                return enseignant;
-            }
-
-            Administrateur administrateur = new Administrateur();
-            fillBase(administrateur, hashedPassword);
-            administrateur.setDepartement(identifierField.getText().trim());
-            administrateur.setFonction(infoFieldOne.getText().trim());
-            administrateur.setTelephone(infoFieldTwo.getText().trim());
-            administrateur.setActif(Boolean.parseBoolean(infoFieldThree.getText().trim().isBlank() ? "true" : infoFieldThree.getText().trim()));
-            administrateur.setDateNomination(LocalDateTime.now());
-            return administrateur;
-        }
-
-        private void applyToExisting() throws IOException {
-            existingUtilisateur.setNom(nomField.getText().trim());
-            existingUtilisateur.setPrenom(prenomField.getText().trim());
-            existingUtilisateur.setEmail(emailField.getText().trim());
-
-            if (!passwordField.getText().trim().isEmpty()) {
-                existingUtilisateur.setMotDePasse(authService.hashPassword(passwordField.getText().trim()));
-            }
-
-            if (existingUtilisateur instanceof Etudiant) {
-                Etudiant etudiant = (Etudiant) existingUtilisateur;
-                etudiant.setMatricule(identifierField.getText().trim());
-                etudiant.setNiveauEtude(infoFieldOne.getText().trim());
-                etudiant.setSpecialisation(infoFieldTwo.getText().trim());
-                etudiant.setTelephone(infoFieldThree.getText().trim());
-                etudiant.setDateNaissance(datePicker.getValue() != null ? datePicker.getValue() : etudiant.getDateNaissance());
-                if (etudiant.getAdresse() == null || etudiant.getAdresse().isBlank()) {
-                    etudiant.setAdresse("Desktop updated user");
-                }
-                if (etudiant.getDateInscription() == null) {
-                    etudiant.setDateInscription(LocalDateTime.now());
-                }
-                return;
-            }
-
-            if (existingUtilisateur instanceof Enseignant) {
-                Enseignant enseignant = (Enseignant) existingUtilisateur;
-                enseignant.setMatriculeEnseignant(identifierField.getText().trim());
-                enseignant.setDiplome(infoFieldOne.getText().trim());
-                enseignant.setSpecialite(infoFieldTwo.getText().trim());
-                enseignant.setTypeContrat(infoFieldThree.getText().trim());
-                if (enseignant.getAnneesExperience() == null) {
-                    enseignant.setAnneesExperience(0);
-                }
-                return;
-            }
-
-            Administrateur administrateur = (Administrateur) existingUtilisateur;
-            administrateur.setDepartement(identifierField.getText().trim());
-            administrateur.setFonction(infoFieldOne.getText().trim());
-            administrateur.setTelephone(infoFieldTwo.getText().trim());
-            administrateur.setActif(Boolean.parseBoolean(infoFieldThree.getText().trim().isBlank() ? "true" : infoFieldThree.getText().trim()));
-            if (administrateur.getDateNomination() == null) {
-                administrateur.setDateNomination(LocalDateTime.now());
-            }
-        }
-
-        private void fillBase(Utilisateur utilisateur, String hashedPassword) {
-            utilisateur.setNom(nomField.getText().trim());
-            utilisateur.setPrenom(prenomField.getText().trim());
-            utilisateur.setEmail(emailField.getText().trim());
-            utilisateur.setMotDePasse(hashedPassword);
-            utilisateur.setDateCreation(LocalDateTime.now());
-            utilisateur.setResetToken(null);
-            utilisateur.setResetTokenExpiresAt(null);
-            utilisateur.setLastLogin(null);
+    private int parseInteger(String value, int fallback) {
+        try {
+            return value == null || value.isBlank() ? fallback : Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            return fallback;
         }
     }
 
-    private static final class UserDialogData {
-        private final Dialog<ButtonType> dialog;
-        private final ButtonType saveButton;
-        private final UserForm form;
+    private String defaultIfBlank(String value, String fallback) {
+        return value == null || value.isBlank() ? fallback : value.trim();
+    }
 
-        private UserDialogData(Dialog<ButtonType> dialog, ButtonType saveButton, UserForm form) {
-            this.dialog = dialog;
-            this.saveButton = saveButton;
-            this.form = form;
+    private String buildInitials(Utilisateur utilisateur) {
+        String prenom = utilisateur.getPrenom() != null && !utilisateur.getPrenom().isBlank()
+                ? utilisateur.getPrenom().substring(0, 1).toUpperCase() : "";
+        String nom = utilisateur.getNom() != null && !utilisateur.getNom().isBlank()
+                ? utilisateur.getNom().substring(0, 1).toUpperCase() : "";
+        return prenom + nom;
+    }
+
+    private void populateCreateFormForEdit(Utilisateur utilisateur) {
+        createNomField.setText(utilisateur.getNom());
+        createPrenomField.setText(utilisateur.getPrenom());
+        createEmailField.setText(utilisateur.getEmail());
+        createPasswordField.clear();
+        createRoleCombo.setValue(utilisateur.getType());
+        updateCreateFormForRole(utilisateur.getType());
+
+        if (utilisateur instanceof Etudiant) {
+            Etudiant etudiant = (Etudiant) utilisateur;
+            createIdentifierField.setText(etudiant.getMatricule());
+            createFieldOneField.setText(etudiant.getNiveauEtude());
+            createFieldTwoField.setText(etudiant.getSpecialisation());
+            createFieldThreeField.setText(etudiant.getTelephone());
+            createFieldFourField.setText(etudiant.getStatut());
+            createDatePicker.setValue(etudiant.getDateNaissance());
+            createAreaField.setText(etudiant.getAdresse());
+            return;
+        }
+
+        if (utilisateur instanceof Enseignant) {
+            Enseignant enseignant = (Enseignant) utilisateur;
+            createIdentifierField.setText(enseignant.getMatriculeEnseignant());
+            createFieldOneField.setText(enseignant.getDiplome());
+            createFieldTwoField.setText(enseignant.getSpecialite());
+            createFieldThreeField.setText(enseignant.getTypeContrat());
+            createFieldFourField.setText(String.valueOf(enseignant.getAnneesExperience() != null ? enseignant.getAnneesExperience() : 0));
+            createAreaField.setText(enseignant.getDisponibilites());
+            return;
+        }
+
+        Administrateur administrateur = (Administrateur) utilisateur;
+        createIdentifierField.setText(administrateur.getDepartement());
+        createFieldOneField.setText(administrateur.getFonction());
+        createFieldTwoField.setText(administrateur.getTelephone());
+        createFieldThreeField.setText(administrateur.isActif() ? "true" : "false");
+    }
+
+    private void applyCreateFormToExisting(Utilisateur utilisateur) throws IOException {
+        utilisateur.setNom(createNomField.getText().trim());
+        utilisateur.setPrenom(createPrenomField.getText().trim());
+        utilisateur.setEmail(createEmailField.getText().trim());
+        if (!createPasswordField.getText().trim().isEmpty()) {
+            utilisateur.setMotDePasse(authService.hashPassword(createPasswordField.getText().trim()));
+        }
+
+        if (utilisateur instanceof Etudiant) {
+            Etudiant etudiant = (Etudiant) utilisateur;
+            etudiant.setMatricule(createIdentifierField.getText().trim());
+            etudiant.setNiveauEtude(createFieldOneField.getText().trim());
+            etudiant.setSpecialisation(createFieldTwoField.getText().trim());
+            etudiant.setTelephone(createFieldThreeField.getText().trim());
+            etudiant.setStatut(defaultIfBlank(createFieldFourField.getText(), etudiant.getStatut()));
+            if (createDatePicker.getValue() != null) {
+                etudiant.setDateNaissance(createDatePicker.getValue());
+            }
+            etudiant.setAdresse(defaultIfBlank(createAreaField.getText(), etudiant.getAdresse()));
+            if (etudiant.getDateInscription() == null) {
+                etudiant.setDateInscription(LocalDateTime.now());
+            }
+            return;
+        }
+
+        if (utilisateur instanceof Enseignant) {
+            Enseignant enseignant = (Enseignant) utilisateur;
+            enseignant.setMatriculeEnseignant(createIdentifierField.getText().trim());
+            enseignant.setDiplome(createFieldOneField.getText().trim());
+            enseignant.setSpecialite(createFieldTwoField.getText().trim());
+            enseignant.setTypeContrat(createFieldThreeField.getText().trim());
+            enseignant.setAnneesExperience(parseInteger(createFieldFourField.getText(), enseignant.getAnneesExperience() != null ? enseignant.getAnneesExperience() : 0));
+            enseignant.setDisponibilites(defaultIfBlank(createAreaField.getText(), enseignant.getDisponibilites()));
+            if (enseignant.getStatut() == null || enseignant.getStatut().isBlank()) {
+                enseignant.setStatut("actif");
+            }
+            return;
+        }
+
+        Administrateur administrateur = (Administrateur) utilisateur;
+        administrateur.setDepartement(createIdentifierField.getText().trim());
+        administrateur.setFonction(createFieldOneField.getText().trim());
+        administrateur.setTelephone(createFieldTwoField.getText().trim());
+        administrateur.setActif(Boolean.parseBoolean(defaultIfBlank(createFieldThreeField.getText(), administrateur.isActif() ? "true" : "false")));
+        if (administrateur.getDateNomination() == null) {
+            administrateur.setDateNomination(LocalDateTime.now());
         }
     }
 }

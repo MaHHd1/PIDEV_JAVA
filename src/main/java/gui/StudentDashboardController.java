@@ -7,6 +7,7 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
+import javafx.scene.control.MenuButton;
 import utils.SceneManager;
 import utils.UserSession;
 
@@ -19,6 +20,15 @@ public class StudentDashboardController {
 
     @FXML
     private Label roleLabel;
+
+    @FXML
+    private Label currentUserNameLabel;
+
+    @FXML
+    private Label currentUserRoleLabel;
+
+    @FXML
+    private MenuButton profileMenuButton;
 
     @FXML
     private ListView<String> profileList;
@@ -39,6 +49,9 @@ public class StudentDashboardController {
             Etudiant etudiant = (Etudiant) utilisateur;
             welcomeLabel.setText("Hello, " + etudiant.getPrenom());
             roleLabel.setText("Student dashboard");
+            currentUserNameLabel.setText(etudiant.getNomComplet());
+            currentUserRoleLabel.setText(etudiant.getType());
+            profileMenuButton.setText(buildInitials(etudiant));
 
             profileItems.setAll(
                     "Name: " + etudiant.getNomComplet(),
@@ -59,8 +72,16 @@ public class StudentDashboardController {
     }
 
     @FXML
-    private void logout() throws IOException {
+    private void handleProfileLogout() throws IOException {
         UserSession.clear();
         SceneManager.switchScene("/gui/login.fxml", "Campus Access");
+    }
+
+    private String buildInitials(Utilisateur utilisateur) {
+        String prenom = utilisateur.getPrenom() != null && !utilisateur.getPrenom().isBlank()
+                ? utilisateur.getPrenom().substring(0, 1).toUpperCase() : "";
+        String nom = utilisateur.getNom() != null && !utilisateur.getNom().isBlank()
+                ? utilisateur.getNom().substring(0, 1).toUpperCase() : "";
+        return prenom + nom;
     }
 }
