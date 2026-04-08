@@ -10,7 +10,9 @@ import javafx.scene.control.TextField;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class ModuleController {
@@ -27,7 +29,7 @@ public class ModuleController {
         }
     }
 
-    public String validateModuleForm(
+    public Map<String, String> validateModuleForm(
             TextField titreField,
             TextArea descriptionArea,
             TextField ordreField,
@@ -35,6 +37,8 @@ public class ModuleController {
             TextField dureeField,
             ComboBox<String> statutCombo
     ) {
+        Map<String, String> errors = new LinkedHashMap<>();
+
         String titre = safeText(titreField.getText());
         String description = safeText(descriptionArea.getText());
         String ordre = safeText(ordreField.getText());
@@ -43,39 +47,40 @@ public class ModuleController {
         String statut = statutCombo.getValue();
 
         if (titre.length() < 3) {
-            return "Le titre du module doit contenir au moins 3 caracteres.";
+            errors.put("titre", "Le titre du module doit contenir au moins 3 caracteres.");
         }
         if (description.length() < 10) {
-            return "La description du module doit contenir au moins 10 caracteres.";
+            errors.put("description", "La description du module doit contenir au moins 10 caracteres.");
         }
         if (objectifs.length() < 10) {
-            return "Les objectifs d'apprentissage doivent contenir au moins 10 caracteres.";
+            errors.put("objectifs", "Les objectifs d'apprentissage doivent contenir au moins 10 caracteres.");
         }
         if (ordre.isEmpty()) {
-            return "L'ordre d'affichage est obligatoire.";
-        }
-        try {
-            int ordreAffichage = Integer.parseInt(ordre);
-            if (ordreAffichage < 0) {
-                return "L'ordre d'affichage doit etre positif ou nul.";
+            errors.put("ordre", "L'ordre d'affichage est obligatoire.");
+        } else {
+            try {
+                int ordreAffichage = Integer.parseInt(ordre);
+                if (ordreAffichage < 0) {
+                    errors.put("ordre", "L'ordre d'affichage doit etre positif ou nul.");
+                }
+            } catch (NumberFormatException e) {
+                errors.put("ordre", "L'ordre d'affichage doit etre un entier valide.");
             }
-        } catch (NumberFormatException e) {
-            return "L'ordre d'affichage doit etre un entier valide.";
         }
         if (!duree.isEmpty()) {
             try {
                 int dureeEstimee = Integer.parseInt(duree);
                 if (dureeEstimee <= 0) {
-                    return "La duree estimee doit etre superieure a zero.";
+                    errors.put("duree", "La duree estimee doit etre superieure a zero.");
                 }
             } catch (NumberFormatException e) {
-                return "La duree estimee doit etre un entier valide.";
+                errors.put("duree", "La duree estimee doit etre un entier valide.");
             }
         }
         if (statut == null || !ALLOWED_STATUS.contains(statut)) {
-            return "Veuillez choisir un statut valide pour le module.";
+            errors.put("statut", "Veuillez choisir un statut valide pour le module.");
         }
-        return null;
+        return errors;
     }
 
     public Module buildModule(

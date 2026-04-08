@@ -171,12 +171,13 @@ public class ContenuService implements IService<Contenu> {
 
     private String serializeList(List<String> values) {
         if (values == null || values.isEmpty()) {
-            return null;
+            return "";
         }
-        return values.stream()
+        String serialized = values.stream()
                 .map(String::trim)
                 .filter(value -> !value.isEmpty())
                 .collect(Collectors.joining(","));
+        return serialized.isEmpty() ? "" : serialized;
     }
 
     private List<String> deserializeList(String values) {
