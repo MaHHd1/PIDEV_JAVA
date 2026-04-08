@@ -1,10 +1,13 @@
 package services;
 
 import entities.Cours;
+import entities.Etudiant;
 import entities.Module;
+import services.UtilisateurService;
 import utils.DBConnection;
 
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -42,6 +45,11 @@ public class CoursService implements IService<Cours> {
         }
     }
 
+    public void createForTeacher(Cours cours, long teacherId) throws SQLException {
+        create(cours);
+        ensureTeacherCourseLink(cours.getId(), teacherId);
+    }
+
     @Override
     public void update(Cours cours) throws SQLException {
         requireId(cours.getId(), "update cours");
@@ -54,6 +62,11 @@ public class CoursService implements IService<Cours> {
             ps.setInt(14, cours.getId());
             ps.executeUpdate();
         }
+    }
+
+    public void updateForTeacher(Cours cours, long teacherId) throws SQLException {
+        update(cours);
+        ensureTeacherCourseLink(cours.getId(), teacherId);
     }
 
     @Override
@@ -112,6 +125,70 @@ public class CoursService implements IService<Cours> {
         }
 
         return coursList;
+    }
+
+    public List<Cours> getByTeacherId(long teacherId) throws SQLException {
+        Connection connection = getConnection();
+        if (connection == null) {
+            throw new SQLException("Database connection is unavailable.");
+        }
+
+        for (RelationDefinition definition : teacherCourseRelations()) {
+            if (!tableHasColumns(connection, definition.tableName(), definition.leftColumn(), definition.rightColumn())) {
+                continue;
+            }
+
+            List<Cours> coursList = new ArrayList<>();
+            String sql = "SELECT c.* FROM cours c "
+                    + "INNER JOIN " + definition.tableName() + " rel ON c.id = rel." + definition.leftColumn() + " "
+                    + "WHERE rel." + definition.rightColumn() + " = ? "
+                    + "ORDER BY c.date_creation DESC, c.id DESC";
+
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setLong(1, teacherId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        coursList.add(mapCours(rs, false));
+                    }
+                }
+            }
+            return coursList;
+        }
+
+        return new ArrayList<>();
+    }
+
+    public List<Etudiant> getStudentsByCoursId(int coursId) throws SQLException {
+        Connection connection = getConnection();
+        if (connection == null) {
+            throw new SQLException("Database connection is unavailable.");
+        }
+
+        UtilisateurService utilisateurService = new UtilisateurService();
+        for (RelationDefinition definition : courseStudentRelations()) {
+            if (!tableHasColumns(connection, definition.tableName(), definition.leftColumn(), definition.rightColumn())) {
+                continue;
+            }
+
+            List<Etudiant> etudiants = new ArrayList<>();
+            String sql = utilisateurService.baseSelectSql()
+                    + " INNER JOIN " + definition.tableName() + " rel ON u.id = rel." + definition.rightColumn()
+                    + " WHERE rel." + definition.leftColumn() + " = ?"
+                    + " AND u.typeUtilisateur = 'etudiant'"
+                    + " ORDER BY u.nom, u.prenom, u.id";
+
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setInt(1, coursId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        etudiants.add((Etudiant) utilisateurService.mapUtilisateur(rs));
+                    }
+                }
+            }
+            return etudiants;
+        }
+
+        return new ArrayList<>();
     }
 
     private void fillStatement(PreparedStatement ps, Cours cours) throws SQLException {
@@ -227,9 +304,113 @@ public class CoursService implements IService<Cours> {
         return module;
     }
 
+    private boolean tableHasColumns(Connection connection, String tableName, String... columns) throws SQLException {
+        DatabaseMetaData metaData = connection.getMetaData();
+        if (!tableExists(metaData, tableName)) {
+            return false;
+        }
+        for (String column : columns) {
+            if (!columnExists(metaData, tableName, column)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean tableExists(DatabaseMetaData metaData, String tableName) throws SQLException {
+        try (ResultSet rs = metaData.getTables(null, null, tableName, new String[]{"TABLE"})) {
+            if (rs.next()) {
+                return true;
+            }
+        }
+        try (ResultSet rs = metaData.getTables(null, null, tableName.toUpperCase(), new String[]{"TABLE"})) {
+            if (rs.next()) {
+                return true;
+            }
+        }
+        try (ResultSet rs = metaData.getTables(null, null, tableName.toLowerCase(), new String[]{"TABLE"})) {
+            return rs.next();
+        }
+    }
+
+    private boolean columnExists(DatabaseMetaData metaData, String tableName, String columnName) throws SQLException {
+        try (ResultSet rs = metaData.getColumns(null, null, tableName, columnName)) {
+            if (rs.next()) {
+                return true;
+            }
+        }
+        try (ResultSet rs = metaData.getColumns(null, null, tableName.toUpperCase(), columnName.toUpperCase())) {
+            if (rs.next()) {
+                return true;
+            }
+        }
+        try (ResultSet rs = metaData.getColumns(null, null, tableName.toLowerCase(), columnName.toLowerCase())) {
+            return rs.next();
+        }
+    }
+
+    private List<RelationDefinition> teacherCourseRelations() {
+        return List.of(
+                new RelationDefinition("cours_enseignant", "cours_id", "enseignant_id"),
+                new RelationDefinition("enseignant_cours", "cours_id", "enseignant_id"),
+                new RelationDefinition("cours_enseignants", "cours_id", "enseignant_id")
+        );
+    }
+
+    private List<RelationDefinition> courseStudentRelations() {
+        return List.of(
+                new RelationDefinition("cours_etudiant", "cours_id", "etudiant_id"),
+                new RelationDefinition("etudiant_cours", "cours_id", "etudiant_id"),
+                new RelationDefinition("inscription", "cours_id", "etudiant_id"),
+                new RelationDefinition("inscriptions", "cours_id", "etudiant_id")
+        );
+    }
+
     private void requireId(Integer id, String action) throws SQLException {
         if (id == null) {
             throw new SQLException("Missing cours id for " + action + ".");
         }
+    }
+
+    private void ensureTeacherCourseLink(Integer coursId, long teacherId) throws SQLException {
+        requireId(coursId, "teacher course link");
+        Connection connection = getConnection();
+        if (connection == null) {
+            throw new SQLException("Database connection is unavailable.");
+        }
+
+        RelationDefinition relation = null;
+        for (RelationDefinition definition : teacherCourseRelations()) {
+            if (tableHasColumns(connection, definition.tableName(), definition.leftColumn(), definition.rightColumn())) {
+                relation = definition;
+                break;
+            }
+        }
+        if (relation == null) {
+            return;
+        }
+
+        String checkSql = "SELECT COUNT(*) FROM " + relation.tableName()
+                + " WHERE " + relation.leftColumn() + " = ? AND " + relation.rightColumn() + " = ?";
+        try (PreparedStatement ps = connection.prepareStatement(checkSql)) {
+            ps.setInt(1, coursId);
+            ps.setLong(2, teacherId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next() && rs.getInt(1) > 0) {
+                    return;
+                }
+            }
+        }
+
+        String insertSql = "INSERT INTO " + relation.tableName()
+                + " (" + relation.leftColumn() + ", " + relation.rightColumn() + ") VALUES (?, ?)";
+        try (PreparedStatement ps = connection.prepareStatement(insertSql)) {
+            ps.setInt(1, coursId);
+            ps.setLong(2, teacherId);
+            ps.executeUpdate();
+        }
+    }
+
+    private record RelationDefinition(String tableName, String leftColumn, String rightColumn) {
     }
 }
