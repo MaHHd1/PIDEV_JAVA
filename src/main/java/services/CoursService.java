@@ -158,6 +158,54 @@ public class CoursService implements IService<Cours> {
         return new ArrayList<>();
     }
 
+    public List<Cours> getByStudentId(long studentId) throws SQLException {
+        Connection connection = getConnection();
+        if (connection == null) {
+            throw new SQLException("Database connection is unavailable.");
+        }
+
+        for (RelationDefinition definition : courseStudentRelations()) {
+            if (!tableHasColumns(connection, definition.tableName(), definition.leftColumn(), definition.rightColumn())) {
+                continue;
+            }
+
+            List<Cours> coursList = new ArrayList<>();
+            String sql = "SELECT c.* FROM cours c "
+                    + "INNER JOIN " + definition.tableName() + " rel ON c.id = rel." + definition.leftColumn() + " "
+                    + "WHERE rel." + definition.rightColumn() + " = ? "
+                    + "ORDER BY c.date_creation DESC, c.id DESC";
+
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setLong(1, studentId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        coursList.add(mapCours(rs, false));
+                    }
+                }
+            }
+            return coursList;
+        }
+
+        return new ArrayList<>();
+    }
+
+    public List<Cours> getAvailableForStudentId(long studentId) throws SQLException {
+        List<Cours> allCourses = getAll();
+        List<Cours> enrolledCourses = getByStudentId(studentId);
+        List<Integer> enrolledIds = enrolledCourses.stream()
+                .map(Cours::getId)
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toList());
+
+        return allCourses.stream()
+                .filter(cours -> cours.getId() != null && !enrolledIds.contains(cours.getId()))
+                .collect(Collectors.toCollection(ArrayList::new));
+    }
+
+    public void enrollStudent(int coursId, long studentId) throws SQLException {
+        ensureStudentCourseLink(coursId, studentId);
+    }
+
     public List<Etudiant> getStudentsByCoursId(int coursId) throws SQLException {
         Connection connection = getConnection();
         if (connection == null) {
@@ -219,6 +267,7 @@ public class CoursService implements IService<Cours> {
 
     Cours mapCours(ResultSet rs, boolean loadRelations) throws SQLException {
         Cours cours = new Cours();
+        ModuleService moduleService = new ModuleService();
         cours.setId(rs.getInt("id"));
         cours.setCodeCours(rs.getString("code_cours"));
         cours.setTitre(rs.getString("titre"));
@@ -226,7 +275,8 @@ public class CoursService implements IService<Cours> {
 
         int moduleId = rs.getInt("module_id");
         if (!rs.wasNull()) {
-            cours.setModule(loadRelations ? new ModuleService().getShallowById(moduleId) : shallowModule(moduleId));
+            Module module = moduleService.getShallowById(moduleId);
+            cours.setModule(module != null ? module : shallowModule(moduleId));
         }
 
         cours.setNiveau(rs.getString("niveau"));
@@ -407,6 +457,45 @@ public class CoursService implements IService<Cours> {
         try (PreparedStatement ps = connection.prepareStatement(insertSql)) {
             ps.setInt(1, coursId);
             ps.setLong(2, teacherId);
+            ps.executeUpdate();
+        }
+    }
+
+    private void ensureStudentCourseLink(Integer coursId, long studentId) throws SQLException {
+        requireId(coursId, "student course link");
+        Connection connection = getConnection();
+        if (connection == null) {
+            throw new SQLException("Database connection is unavailable.");
+        }
+
+        RelationDefinition relation = null;
+        for (RelationDefinition definition : courseStudentRelations()) {
+            if (tableHasColumns(connection, definition.tableName(), definition.leftColumn(), definition.rightColumn())) {
+                relation = definition;
+                break;
+            }
+        }
+        if (relation == null) {
+            throw new SQLException("No course-student relation table is available.");
+        }
+
+        String checkSql = "SELECT COUNT(*) FROM " + relation.tableName()
+                + " WHERE " + relation.leftColumn() + " = ? AND " + relation.rightColumn() + " = ?";
+        try (PreparedStatement ps = connection.prepareStatement(checkSql)) {
+            ps.setInt(1, coursId);
+            ps.setLong(2, studentId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next() && rs.getInt(1) > 0) {
+                    return;
+                }
+            }
+        }
+
+        String insertSql = "INSERT INTO " + relation.tableName()
+                + " (" + relation.leftColumn() + ", " + relation.rightColumn() + ") VALUES (?, ?)";
+        try (PreparedStatement ps = connection.prepareStatement(insertSql)) {
+            ps.setInt(1, coursId);
+            ps.setLong(2, studentId);
             ps.executeUpdate();
         }
     }
