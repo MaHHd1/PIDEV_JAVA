@@ -1,0 +1,675 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.MenuButton?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="gui.AdminDashboardController" styleClass="dashboard-shell">
+    <left>
+        <VBox spacing="16.0" styleClass="sidebar">
+            <padding>
+                <Insets bottom="20.0" left="18.0" right="18.0" top="20.0" />
+            </padding>
+            <Label styleClass="sidebar-brand" text="Admin Hub" />
+            <Label styleClass="sidebar-copy" text="Navigate your user management workspace." wrapText="true" />
+            <Button maxWidth="1.7976931348623157E308" onAction="#showUsersPage" styleClass="sidebar-button" text="User Info" />
+            <Button maxWidth="1.7976931348623157E308" onAction="#showStatsPage" styleClass="sidebar-button" text="Statistics" />
+            <Button maxWidth="1.7976931348623157E308" onAction="#showCreatePage" styleClass="sidebar-button" text="Add User" />
+            <Button maxWidth="1.7976931348623157E308" onAction="#showModulesPage" styleClass="sidebar-button" text="Modules" />
+            <VBox VBox.vgrow="ALWAYS" />
+            <Label styleClass="sidebar-foot" text="Role-based desktop administration" wrapText="true" />
+        </VBox>
+    </left>
+    <top>
+        <HBox alignment="CENTER_LEFT" spacing="18.0" styleClass="topbar profile-topbar">
+            <VBox spacing="4.0">
+                <Label fx:id="sectionTitleLabel" styleClass="dashboard-title" text="User Registry" />
+                <Label fx:id="sectionSubtitleLabel" styleClass="dashboard-subtitle" text="Filter, inspect, edit, and remove platform users." />
+            </VBox>
+            <HBox HBox.hgrow="ALWAYS" />
+            <Button onAction="#refreshData" styleClass="secondary-button compact-button" text="Refresh" />
+            <HBox alignment="CENTER_RIGHT" spacing="10.0" styleClass="profile-chip">
+                <VBox alignment="CENTER_RIGHT" spacing="2.0">
+                    <Label fx:id="currentUserNameLabel" styleClass="profile-name" text="Desktop Admin" />
+                    <Label fx:id="currentUserRoleLabel" styleClass="profile-role" text="administrateur" />
+                </VBox>
+                <MenuButton fx:id="profileMenuButton" styleClass="profile-menu-button" text="DA">
+                    <items>
+                        <MenuItem onAction="#handleProfileLogout" text="Disconnect" />
+                    </items>
+                </MenuButton>
+            </HBox>
+        </HBox>
+    </top>
+    <center>
+        <StackPane styleClass="dashboard-content">
+            <padding>
+                <Insets bottom="22.0" left="22.0" right="22.0" top="22.0" />
+            </padding>
+
+            <VBox fx:id="usersSection" spacing="18.0">
+                <HBox spacing="14.0">
+                    <VBox styleClass="stat-card" HBox.hgrow="ALWAYS">
+                        <Label styleClass="stat-title" text="Total Users" />
+                        <Label fx:id="totalUsersLabel" styleClass="stat-value" text="0" />
+                    </VBox>
+                    <VBox styleClass="stat-card" HBox.hgrow="ALWAYS">
+                        <Label styleClass="stat-title" text="Students" />
+                        <Label fx:id="studentsCountLabel" styleClass="stat-value" text="0" />
+                    </VBox>
+                    <VBox styleClass="stat-card" HBox.hgrow="ALWAYS">
+                        <Label styleClass="stat-title" text="Teachers" />
+                        <Label fx:id="teachersCountLabel" styleClass="stat-value" text="0" />
+                    </VBox>
+                    <VBox styleClass="stat-card" HBox.hgrow="ALWAYS">
+                        <Label styleClass="stat-title" text="Admins" />
+                        <Label fx:id="adminsCountLabel" styleClass="stat-value" text="0" />
+                    </VBox>
+                </HBox>
+                <HBox spacing="18.0" VBox.vgrow="ALWAYS">
+                    <VBox spacing="12.0" styleClass="panel-card admin-main-panel" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+                        <HBox alignment="CENTER_LEFT" spacing="10.0">
+                            <Label styleClass="panel-title" text="User Registry" />
+                            <HBox HBox.hgrow="ALWAYS" />
+                            <TextField fx:id="searchField" promptText="Search by id, name, email, role..." styleClass="input-field inline-field" />
+                            <ComboBox fx:id="roleFilterCombo" prefWidth="170.0" styleClass="inline-combo" />
+                        </HBox>
+                        <TableView fx:id="usersTable" VBox.vgrow="ALWAYS">
+                            <columns>
+                                <TableColumn fx:id="idColumn" prefWidth="60.0" text="ID" />
+                                <TableColumn fx:id="fullNameColumn" prefWidth="165.0" text="Full Name" />
+                                <TableColumn fx:id="emailColumn" prefWidth="210.0" text="Email" />
+                                <TableColumn fx:id="roleColumn" prefWidth="110.0" text="Role" />
+                                <TableColumn fx:id="identifierColumn" prefWidth="140.0" text="Identifier" />
+                                <TableColumn fx:id="statusColumn" prefWidth="90.0" text="Status" />
+                                <TableColumn fx:id="lastLoginColumn" prefWidth="135.0" text="Last Login" />
+                                <TableColumn fx:id="actionsColumn" prefWidth="230.0" text="Actions" />
+                            </columns>
+                        </TableView>
+                    </VBox>
+                    <VBox spacing="14.0" styleClass="panel-card details-panel" HBox.hgrow="NEVER">
+                        <Label styleClass="panel-title" text="User Details" />
+                        <GridPane hgap="10.0" vgap="10.0">
+                            <Label styleClass="detail-key" text="Name" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                            <Label fx:id="detailNameLabel" styleClass="detail-value" text="-" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                            <Label styleClass="detail-key" text="Email" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                            <Label fx:id="detailEmailLabel" styleClass="detail-value" text="-" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                            <Label styleClass="detail-key" text="Role" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                            <Label fx:id="detailRoleLabel" styleClass="detail-value" text="-" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                            <Label styleClass="detail-key" text="Identifier" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+                            <Label fx:id="detailIdentifierLabel" styleClass="detail-value" text="-" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                            <Label styleClass="detail-key" text="Status" GridPane.columnIndex="0" GridPane.rowIndex="4" />
+                            <Label fx:id="detailStatusLabel" styleClass="detail-value" text="-" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+                            <Label styleClass="detail-key" text="Extra" GridPane.columnIndex="0" GridPane.rowIndex="5" />
+                            <Label fx:id="detailInfoLabel" styleClass="detail-value" text="-" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="5" />
+                            <Label styleClass="detail-key" text="Created" GridPane.columnIndex="0" GridPane.rowIndex="6" />
+                            <Label fx:id="detailCreatedLabel" styleClass="detail-value" text="-" GridPane.columnIndex="1" GridPane.rowIndex="6" />
+                            <Label styleClass="detail-key" text="Last Login" GridPane.columnIndex="0" GridPane.rowIndex="7" />
+                            <Label fx:id="detailLastLoginLabel" styleClass="detail-value" text="-" GridPane.columnIndex="1" GridPane.rowIndex="7" />
+                        </GridPane>
+                        <Label styleClass="panel-title" text="Activity Feed" />
+                        <ListView fx:id="activityList" VBox.vgrow="ALWAYS" />
+                    </VBox>
+                </HBox>
+            </VBox>
+
+            <VBox fx:id="statsSection" managed="false" spacing="18.0" visible="false">
+                <HBox spacing="18.0">
+                    <VBox spacing="10.0" styleClass="hero-banner admin-stats-banner" HBox.hgrow="ALWAYS">
+                        <Label styleClass="eyebrow" text="Analytics" />
+                        <Label styleClass="hero-title small-hero" text="See how your user base is distributed and how active your platform feels." wrapText="true" />
+                    </VBox>
+                </HBox>
+                <HBox spacing="18.0" VBox.vgrow="ALWAYS">
+                    <VBox spacing="10.0" styleClass="panel-card" HBox.hgrow="ALWAYS">
+                        <Label styleClass="panel-title" text="Statistics Table" />
+                        <TableView fx:id="statisticsTable" VBox.vgrow="ALWAYS">
+                            <columns>
+                                <TableColumn fx:id="metricColumn" prefWidth="280.0" text="Metric" />
+                                <TableColumn fx:id="valueColumn" prefWidth="180.0" text="Value" />
+                            </columns>
+                        </TableView>
+                    </VBox>
+                    <VBox spacing="10.0" styleClass="panel-card side-panel" HBox.hgrow="ALWAYS">
+                        <Label styleClass="panel-title" text="Insights" />
+                        <ListView fx:id="statsInsightsList" VBox.vgrow="ALWAYS" />
+                    </VBox>
+                </HBox>
+            </VBox>
+
+            <VBox fx:id="createSection" managed="false" spacing="18.0" visible="false">
+                <HBox spacing="18.0">
+                    <VBox spacing="10.0" styleClass="hero-banner create-banner" HBox.hgrow="ALWAYS">
+                        <Label styleClass="eyebrow" text="Add User" />
+                        <Label styleClass="hero-title small-hero" text="Create admins, teachers, or students with role-specific inputs." wrapText="true" />
+                    </VBox>
+                </HBox>
+                <VBox spacing="14.0" styleClass="panel-card create-panel">
+                    <GridPane hgap="14.0" vgap="14.0">
+                        <Label styleClass="detail-key" text="Role" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                        <ComboBox fx:id="createRoleCombo" prefWidth="220.0" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                        <Label styleClass="detail-key" text="Nom" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                        <TextField fx:id="createNomField" styleClass="input-field" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                        <Label styleClass="detail-key" text="Prenom" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                        <TextField fx:id="createPrenomField" styleClass="input-field" GridPane.columnIndex="3" GridPane.rowIndex="1" />
+                        <Label styleClass="detail-key" text="Email" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                        <TextField fx:id="createEmailField" styleClass="input-field" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                        <Label styleClass="detail-key" text="Password" GridPane.columnIndex="2" GridPane.rowIndex="2" />
+                        <TextField fx:id="createPasswordField" styleClass="input-field" GridPane.columnIndex="3" GridPane.rowIndex="2" />
+                        <Label fx:id="createIdentifierLabel" styleClass="detail-key" text="Identifier" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+                        <TextField fx:id="createIdentifierField" styleClass="input-field" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                        <Label fx:id="createFieldOneLabel" styleClass="detail-key" text="Field 1" GridPane.columnIndex="2" GridPane.rowIndex="3" />
+                        <TextField fx:id="createFieldOneField" styleClass="input-field" GridPane.columnIndex="3" GridPane.rowIndex="3" />
+                        <Label fx:id="createFieldTwoLabel" styleClass="detail-key" text="Field 2" GridPane.columnIndex="0" GridPane.rowIndex="4" />
+                        <TextField fx:id="createFieldTwoField" styleClass="input-field" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+                        <Label fx:id="createFieldThreeLabel" styleClass="detail-key" text="Field 3" GridPane.columnIndex="2" GridPane.rowIndex="4" />
+                        <TextField fx:id="createFieldThreeField" styleClass="input-field" GridPane.columnIndex="3" GridPane.rowIndex="4" />
+                        <Label fx:id="createFieldFourLabel" styleClass="detail-key" text="Field 4" GridPane.columnIndex="0" GridPane.rowIndex="5" />
+                        <TextField fx:id="createFieldFourField" styleClass="input-field" GridPane.columnIndex="1" GridPane.rowIndex="5" />
+                        <Label fx:id="createDateLabel" styleClass="detail-key" text="Date" GridPane.columnIndex="2" GridPane.rowIndex="5" />
+                        <DatePicker fx:id="createDatePicker" GridPane.columnIndex="3" GridPane.rowIndex="5" />
+                        <Label fx:id="createAreaLabel" styleClass="detail-key" text="Extra Info" GridPane.columnIndex="0" GridPane.rowIndex="6" />
+                        <TextArea fx:id="createAreaField" prefRowCount="4" wrapText="true" GridPane.columnIndex="1" GridPane.columnSpan="3" GridPane.rowIndex="6" />
+                    </GridPane>
+                    <HBox alignment="CENTER_RIGHT" spacing="12.0">
+                        <Label fx:id="createStatusLabel" styleClass="status-label neutral-status" text="" HBox.hgrow="ALWAYS" wrapText="true" />
+                        <Button fx:id="createSubmitButton" onAction="#createUser" styleClass="primary-button compact-button" text="Create User" />
+                    </HBox>
+                </VBox>
+            </VBox>
+
+            <VBox fx:id="modulesSection" managed="false" spacing="18.0" visible="false">
+                <VBox fx:id="moduleBrowseSection" spacing="18.0">
+                    <HBox spacing="18.0">
+                        <VBox spacing="10.0" styleClass="hero-banner admin-stats-banner" HBox.hgrow="ALWAYS">
+                            <Label styleClass="eyebrow" text="Administration des modules" />
+                            <Label styleClass="hero-title small-hero" text="Centralisez la consultation, la creation et la mise a jour des modules de formation." wrapText="true" />
+                        </VBox>
+                        <VBox alignment="CENTER_RIGHT" spacing="10.0">
+                            <Button onAction="#showModuleCreateForm" styleClass="primary-button compact-button" text="Nouveau module" />
+                            <Label fx:id="moduleMessageLabel" styleClass="status-label neutral-status" text="" wrapText="true" />
+                        </VBox>
+                    </HBox>
+                    <HBox spacing="18.0" VBox.vgrow="ALWAYS">
+                        <VBox spacing="12.0" styleClass="panel-card modules-list-panel" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+                            <Label styleClass="panel-title" text="Catalogue des modules" />
+                            <TableView fx:id="modulesTable" VBox.vgrow="ALWAYS">
+                                <columns>
+                                    <TableColumn fx:id="moduleIdColumn" prefWidth="70.0" text="ID" />
+                                    <TableColumn fx:id="moduleTitleColumn" prefWidth="260.0" text="Titre" />
+                                    <TableColumn fx:id="moduleOrderColumn" prefWidth="90.0" text="Ordre" />
+                                    <TableColumn fx:id="moduleDurationColumn" prefWidth="110.0" text="Duree (h)" />
+                                    <TableColumn fx:id="moduleStatusColumn" prefWidth="110.0" text="Statut" />
+                                    <TableColumn fx:id="moduleActionsColumn" prefWidth="250.0" text="Actions" />
+                                </columns>
+                            </TableView>
+                        </VBox>
+                        <VBox fx:id="moduleDetailsPanel" managed="false" spacing="14.0" styleClass="panel-card modules-detail-panel" visible="false" HBox.hgrow="NEVER">
+                            <HBox alignment="CENTER_LEFT" spacing="10.0">
+                                <Label styleClass="panel-title" text="Fiche du module" />
+                                <HBox HBox.hgrow="ALWAYS" />
+                                <Button onAction="#closeModuleDetails" styleClass="detail-close-button" text="X" />
+                            </HBox>
+                            <Label styleClass="dashboard-subsection" text="Selectionnez un module dans la liste pour consulter ses informations detaillees." wrapText="true" />
+                            <ListView fx:id="moduleDetailsList" VBox.vgrow="ALWAYS" />
+                            <HBox spacing="10.0">
+                                <Button onAction="#editSelectedModule" styleClass="secondary-button compact-button" text="Modifier" />
+                                <Button onAction="#deleteSelectedModule" styleClass="danger-button compact-button" text="Supprimer" />
+                            </HBox>
+                        </VBox>
+                    </HBox>
+                </VBox>
+
+                <VBox fx:id="moduleEditorSection" managed="false" spacing="18.0" visible="false">
+                    <HBox spacing="18.0">
+                        <VBox spacing="10.0" styleClass="hero-banner create-banner" HBox.hgrow="ALWAYS">
+                            <Label styleClass="eyebrow" text="Edition du module" />
+                            <Label fx:id="moduleFormTitleLabel" styleClass="hero-title small-hero" text="Nouveau module" wrapText="true" />
+                            <Label styleClass="dashboard-subtitle" text="Renseignez les informations requises pour enregistrer un module de formation." wrapText="true" />
+                        </VBox>
+                    </HBox>
+                    <VBox spacing="14.0" styleClass="panel-card module-editor-panel">
+                        <GridPane hgap="16.0" vgap="16.0">
+                            <Label styleClass="detail-key" text="Titre" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                            <VBox spacing="4.0" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                                <TextField fx:id="moduleTitreField" promptText="Ex: Java avance" styleClass="input-field" />
+                                <Label fx:id="moduleTitreErrorLabel" styleClass="field-error-label" text="" wrapText="true" />
+                            </VBox>
+                            <Label styleClass="detail-key" text="Ordre d'affichage" GridPane.columnIndex="2" GridPane.rowIndex="0" />
+                            <VBox spacing="4.0" GridPane.columnIndex="3" GridPane.rowIndex="0">
+                                <TextField fx:id="moduleOrdreField" promptText="0" styleClass="input-field" />
+                                <Label fx:id="moduleOrdreErrorLabel" styleClass="field-error-label" text="" wrapText="true" />
+                            </VBox>
+                            <Label styleClass="detail-key" text="Description" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                            <VBox spacing="4.0" GridPane.columnIndex="1" GridPane.columnSpan="3" GridPane.rowIndex="1">
+                                <TextArea fx:id="moduleDescriptionArea" prefRowCount="4" promptText="Decrivez clairement le module..." wrapText="true" />
+                                <Label fx:id="moduleDescriptionErrorLabel" styleClass="field-error-label" text="" wrapText="true" />
+                            </VBox>
+                            <Label styleClass="detail-key" text="Objectifs d'apprentissage" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                            <VBox spacing="4.0" GridPane.columnIndex="1" GridPane.columnSpan="3" GridPane.rowIndex="2">
+                                <TextArea fx:id="moduleObjectifsArea" prefRowCount="4" promptText="Ex: comprendre les bases, manipuler les concepts..." wrapText="true" />
+                                <Label fx:id="moduleObjectifsErrorLabel" styleClass="field-error-label" text="" wrapText="true" />
+                            </VBox>
+                            <Label styleClass="detail-key" text="Duree estimee (h)" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+                            <VBox spacing="4.0" GridPane.columnIndex="1" GridPane.rowIndex="3">
+                                <TextField fx:id="moduleDureeField" promptText="12" styleClass="input-field" />
+                                <Label fx:id="moduleDureeErrorLabel" styleClass="field-error-label" text="" wrapText="true" />
+                            </VBox>
+                            <Label styleClass="detail-key" text="Date publication" GridPane.columnIndex="2" GridPane.rowIndex="3" />
+                            <VBox spacing="4.0" GridPane.columnIndex="3" GridPane.rowIndex="3">
+                                <DatePicker fx:id="moduleDatePublicationPicker" />
+                                <Label fx:id="moduleDatePublicationErrorLabel" styleClass="field-error-label" text="" wrapText="true" />
+                            </VBox>
+                            <Label styleClass="detail-key" text="Statut" GridPane.columnIndex="0" GridPane.rowIndex="4" />
+                            <VBox spacing="4.0" GridPane.columnIndex="1" GridPane.rowIndex="4">
+                                <ComboBox fx:id="moduleStatutCombo" prefWidth="220.0" />
+                                <Label fx:id="moduleStatutErrorLabel" styleClass="field-error-label" text="" wrapText="true" />
+                            </VBox>
+                            <Label styleClass="detail-key" text="Ressources" GridPane.columnIndex="0" GridPane.rowIndex="5" />
+                            <VBox spacing="4.0" GridPane.columnIndex="1" GridPane.columnSpan="3" GridPane.rowIndex="5">
+                                <TextArea fx:id="moduleRessourcesArea" prefRowCount="3" promptText="support1.pdf, lien-video, tp-module.zip" wrapText="true" />
+                                <Label fx:id="moduleRessourcesErrorLabel" styleClass="field-error-label" text="" wrapText="true" />
+                            </VBox>
+                        </GridPane>
+                        <HBox alignment="CENTER_RIGHT" spacing="12.0">
+                            <Label fx:id="moduleFormStatusLabel" styleClass="status-label neutral-status" text="" HBox.hgrow="ALWAYS" wrapText="true" />
+                            <Button onAction="#cancelModuleForm" styleClass="secondary-button compact-button" text="Retour a la liste" />
+                            <Button onAction="#saveModule" styleClass="primary-button compact-button" text="Enregistrer le module" />
+                        </HBox>
+                    </VBox>
+                </VBox>
+            </VBox>
+
+            <VBox fx:id="coursesSection" managed="false" spacing="18.0" visible="false">
+                <VBox fx:id="coursBrowseSection" spacing="18.0">
+                    <HBox spacing="18.0">
+                        <VBox spacing="10.0" styleClass="hero-banner admin-stats-banner" HBox.hgrow="ALWAYS">
+                            <Label styleClass="eyebrow" text="Gestion Cours" />
+                            <Label fx:id="currentModuleTitleLabel" styleClass="hero-title small-hero" text="Cours du module" wrapText="true" />
+                            <Label fx:id="currentModuleSubtitleLabel" styleClass="dashboard-subtitle" text="Module selectionne" wrapText="true" />
+                        </VBox>
+                        <VBox alignment="CENTER_RIGHT" spacing="10.0">
+                            <Button onAction="#backToModulesFromCours" styleClass="secondary-button compact-button" text="Retour Modules" />
+                            <Button onAction="#showCoursCreateForm" styleClass="primary-button compact-button" text="Creer Nouveau Cours" />
+                            <Label fx:id="coursMessageLabel" styleClass="status-label neutral-status" text="" wrapText="true" />
+                        </VBox>
+                    </HBox>
+                    <HBox spacing="18.0" VBox.vgrow="ALWAYS">
+                        <VBox spacing="12.0" styleClass="panel-card modules-list-panel" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+                            <Label styleClass="panel-title" text="Liste des Cours" />
+                            <TableView fx:id="coursTable" VBox.vgrow="ALWAYS">
+                                <columns>
+                                    <TableColumn fx:id="coursIdColumn" prefWidth="70.0" text="ID" />
+                                    <TableColumn fx:id="coursCodeColumn" prefWidth="120.0" text="Code" />
+                                    <TableColumn fx:id="coursTitreColumn" prefWidth="250.0" text="Titre" />
+                                    <TableColumn fx:id="coursNiveauColumn" prefWidth="110.0" text="Niveau" />
+                                    <TableColumn fx:id="coursCreditsColumn" prefWidth="90.0" text="Credits" />
+                                    <TableColumn fx:id="coursStatutColumn" prefWidth="110.0" text="Statut" />
+                                    <TableColumn fx:id="coursActionsColumn" prefWidth="250.0" text="Actions" />
+                                </columns>
+                            </TableView>
+                        </VBox>
+                        <VBox fx:id="coursDetailsPanel" managed="false" spacing="14.0" styleClass="panel-card modules-detail-panel" visible="false" HBox.hgrow="NEVER">
+                            <HBox alignment="CENTER_LEFT" spacing="10.0">
+                                <Label styleClass="panel-title" text="Details du Cours" />
+                                <HBox HBox.hgrow="ALWAYS" />
+                                <Button onAction="#closeCoursDetails" styleClass="detail-close-button" text="X" />
+                            </HBox>
+                            <Label styleClass="dashboard-subsection" text="Selectionnez un cours dans la liste pour afficher sa fiche detaillee." wrapText="true" />
+                            <VBox spacing="12.0" styleClass="detail-hero-card">
+                                <Label fx:id="coursDetailHeroTitleLabel" styleClass="detail-hero-title" text="Aucun cours selectionne" wrapText="true" />
+                                <Label fx:id="coursDetailHeroMetaLabel" styleClass="detail-hero-meta" text="La fiche detaillee du cours apparaitra ici apres selection dans la liste." wrapText="true" />
+                            </VBox>
+                            <Label styleClass="detail-section-title" text="Informations generales" />
+                            <GridPane hgap="12.0" vgap="10.0">
+                                <Label styleClass="detail-key" text="Code" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                                <Label fx:id="coursDetailCodeLabel" styleClass="detail-value detail-multiline wide-detail" text="-" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                                <Label styleClass="detail-key" text="Titre" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                                <Label fx:id="coursDetailTitreLabel" styleClass="detail-value detail-multiline wide-detail" text="-" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                <Label styleClass="detail-key" text="Description" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                                <Label fx:id="coursDetailDescriptionLabel" styleClass="detail-value detail-multiline wide-detail" text="-" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                <Label styleClass="detail-key" text="Niveau" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+                                <Label fx:id="coursDetailNiveauLabel" styleClass="detail-value detail-multiline wide-detail" text="-" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                                <Label styleClass="detail-key" text="Langue" GridPane.columnIndex="0" GridPane.rowIndex="4" />
+                                <Label fx:id="coursDetailLangueLabel" styleClass="detail-value detail-multiline wide-detail" text="-" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+                            </GridPane>
+                            <Label styleClass="detail-section-title" text="Organisation" />
+                            <GridPane hgap="12.0" vgap="10.0">
+                                <Label styleClass="detail-key" text="Credits" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                                <Label fx:id="coursDetailCreditsLabel" styleClass="detail-value detail-multiline wide-detail" text="-" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                                <Label styleClass="detail-key" text="Date debut" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                                <Label fx:id="coursDetailDateDebutLabel" styleClass="detail-value detail-multiline wide-detail" text="-" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                <Label styleClass="detail-key" text="Date fin" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                                <Label fx:id="coursDetailDateFinLabel" styleClass="detail-value detail-multiline wide-detail" text="-" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                <Label styleClass="detail-key" text="Statut" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+                                <Label fx:id="coursDetailStatutLabel" styleClass="detail-value detail-multiline wide-detail" text="-" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                            </GridPane>
+                            <Label styleClass="detail-section-title" text="Ressources" />
+                            <GridPane hgap="12.0" vgap="10.0" VBox.vgrow="ALWAYS">
+                                <Label styleClass="detail-key" text="Image" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                                <Label fx:id="coursDetailImageLabel" styleClass="detail-value detail-multiline wide-detail" text="-" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                                <Label styleClass="detail-key" text="Prerequis" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                                <Label fx:id="coursDetailPrerequisLabel" styleClass="detail-value detail-multiline wide-detail" text="-" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                            </GridPane>
+                            <HBox spacing="10.0">
+                                <Button onAction="#editSelectedCours" styleClass="secondary-button compact-button" text="Modifier" />
+                                <Button onAction="#deleteSelectedCours" styleClass="danger-button compact-button" text="Supprimer" />
+                            </HBox>
+                        </VBox>
+                    </HBox>
+                </VBox>
+
+                <VBox fx:id="coursEditorSection" managed="false" spacing="18.0" visible="false">
+                    <HBox spacing="18.0">
+                        <VBox spacing="10.0" styleClass="hero-banner create-banner" HBox.hgrow="ALWAYS">
+                            <Label styleClass="eyebrow" text="Edition Cours" />
+                            <Label fx:id="coursFormTitleLabel" styleClass="hero-title small-hero" text="Nouveau Cours" wrapText="true" />
+                            <Label styleClass="dashboard-subtitle" text="Remplissez le formulaire pour creer ou modifier un cours." wrapText="true" />
+                        </VBox>
+                    </HBox>
+                    <HBox alignment="CENTER_RIGHT" spacing="12.0">
+                        <Label fx:id="coursFormStatusLabel" styleClass="status-label neutral-status" text="" HBox.hgrow="ALWAYS" wrapText="true" />
+                        <Button onAction="#cancelCoursForm" styleClass="secondary-button compact-button" text="Retour a la liste" />
+                        <Button onAction="#saveCours" styleClass="primary-button compact-button" text="Enregistrer le cours" />
+                    </HBox>
+                    <ScrollPane fitToWidth="true" pannable="true" styleClass="form-scroll-pane" VBox.vgrow="ALWAYS">
+                        <content>
+                    <VBox spacing="14.0" styleClass="panel-card module-editor-panel">
+                        <GridPane hgap="16.0" vgap="16.0">
+                            <Label styleClass="detail-key" text="Code cours" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                            <VBox spacing="4.0" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                                <TextField fx:id="coursCodeField" promptText="CRS-JAVA-01" styleClass="input-field" />
+                                <Label fx:id="coursCodeErrorLabel" styleClass="field-error-label" text="" wrapText="true" />
+                            </VBox>
+                            <Label styleClass="detail-key" text="Titre" GridPane.columnIndex="2" GridPane.rowIndex="0" />
+                            <VBox spacing="4.0" GridPane.columnIndex="3" GridPane.rowIndex="0">
+                                <TextField fx:id="coursTitreField" promptText="Introduction Java" styleClass="input-field" />
+                                <Label fx:id="coursTitreErrorLabel" styleClass="field-error-label" text="" wrapText="true" />
+                            </VBox>
+                            <Label styleClass="detail-key" text="Description" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                            <VBox spacing="4.0" GridPane.columnIndex="1" GridPane.columnSpan="3" GridPane.rowIndex="1">
+                                <TextArea fx:id="coursDescriptionArea" prefRowCount="4" promptText="Optionnel : decrivez le cours..." wrapText="true" />
+                                <Label fx:id="coursDescriptionErrorLabel" styleClass="field-error-label" text="" wrapText="true" />
+                            </VBox>
+                            <Label styleClass="detail-key" text="Niveau" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                            <VBox spacing="4.0" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                                <TextField fx:id="coursNiveauField" promptText="Licence 3" styleClass="input-field" />
+                                <Label fx:id="coursNiveauErrorLabel" styleClass="field-error-label" text="" wrapText="true" />
+                            </VBox>
+                            <Label styleClass="detail-key" text="Credits" GridPane.columnIndex="2" GridPane.rowIndex="2" />
+                            <VBox spacing="4.0" GridPane.columnIndex="3" GridPane.rowIndex="2">
+                                <TextField fx:id="coursCreditsField" promptText="Optionnel" styleClass="input-field" />
+                                <Label fx:id="coursCreditsErrorLabel" styleClass="field-error-label" text="" wrapText="true" />
+                            </VBox>
+                            <Label styleClass="detail-key" text="Langue" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+                            <VBox spacing="4.0" GridPane.columnIndex="1" GridPane.rowIndex="3">
+                                <TextField fx:id="coursLangueField" promptText="Francais" styleClass="input-field" />
+                                <Label fx:id="coursLangueErrorLabel" styleClass="field-error-label" text="" wrapText="true" />
+                            </VBox>
+                            <Label styleClass="detail-key" text="Statut" GridPane.columnIndex="2" GridPane.rowIndex="3" />
+                            <VBox spacing="4.0" GridPane.columnIndex="3" GridPane.rowIndex="3">
+                                <ComboBox fx:id="coursStatutCombo" prefWidth="220.0" />
+                                <Label fx:id="coursStatutErrorLabel" styleClass="field-error-label" text="" wrapText="true" />
+                            </VBox>
+                            <Label styleClass="detail-key" text="Date debut" GridPane.columnIndex="0" GridPane.rowIndex="4" />
+                            <VBox spacing="4.0" GridPane.columnIndex="1" GridPane.rowIndex="4">
+                                <DatePicker fx:id="coursDateDebutPicker" />
+                                <Label fx:id="coursDateDebutErrorLabel" styleClass="field-error-label" text="" wrapText="true" />
+                            </VBox>
+                            <Label styleClass="detail-key" text="Date fin" GridPane.columnIndex="2" GridPane.rowIndex="4" />
+                            <VBox spacing="4.0" GridPane.columnIndex="3" GridPane.rowIndex="4">
+                                <DatePicker fx:id="coursDateFinPicker" />
+                                <Label fx:id="coursDateFinErrorLabel" styleClass="field-error-label" text="" wrapText="true" />
+                            </VBox>
+                            <Label styleClass="detail-key" text="Image" GridPane.columnIndex="0" GridPane.rowIndex="5" />
+                            <VBox spacing="4.0" GridPane.columnIndex="1" GridPane.columnSpan="3" GridPane.rowIndex="5">
+                                <TextField fx:id="coursImageField" promptText="Optionnel : url ou chemin image" styleClass="input-field" />
+                                <Label fx:id="coursImageErrorLabel" styleClass="field-error-label" text="" wrapText="true" />
+                            </VBox>
+                            <Label styleClass="detail-key" text="Prerequis" GridPane.columnIndex="0" GridPane.rowIndex="6" />
+                            <VBox spacing="4.0" GridPane.columnIndex="1" GridPane.columnSpan="3" GridPane.rowIndex="6">
+                                <TextArea fx:id="coursPrerequisArea" prefRowCount="3" promptText="Optionnel : prerequis separes par des virgules" wrapText="true" />
+                                <Label fx:id="coursPrerequisErrorLabel" styleClass="field-error-label" text="" wrapText="true" />
+                            </VBox>
+                        </GridPane>
+                        <HBox alignment="CENTER_RIGHT" spacing="12.0">
+                            <Button onAction="#cancelCoursForm" styleClass="secondary-button compact-button" text="Retour a la liste" />
+                            <Button onAction="#saveCours" styleClass="primary-button compact-button" text="Enregistrer le cours" />
+                        </HBox>
+                    </VBox>
+                        </content>
+                    </ScrollPane>
+                </VBox>
+            </VBox>
+
+            <VBox fx:id="contenusSection" managed="false" spacing="18.0" visible="false">
+                <VBox fx:id="contenuBrowseSection" spacing="18.0">
+                    <HBox spacing="18.0">
+                        <VBox spacing="10.0" styleClass="hero-banner admin-stats-banner" HBox.hgrow="ALWAYS">
+                            <Label styleClass="eyebrow" text="Gestion Contenus" />
+                            <Label fx:id="currentCoursTitleLabel" styleClass="hero-title small-hero" text="Contenus du cours" wrapText="true" />
+                            <Label fx:id="currentCoursSubtitleLabel" styleClass="dashboard-subtitle" text="Cours selectionne" wrapText="true" />
+                        </VBox>
+                        <VBox alignment="CENTER_RIGHT" spacing="10.0">
+                            <Button onAction="#backToCoursFromContenus" styleClass="secondary-button compact-button" text="Retour Cours" />
+                            <Button onAction="#showContenuCreateForm" styleClass="primary-button compact-button" text="Ajouter Contenu" />
+                            <Label fx:id="contenuMessageLabel" styleClass="status-label neutral-status" text="" wrapText="true" />
+                        </VBox>
+                    </HBox>
+                    <HBox spacing="18.0" VBox.vgrow="ALWAYS">
+                        <VBox spacing="12.0" styleClass="panel-card modules-list-panel" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+                            <Label styleClass="panel-title" text="Liste des Contenus" />
+                            <TableView fx:id="contenusTable" VBox.vgrow="ALWAYS">
+                                <columns>
+                                    <TableColumn fx:id="contenuIdColumn" prefWidth="70.0" text="ID" />
+                                    <TableColumn fx:id="contenuTypeColumn" prefWidth="120.0" text="Type" />
+                                    <TableColumn fx:id="contenuTitreColumn" prefWidth="260.0" text="Titre" />
+                                    <TableColumn fx:id="contenuOrdreColumn" prefWidth="90.0" text="Ordre" />
+                                    <TableColumn fx:id="contenuDureeColumn" prefWidth="100.0" text="Duree" />
+                                    <TableColumn fx:id="contenuActionsColumn" prefWidth="250.0" text="Actions" />
+                                </columns>
+                            </TableView>
+                        </VBox>
+                        <VBox fx:id="contenuDetailsPanel" managed="false" spacing="14.0" styleClass="panel-card modules-detail-panel" visible="false" HBox.hgrow="NEVER">
+                            <HBox alignment="CENTER_LEFT" spacing="10.0">
+                                <Label styleClass="panel-title" text="Details du Contenu" />
+                                <HBox HBox.hgrow="ALWAYS" />
+                                <Button onAction="#closeContenuDetails" styleClass="detail-close-button" text="X" />
+                            </HBox>
+                            <Label styleClass="dashboard-subsection" text="Selectionnez un contenu dans la liste pour afficher ses informations detaillees." wrapText="true" />
+                            <VBox spacing="12.0" styleClass="detail-hero-card">
+                                <Label fx:id="contenuHeroTitleLabel" styleClass="detail-hero-title" text="Aucun contenu selectionne" wrapText="true" />
+                                <Label fx:id="contenuHeroMetaLabel" styleClass="detail-hero-meta" text="La fiche detaillee du contenu apparaitra ici apres selection dans la liste." wrapText="true" />
+                            </VBox>
+                            <Label styleClass="detail-section-title" text="Informations generales" />
+                            <GridPane hgap="12.0" vgap="10.0">
+                                <Label styleClass="detail-key" text="Type" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                                <Label fx:id="contenuDetailTypeLabel" styleClass="detail-value detail-multiline wide-detail" text="-" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                                <Label styleClass="detail-key" text="Titre" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                                <Label fx:id="contenuDetailTitreLabel" styleClass="detail-value detail-multiline wide-detail" text="-" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                <Label styleClass="detail-key" text="Description" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                                <Label fx:id="contenuDetailDescriptionLabel" styleClass="detail-value detail-multiline wide-detail" text="-" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                <Label styleClass="detail-key" text="URL" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+                                <Label fx:id="contenuDetailUrlLabel" styleClass="detail-value detail-multiline wide-detail" text="-" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                            </GridPane>
+                            <Label styleClass="detail-section-title" text="Organisation" />
+                            <GridPane hgap="12.0" vgap="10.0">
+                                <Label styleClass="detail-key" text="Duree" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                                <Label fx:id="contenuDetailDureeLabel" styleClass="detail-value detail-multiline wide-detail" text="-" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                                <Label styleClass="detail-key" text="Ordre" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                                <Label fx:id="contenuDetailOrdreLabel" styleClass="detail-value detail-multiline wide-detail" text="-" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                <Label styleClass="detail-key" text="Public" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                                <Label fx:id="contenuDetailPublicLabel" styleClass="detail-value detail-multiline wide-detail" text="-" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                <Label styleClass="detail-key" text="Date ajout" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+                                <Label fx:id="contenuDetailDateAjoutLabel" styleClass="detail-value detail-multiline wide-detail" text="-" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                                <Label styleClass="detail-key" text="Vues" GridPane.columnIndex="0" GridPane.rowIndex="4" />
+                                <Label fx:id="contenuDetailVuesLabel" styleClass="detail-value detail-multiline wide-detail" text="-" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+                            </GridPane>
+                            <Label styleClass="detail-section-title" text="Ressources" />
+                            <GridPane hgap="12.0" vgap="10.0">
+                                <Label styleClass="detail-key" text="Format" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                                <Label fx:id="contenuDetailFormatLabel" styleClass="detail-value detail-multiline wide-detail" text="-" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                                <Label styleClass="detail-key" text="Ressources" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                                <Label fx:id="contenuDetailRessourcesLabel" styleClass="detail-value detail-multiline wide-detail" text="-" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                            </GridPane>
+                            <HBox spacing="10.0">
+                                <Button onAction="#editSelectedContenu" styleClass="secondary-button compact-button" text="Modifier" />
+                                <Button onAction="#deleteSelectedContenu" styleClass="danger-button compact-button" text="Supprimer" />
+                            </HBox>
+                        </VBox>
+                    </HBox>
+                </VBox>
+
+                <VBox fx:id="contenuEditorSection" managed="false" spacing="18.0" visible="false">
+                    <HBox spacing="18.0">
+                        <VBox spacing="10.0" styleClass="hero-banner create-banner" HBox.hgrow="ALWAYS">
+                            <Label styleClass="eyebrow" text="Edition Contenu" />
+                            <Label fx:id="contenuFormTitleLabel" styleClass="hero-title small-hero" text="Nouveau Contenu" wrapText="true" />
+                            <Label styleClass="dashboard-subtitle" text="Creez ou modifiez un contenu rattache au cours selectionne." wrapText="true" />
+                        </VBox>
+                    </HBox>
+                    <HBox alignment="CENTER_RIGHT" spacing="12.0">
+                        <Label fx:id="contenuFormStatusLabel" styleClass="status-label neutral-status" text="" HBox.hgrow="ALWAYS" wrapText="true" />
+                        <Button onAction="#cancelContenuForm" styleClass="secondary-button compact-button" text="Retour a la liste" />
+                        <Button onAction="#saveContenu" styleClass="primary-button compact-button" text="Enregistrer le contenu" />
+                    </HBox>
+                    <ScrollPane fitToWidth="true" pannable="true" styleClass="form-scroll-pane" VBox.vgrow="ALWAYS">
+                        <content>
+                            <VBox spacing="14.0" styleClass="panel-card module-editor-panel">
+                                <GridPane hgap="16.0" vgap="16.0">
+                                    <Label styleClass="detail-key" text="Type" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                                    <VBox spacing="4.0" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                                        <VBox spacing="8.0" styleClass="type-choice-box">
+                                            <HBox spacing="10.0">
+                                                <CheckBox fx:id="contenuVideoCheck" text="Video" />
+                                                <CheckBox fx:id="contenuPdfCheck" text="PDF" />
+                                                <CheckBox fx:id="contenuPptCheck" text="PPT" />
+                                            </HBox>
+                                            <HBox spacing="10.0">
+                                                <CheckBox fx:id="contenuTexteCheck" text="Texte" />
+                                                <CheckBox fx:id="contenuQuizCheck" text="Quiz" />
+                                                <CheckBox fx:id="contenuLienCheck" text="Lien" />
+                                            </HBox>
+                                        </VBox>
+                                        <Label styleClass="dashboard-subsection" text="Choix multiple: video, pdf, ppt, texte, quiz, lien." wrapText="true" />
+                                        <Label fx:id="contenuTypeErrorLabel" styleClass="field-error-label" text="" wrapText="true" />
+                                    </VBox>
+                                    <Label styleClass="detail-key" text="Titre" GridPane.columnIndex="2" GridPane.rowIndex="0" />
+                                    <VBox spacing="4.0" GridPane.columnIndex="3" GridPane.rowIndex="0">
+                                        <TextField fx:id="contenuTitreField" promptText="Titre du contenu" styleClass="input-field" />
+                                        <Label fx:id="contenuTitreErrorLabel" styleClass="field-error-label" text="" wrapText="true" />
+                                    </VBox>
+                                    <Label styleClass="detail-key" text="URL" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                                    <VBox spacing="4.0" GridPane.columnIndex="1" GridPane.columnSpan="3" GridPane.rowIndex="1">
+                                        <TextField fx:id="contenuUrlField" promptText="Optionnel : lien principal ou chemin principal" styleClass="input-field" />
+                                        <Label fx:id="contenuUrlErrorLabel" styleClass="field-error-label" text="" wrapText="true" />
+                                    </VBox>
+                                    <Label styleClass="detail-key" text="Description" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                                    <VBox spacing="4.0" GridPane.columnIndex="1" GridPane.columnSpan="3" GridPane.rowIndex="2">
+                                        <TextArea fx:id="contenuDescriptionArea" prefRowCount="4" promptText="Description generale ou contenu texte" wrapText="true" />
+                                        <Label fx:id="contenuDescriptionErrorLabel" styleClass="field-error-label" text="" wrapText="true" />
+                                    </VBox>
+                                    <Label styleClass="detail-key" text="Duree (min)" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+                                    <VBox spacing="4.0" GridPane.columnIndex="1" GridPane.rowIndex="3">
+                                        <TextField fx:id="contenuDureeField" promptText="Optionnel" styleClass="input-field" />
+                                        <Label fx:id="contenuDureeErrorLabel" styleClass="field-error-label" text="" wrapText="true" />
+                                    </VBox>
+                                    <Label styleClass="detail-key" text="Ordre" GridPane.columnIndex="2" GridPane.rowIndex="3" />
+                                    <VBox spacing="4.0" GridPane.columnIndex="3" GridPane.rowIndex="3">
+                                        <TextField fx:id="contenuOrdreField" promptText="0" styleClass="input-field" />
+                                        <Label fx:id="contenuOrdreErrorLabel" styleClass="field-error-label" text="" wrapText="true" />
+                                    </VBox>
+                                    <Label styleClass="detail-key" text="Public" GridPane.columnIndex="0" GridPane.rowIndex="4" />
+                                    <VBox spacing="4.0" GridPane.columnIndex="1" GridPane.rowIndex="4">
+                                        <ComboBox fx:id="contenuPublicCombo" prefWidth="220.0" />
+                                        <Label fx:id="contenuPublicErrorLabel" styleClass="field-error-label" text="" wrapText="true" />
+                                    </VBox>
+                                    <Label styleClass="detail-key" text="Date ajout" GridPane.columnIndex="2" GridPane.rowIndex="4" />
+                                    <VBox spacing="4.0" GridPane.columnIndex="3" GridPane.rowIndex="4">
+                                        <DatePicker fx:id="contenuDateAjoutPicker" />
+                                        <Label fx:id="contenuDateAjoutErrorLabel" styleClass="field-error-label" text="" wrapText="true" />
+                                    </VBox>
+                                    <Label styleClass="detail-key" text="Vues" GridPane.columnIndex="0" GridPane.rowIndex="5" />
+                                    <VBox spacing="4.0" GridPane.columnIndex="1" GridPane.rowIndex="5">
+                                        <TextField fx:id="contenuVuesField" promptText="0" styleClass="input-field" />
+                                        <Label fx:id="contenuVuesErrorLabel" styleClass="field-error-label" text="" wrapText="true" />
+                                    </VBox>
+                                    <Label styleClass="detail-key" text="Format" GridPane.columnIndex="2" GridPane.rowIndex="5" />
+                                    <VBox spacing="4.0" GridPane.columnIndex="3" GridPane.rowIndex="5">
+                                        <TextField fx:id="contenuFormatField" promptText="pdf, mp4, lien..." styleClass="input-field" />
+                                        <Label fx:id="contenuFormatErrorLabel" styleClass="field-error-label" text="" wrapText="true" />
+                                    </VBox>
+                                    <Label styleClass="detail-key" text="Ressources" GridPane.columnIndex="0" GridPane.rowIndex="6" />
+                                    <VBox spacing="4.0" GridPane.columnIndex="1" GridPane.columnSpan="3" GridPane.rowIndex="6">
+                                        <TextArea fx:id="contenuRessourcesArea" prefRowCount="3" promptText="Optionnel : ressources supplementaires separees par des virgules" wrapText="true" />
+                                        <Label fx:id="contenuRessourcesErrorLabel" styleClass="field-error-label" text="" wrapText="true" />
+                                    </VBox>
+                                </GridPane>
+                                <VBox fx:id="contenuPdfSection" managed="false" spacing="8.0" styleClass="type-card-section" visible="false">
+                                    <Label styleClass="detail-section-title" text="Fichier PDF" />
+                                    <HBox spacing="10.0">
+                                        <TextField fx:id="contenuPdfField" promptText="Chemin du fichier PDF" styleClass="input-field" HBox.hgrow="ALWAYS" />
+                                        <Button onAction="#browseContenuPdfFile" styleClass="secondary-button compact-button" text="Choisir PDF" />
+                                    </HBox>
+                                    <Label fx:id="contenuPdfErrorLabel" styleClass="field-error-label" text="" wrapText="true" />
+                                </VBox>
+                                <VBox fx:id="contenuPptSection" managed="false" spacing="8.0" styleClass="type-card-section" visible="false">
+                                    <Label styleClass="detail-section-title" text="Fichier PowerPoint" />
+                                    <HBox spacing="10.0">
+                                        <TextField fx:id="contenuPptField" promptText="Chemin du fichier PPT/PPTX" styleClass="input-field" HBox.hgrow="ALWAYS" />
+                                        <Button onAction="#browseContenuPptFile" styleClass="secondary-button compact-button" text="Choisir PPT" />
+                                    </HBox>
+                                    <Label fx:id="contenuPptErrorLabel" styleClass="field-error-label" text="" wrapText="true" />
+                                </VBox>
+                                <VBox fx:id="contenuVideoSection" managed="false" spacing="8.0" styleClass="type-card-section" visible="false">
+                                    <Label styleClass="detail-section-title" text="Ressource video" />
+                                    <HBox spacing="10.0">
+                                        <TextField fx:id="contenuVideoField" promptText="Chemin local ou lien video" styleClass="input-field" HBox.hgrow="ALWAYS" />
+                                        <Button onAction="#browseContenuVideoFile" styleClass="secondary-button compact-button" text="Choisir video" />
+                                    </HBox>
+                                    <Label fx:id="contenuVideoErrorLabel" styleClass="field-error-label" text="" wrapText="true" />
+                                </VBox>
+                                <VBox fx:id="contenuLienSection" managed="false" spacing="8.0" styleClass="type-card-section" visible="false">
+                                    <Label styleClass="detail-section-title" text="Lien externe" />
+                                    <TextField fx:id="contenuLienField" promptText="https://..." styleClass="input-field" />
+                                    <Label fx:id="contenuLienErrorLabel" styleClass="field-error-label" text="" wrapText="true" />
+                                </VBox>
+                                <VBox fx:id="contenuQuizSection" managed="false" spacing="8.0" styleClass="type-card-section" visible="false">
+                                    <Label styleClass="detail-section-title" text="Reference Quiz" />
+                                    <TextField fx:id="contenuQuizField" promptText="Ex: QUIZ-JAVA-01" styleClass="input-field" />
+                                    <Label fx:id="contenuQuizErrorLabel" styleClass="field-error-label" text="" wrapText="true" />
+                                </VBox>
+                                <VBox fx:id="contenuTexteSection" managed="false" spacing="6.0" styleClass="type-card-section" visible="false">
+                                    <Label styleClass="detail-section-title" text="Contenu texte" />
+                                    <Label styleClass="dashboard-subsection" text="Quand le type texte est choisi, la zone Description devient obligatoire et sert de contenu textuel." wrapText="true" />
+                                </VBox>
+                                <HBox alignment="CENTER_RIGHT" spacing="12.0">
+                                    <Button onAction="#cancelContenuForm" styleClass="secondary-button compact-button" text="Retour a la liste" />
+                                    <Button onAction="#saveContenu" styleClass="primary-button compact-button" text="Enregistrer le contenu" />
+                                </HBox>
+                            </VBox>
+                        </content>
+                    </ScrollPane>
+                </VBox>
+            </VBox>
+        </StackPane>
+    </center>
+</BorderPane>
