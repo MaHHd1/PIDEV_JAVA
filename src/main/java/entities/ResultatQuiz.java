@@ -73,6 +73,7 @@ public class ResultatQuiz {
 
     public String getReponsesEtudiant() { return reponsesEtudiant; }
     public void setReponsesEtudiant(String reponsesEtudiant) { this.reponsesEtudiant = reponsesEtudiant; }
+    public void setId(Long id) { this.id = id; }
 
     // ─── toString ─────────────────────────────────────────────────
 

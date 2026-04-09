@@ -67,7 +67,7 @@ public class Reponse {
 
     public String getMediaUrl() { return mediaUrl; }
     public void setMediaUrl(String mediaUrl) { this.mediaUrl = mediaUrl; }
-
+    public void setId(Long id) { this.id = id; }
     // ─── toString ─────────────────────────────────────────────────
 
     @Override

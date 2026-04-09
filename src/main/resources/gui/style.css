@@ -599,3 +599,93 @@
 .list-cell:filled:selected:hover {
     -fx-background-color: #dbeafe;
 }
+/* ═══════════════════════════════════════════════════════════════════
+   ADDITIONS QUIZ — à coller à la fin de styles.css
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Icônes emoji dans les en-têtes de blocs ─────────────────────── */
+/* Remplace les style="-fx-font-size:18px;" inline */
+
+.icon-label {
+    -fx-font-size: 18px;
+}
+
+.icon-label-sm {
+    -fx-font-size: 14px;
+}
+
+/* ── Séparateur dans les panneaux ───────────────────────────────── */
+
+.panel-card .separator > .line {
+    -fx-border-color: #e2e8f0;
+    -fx-border-width: 0.5px;
+}
+
+/* ── Flèche entre les DatePicker ────────────────────────────────── */
+/* Remplace le style inline sur la VBox séparateur */
+
+.date-arrow-label {
+    -fx-font-size: 20px;
+    -fx-text-fill: #94a3b8;
+    -fx-font-weight: 900;
+}
+
+/* ── Bloc info plage de dates ───────────────────────────────────── */
+/* Remplace le style inline -fx-background-color:#f0fdf4;... */
+
+.date-range-info-box {
+    -fx-background-color: #f0fdf4;
+    -fx-background-radius: 12;
+    -fx-border-color: #bbf7d0;
+    -fx-border-radius: 12;
+    -fx-padding: 10 14 10 14;
+}
+
+/* ── CheckBox "réponse correcte" ────────────────────────────────── */
+/* Remplace le style inline -fx-font-weight:700; -fx-text-fill:#16a34a; */
+
+.correct-answer-check {
+    -fx-font-weight: 700;
+    -fx-font-size: 13px;
+    -fx-text-fill: #16a34a;
+}
+
+.correct-answer-check:selected .box {
+    -fx-background-color: #16a34a;
+    -fx-border-color: #16a34a;
+}
+
+.correct-answer-check:selected .mark {
+    -fx-background-color: white;
+}
+
+/* ── Hover sur les boutons principaux ───────────────────────────── */
+
+.primary-button:hover {
+    -fx-opacity: 0.88;
+    -fx-cursor: hand;
+}
+
+.secondary-button:hover {
+    -fx-background-color: #d1dff0;
+    -fx-cursor: hand;
+}
+
+.danger-button:hover {
+    -fx-background-color: #dc2626;
+    -fx-cursor: hand;
+}
+
+.detail-close-button:hover {
+    -fx-background-color: #cbd5e1;
+    -fx-cursor: hand;
+}
+
+/* ── Placeholder des TableView en français ──────────────────────── */
+/* Les placeholders utilisent des styles inline dans le FXML,
+   ces règles permettent de les surcharger si besoin */
+
+.table-view .placeholder > .label {
+    -fx-text-fill: #94a3b8;
+    -fx-font-size: 13px;
+}

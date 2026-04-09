@@ -155,7 +155,7 @@ public class Question {
         }
         return correct;
     }
-
+    public void setId(Long id) { this.id = id; }
     public int getCorrectAnswersCount() {
         return getCorrectAnswers().size();
     }

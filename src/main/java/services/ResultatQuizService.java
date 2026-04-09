@@ -1,188 +1,220 @@
 package services;
 
+import entities.Quiz;
 import entities.ResultatQuiz;
+import utils.DBConnection;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.Persistence;
-import javax.persistence.TypedQuery;
+import java.sql.*;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 public class ResultatQuizService implements IService<ResultatQuiz> {
 
-    private static final EntityManagerFactory emf =
-            Persistence.createEntityManagerFactory("myPU");
-
-    private EntityManager getEM() {
-        return emf.createEntityManager();
+    private Connection getConnection() {
+        return DBConnection.getInstance().getConnection();
     }
 
     // ─── CRUD ─────────────────────────────────────────────────────
 
     @Override
-    public void create(ResultatQuiz resultat) {
-        EntityManager em = getEM();
-        try {
-            em.getTransaction().begin();
-            em.persist(resultat);
-            em.getTransaction().commit();
-        } catch (Exception e) {
-            em.getTransaction().rollback();
-            throw e;
-        } finally {
-            em.close();
-        }
-    }
+    public void create(ResultatQuiz resultat) throws SQLException {
+        String sql = "INSERT INTO resultat_quiz "
+                + "(quiz_id, id_etudiant, date_passation, "
+                + " score, total_points, earned_points, reponses_etudiant) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?)";
 
-    @Override
-    public void update(ResultatQuiz resultat) {
-        EntityManager em = getEM();
-        try {
-            em.getTransaction().begin();
-            em.merge(resultat);
-            em.getTransaction().commit();
-        } catch (Exception e) {
-            em.getTransaction().rollback();
-            throw e;
-        } finally {
-            em.close();
-        }
-    }
-
-    @Override
-    public void delete(int id) {
-        EntityManager em = getEM();
-        try {
-            em.getTransaction().begin();
-            ResultatQuiz resultat = em.find(ResultatQuiz.class, (long) id);
-            if (resultat != null) {
-                em.remove(resultat);
+        try (PreparedStatement ps = getConnection().prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            fillStatement(ps, resultat);
+            ps.executeUpdate();
+            try (ResultSet keys = ps.getGeneratedKeys()) {
+                if (keys.next()) resultat.setId(keys.getLong(1));
             }
-            em.getTransaction().commit();
-        } catch (Exception e) {
-            em.getTransaction().rollback();
-            throw e;
-        } finally {
-            em.close();
         }
     }
 
     @Override
-    public ResultatQuiz getById(int id) {
-        EntityManager em = getEM();
-        try {
-            return em.find(ResultatQuiz.class, (long) id);
-        } finally {
-            em.close();
+    public void update(ResultatQuiz resultat) throws SQLException {
+        if (resultat.getId() == null) throw new SQLException("ID manquant pour la mise a jour.");
+
+        String sql = "UPDATE resultat_quiz SET "
+                + "quiz_id = ?, id_etudiant = ?, date_passation = ?, "
+                + "score = ?, total_points = ?, earned_points = ?, reponses_etudiant = ? "
+                + "WHERE id = ?";
+
+        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+            fillStatement(ps, resultat);
+            ps.setLong(8, resultat.getId());
+            ps.executeUpdate();
         }
     }
 
     @Override
-    public List<ResultatQuiz> getAll() {
-        EntityManager em = getEM();
-        try {
-            return em.createQuery("SELECT r FROM ResultatQuiz r", ResultatQuiz.class).getResultList();
-        } finally {
-            em.close();
+    public void delete(int id) throws SQLException {
+        try (PreparedStatement ps = getConnection().prepareStatement(
+                "DELETE FROM resultat_quiz WHERE id = ?")) {
+            ps.setInt(1, id);
+            ps.executeUpdate();
         }
     }
 
-    // ─── Méthodes métier ──────────────────────────────────────────
-
-    public List<ResultatQuiz> getByEtudiant(int idEtudiant) {
-        EntityManager em = getEM();
-        try {
-            TypedQuery<ResultatQuiz> query = em.createQuery(
-                    "SELECT r FROM ResultatQuiz r WHERE r.idEtudiant = :idEtudiant ORDER BY r.datePassation DESC",
-                    ResultatQuiz.class);
-            query.setParameter("idEtudiant", idEtudiant);
-            return query.getResultList();
-        } finally {
-            em.close();
+    @Override
+    public ResultatQuiz getById(int id) throws SQLException {
+        try (PreparedStatement ps = getConnection().prepareStatement(
+                "SELECT * FROM resultat_quiz WHERE id = ?")) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return mapResultat(rs);
+            }
         }
+        return null;
     }
 
-    public List<ResultatQuiz> getByQuiz(long quizId) {
-        EntityManager em = getEM();
-        try {
-            TypedQuery<ResultatQuiz> query = em.createQuery(
-                    "SELECT r FROM ResultatQuiz r WHERE r.quiz.id = :quizId ORDER BY r.datePassation DESC",
-                    ResultatQuiz.class);
-            query.setParameter("quizId", quizId);
-            return query.getResultList();
-        } finally {
-            em.close();
+    @Override
+    public List<ResultatQuiz> getAll() throws SQLException {
+        List<ResultatQuiz> list = new ArrayList<>();
+        try (PreparedStatement ps = getConnection().prepareStatement(
+                "SELECT * FROM resultat_quiz ORDER BY date_passation DESC");
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) list.add(mapResultat(rs));
+        }
+        return list;
+    }
+
+    // ─── Methodes metier ──────────────────────────────────────────
+
+    public List<ResultatQuiz> getByEtudiant(int idEtudiant) throws SQLException {
+        List<ResultatQuiz> list = new ArrayList<>();
+        try (PreparedStatement ps = getConnection().prepareStatement(
+                "SELECT * FROM resultat_quiz WHERE id_etudiant = ? ORDER BY date_passation DESC")) {
+            ps.setInt(1, idEtudiant);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) list.add(mapResultat(rs));
+            }
+        }
+        return list;
+    }
+
+    public List<ResultatQuiz> getByQuiz(long quizId) throws SQLException {
+        List<ResultatQuiz> list = new ArrayList<>();
+        try (PreparedStatement ps = getConnection().prepareStatement(
+                "SELECT * FROM resultat_quiz WHERE quiz_id = ? ORDER BY date_passation DESC")) {
+            ps.setLong(1, quizId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) list.add(mapResultat(rs));
+            }
+        }
+        return list;
+    }
+
+    /**
+     * Verifie si un etudiant a deja passe un quiz au moins une fois.
+     */
+    public boolean hasAlreadyPassed(int idEtudiant, long quizId) throws SQLException {
+        try (PreparedStatement ps = getConnection().prepareStatement(
+                "SELECT COUNT(*) FROM resultat_quiz WHERE id_etudiant = ? AND quiz_id = ?")) {
+            ps.setInt(1, idEtudiant);
+            ps.setLong(2, quizId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() && rs.getInt(1) > 0;
+            }
         }
     }
 
     /**
-     * Vérifie si un étudiant a déjà passé un quiz au moins une fois.
+     * Calcule la moyenne des scores pour un quiz donne (sur 100).
+     * Retourne 0.0 si aucun resultat n'existe.
      */
-    public boolean hasAlreadyPassed(int idEtudiant, long quizId) {
-        EntityManager em = getEM();
-        try {
-            TypedQuery<Long> query = em.createQuery(
-                    "SELECT COUNT(r) FROM ResultatQuiz r WHERE r.idEtudiant = :idEtudiant AND r.quiz.id = :quizId",
-                    Long.class);
-            query.setParameter("idEtudiant", idEtudiant);
-            query.setParameter("quizId", quizId);
-            return query.getSingleResult() > 0;
-        } finally {
-            em.close();
+    public double getMoyenneScore(long quizId) throws SQLException {
+        try (PreparedStatement ps = getConnection().prepareStatement(
+                "SELECT AVG(score) FROM resultat_quiz WHERE quiz_id = ?")) {
+            ps.setLong(1, quizId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    double avg = rs.getDouble(1);
+                    return rs.wasNull() ? 0.0 : avg;
+                }
+            }
+        }
+        return 0.0;
+    }
+
+    /**
+     * Retourne le nombre de tentatives d'un etudiant pour un quiz donne.
+     */
+    public int countTentatives(int idEtudiant, long quizId) throws SQLException {
+        try (PreparedStatement ps = getConnection().prepareStatement(
+                "SELECT COUNT(*) FROM resultat_quiz WHERE id_etudiant = ? AND quiz_id = ?")) {
+            ps.setInt(1, idEtudiant);
+            ps.setLong(2, quizId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
         }
     }
 
     /**
-     * Calcule la moyenne des scores pour un quiz donné (sur 100).
-     * Retourne 0.0 si aucun résultat n'existe.
+     * Retourne le meilleur score d'un etudiant pour un quiz donne.
+     * Retourne 0.0 si aucun resultat.
      */
-    public double getMoyenneScore(long quizId) {
-        EntityManager em = getEM();
-        try {
-            TypedQuery<Double> query = em.createQuery(
-                    "SELECT AVG(r.score) FROM ResultatQuiz r WHERE r.quiz.id = :quizId",
-                    Double.class);
-            query.setParameter("quizId", quizId);
-            Double avg = query.getSingleResult();
-            return avg != null ? avg : 0.0;
-        } finally {
-            em.close();
+    public double getMeilleurScore(int idEtudiant, long quizId) throws SQLException {
+        try (PreparedStatement ps = getConnection().prepareStatement(
+                "SELECT MAX(score) FROM resultat_quiz WHERE id_etudiant = ? AND quiz_id = ?")) {
+            ps.setInt(1, idEtudiant);
+            ps.setLong(2, quizId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    double max = rs.getDouble(1);
+                    return rs.wasNull() ? 0.0 : max;
+                }
+            }
         }
+        return 0.0;
     }
 
-    /**
-     * Retourne le nombre de tentatives d'un étudiant pour un quiz donné.
-     */
-    public int countTentatives(int idEtudiant, long quizId) {
-        EntityManager em = getEM();
-        try {
-            TypedQuery<Long> query = em.createQuery(
-                    "SELECT COUNT(r) FROM ResultatQuiz r WHERE r.idEtudiant = :idEtudiant AND r.quiz.id = :quizId",
-                    Long.class);
-            query.setParameter("idEtudiant", idEtudiant);
-            query.setParameter("quizId", quizId);
-            return query.getSingleResult().intValue();
-        } finally {
-            em.close();
-        }
+    // ─── Helpers prives ───────────────────────────────────────────
+
+    private void fillStatement(PreparedStatement ps, ResultatQuiz resultat) throws SQLException {
+        // quiz_id — NOT NULL dans la DB
+        if (resultat.getQuiz() != null && resultat.getQuiz().getId() != null)
+            ps.setLong(1, resultat.getQuiz().getId());
+        else
+            throw new SQLException("quiz_id est obligatoire pour un resultat.");
+
+        ps.setInt(2, resultat.getIdEtudiant());
+
+        ps.setTimestamp(3, Timestamp.valueOf(
+                resultat.getDatePassation() != null
+                        ? resultat.getDatePassation()
+                        : LocalDateTime.now()));
+
+        ps.setDouble(4, resultat.getScore());
+        ps.setInt(5, resultat.getTotalPoints());
+        ps.setInt(6, resultat.getEarnedPoints());
+        ps.setString(7, resultat.getReponsesEtudiant());
     }
 
-    /**
-     * Retourne le meilleur score d'un étudiant pour un quiz donné.
-     * Retourne 0.0 si aucun résultat.
-     */
-    public double getMeilleurScore(int idEtudiant, long quizId) {
-        EntityManager em = getEM();
-        try {
-            TypedQuery<Double> query = em.createQuery(
-                    "SELECT MAX(r.score) FROM ResultatQuiz r WHERE r.idEtudiant = :idEtudiant AND r.quiz.id = :quizId",
-                    Double.class);
-            query.setParameter("idEtudiant", idEtudiant);
-            query.setParameter("quizId", quizId);
-            Double max = query.getSingleResult();
-            return max != null ? max : 0.0;
-        } finally {
-            em.close();
+    private ResultatQuiz mapResultat(ResultSet rs) throws SQLException {
+        ResultatQuiz r = new ResultatQuiz();
+        r.setId(rs.getLong("id"));
+        r.setIdEtudiant(rs.getInt("id_etudiant"));
+
+        Timestamp tp = rs.getTimestamp("date_passation");
+        if (tp != null) r.setDatePassation(tp.toLocalDateTime());
+
+        r.setScore(rs.getDouble("score"));
+        r.setTotalPoints(rs.getInt("total_points"));
+        r.setEarnedPoints(rs.getInt("earned_points"));
+        r.setReponsesEtudiant(rs.getString("reponses_etudiant"));
+
+        // Quiz — objet leger avec juste l'ID
+        long quizId = rs.getLong("quiz_id");
+        if (!rs.wasNull()) {
+            Quiz quiz = new Quiz();
+            quiz.setId(quizId);
+            r.setQuiz(quiz);
         }
+
+        return r;
     }
 }
