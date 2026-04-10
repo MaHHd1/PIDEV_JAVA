@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import java.lang.String?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
@@ -19,9 +20,17 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="gui.AdminDashboardController" styleClass="dashboard-shell admin-shell">
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="gui.AdminDashboardController">
+    <styleClass>
+        <String fx:value="dashboard-shell" />
+        <String fx:value="admin-shell" />
+    </styleClass>
     <left>
-        <VBox spacing="16.0" styleClass="sidebar admin-sidebar">
+        <VBox spacing="16.0">
+            <styleClass>
+                <String fx:value="sidebar" />
+                <String fx:value="admin-sidebar" />
+            </styleClass>
             <padding>
                 <Insets bottom="20.0" left="18.0" right="18.0" top="20.0" />
             </padding>
@@ -35,13 +44,22 @@
         </VBox>
     </left>
     <top>
-        <HBox alignment="CENTER_LEFT" spacing="18.0" styleClass="topbar profile-topbar">
+        <HBox alignment="CENTER_LEFT" spacing="18.0">
+            <styleClass>
+                <String fx:value="topbar" />
+                <String fx:value="profile-topbar" />
+            </styleClass>
             <VBox spacing="4.0">
                 <Label fx:id="sectionTitleLabel" styleClass="dashboard-title" text="User Registry" />
                 <Label fx:id="sectionSubtitleLabel" styleClass="dashboard-subtitle" text="Filter, inspect, edit, and remove platform users." />
             </VBox>
             <HBox HBox.hgrow="ALWAYS" />
-            <Button onAction="#refreshData" styleClass="secondary-button compact-button" text="Refresh" />
+            <Button onAction="#refreshData" text="Refresh">
+                <styleClass>
+                    <String fx:value="secondary-button" />
+                    <String fx:value="compact-button" />
+                </styleClass>
+            </Button>
             <HBox alignment="CENTER_RIGHT" spacing="10.0" styleClass="profile-chip">
                 <VBox alignment="CENTER_RIGHT" spacing="2.0">
                     <Label fx:id="currentUserNameLabel" styleClass="profile-name" text="Desktop Admin" />
@@ -81,11 +99,20 @@
                     </VBox>
                 </HBox>
                 <HBox spacing="18.0" VBox.vgrow="ALWAYS">
-                    <VBox spacing="12.0" styleClass="panel-card admin-main-panel" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+                    <VBox spacing="12.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+                        <styleClass>
+                            <String fx:value="panel-card" />
+                            <String fx:value="admin-main-panel" />
+                        </styleClass>
                         <HBox alignment="CENTER_LEFT" spacing="10.0">
                             <Label styleClass="panel-title" text="User Registry" />
                             <HBox HBox.hgrow="ALWAYS" />
-                            <TextField fx:id="searchField" promptText="Search by id, name, email, role..." styleClass="input-field inline-field" />
+                            <TextField fx:id="searchField" promptText="Search by id, name, email, role...">
+                                <styleClass>
+                                    <String fx:value="input-field" />
+                                    <String fx:value="inline-field" />
+                                </styleClass>
+                            </TextField>
                             <ComboBox fx:id="roleFilterCombo" prefWidth="170.0" styleClass="inline-combo" />
                         </HBox>
                         <TableView fx:id="usersTable" VBox.vgrow="ALWAYS">
@@ -101,7 +128,11 @@
                             </columns>
                         </TableView>
                     </VBox>
-                    <VBox spacing="14.0" styleClass="panel-card details-panel" HBox.hgrow="NEVER">
+                    <VBox spacing="14.0" HBox.hgrow="NEVER">
+                        <styleClass>
+                            <String fx:value="panel-card" />
+                            <String fx:value="details-panel" />
+                        </styleClass>
                         <Label styleClass="panel-title" text="User Details" />
                         <GridPane hgap="10.0" vgap="10.0">
                             <Label styleClass="detail-key" text="Name" GridPane.columnIndex="0" GridPane.rowIndex="0" />
@@ -129,9 +160,18 @@
 
             <VBox fx:id="statsSection" managed="false" spacing="18.0" visible="false">
                 <HBox spacing="18.0">
-                    <VBox spacing="10.0" styleClass="hero-banner admin-stats-banner" HBox.hgrow="ALWAYS">
+                    <VBox spacing="10.0" HBox.hgrow="ALWAYS">
+                        <styleClass>
+                            <String fx:value="hero-banner" />
+                            <String fx:value="admin-stats-banner" />
+                        </styleClass>
                         <Label styleClass="eyebrow" text="Analytics" />
-                        <Label styleClass="hero-title small-hero" text="See how your user base is distributed and how active your platform feels." wrapText="true" />
+                        <Label text="See how your user base is distributed and how active your platform feels." wrapText="true">
+                            <styleClass>
+                                <String fx:value="hero-title" />
+                                <String fx:value="small-hero" />
+                            </styleClass>
+                        </Label>
                     </VBox>
                 </HBox>
                 <HBox spacing="18.0" VBox.vgrow="ALWAYS">
@@ -144,7 +184,11 @@
                             </columns>
                         </TableView>
                     </VBox>
-                    <VBox spacing="10.0" styleClass="panel-card side-panel" HBox.hgrow="ALWAYS">
+                    <VBox spacing="10.0" HBox.hgrow="ALWAYS">
+                        <styleClass>
+                            <String fx:value="panel-card" />
+                            <String fx:value="side-panel" />
+                        </styleClass>
                         <Label styleClass="panel-title" text="Insights" />
                         <ListView fx:id="statsInsightsList" VBox.vgrow="ALWAYS" />
                     </VBox>
@@ -153,12 +197,25 @@
 
             <VBox fx:id="createSection" managed="false" spacing="18.0" visible="false">
                 <HBox spacing="18.0">
-                    <VBox spacing="10.0" styleClass="hero-banner create-banner" HBox.hgrow="ALWAYS">
+                    <VBox spacing="10.0" HBox.hgrow="ALWAYS">
+                        <styleClass>
+                            <String fx:value="hero-banner" />
+                            <String fx:value="create-banner" />
+                        </styleClass>
                         <Label styleClass="eyebrow" text="Add User" />
-                        <Label styleClass="hero-title small-hero" text="Create admins, teachers, or students with role-specific inputs." wrapText="true" />
+                        <Label text="Create admins, teachers, or students with role-specific inputs." wrapText="true">
+                            <styleClass>
+                                <String fx:value="hero-title" />
+                                <String fx:value="small-hero" />
+                            </styleClass>
+                        </Label>
                     </VBox>
                 </HBox>
-                <VBox spacing="14.0" styleClass="panel-card create-panel">
+                <VBox spacing="14.0">
+                    <styleClass>
+                        <String fx:value="panel-card" />
+                        <String fx:value="create-panel" />
+                    </styleClass>
                     <GridPane hgap="14.0" vgap="14.0">
                         <Label styleClass="detail-key" text="Role" GridPane.columnIndex="0" GridPane.rowIndex="0" />
                         <ComboBox fx:id="createRoleCombo" prefWidth="220.0" GridPane.columnIndex="1" GridPane.rowIndex="0" />
@@ -186,8 +243,18 @@
                         <TextArea fx:id="createAreaField" prefRowCount="4" wrapText="true" GridPane.columnIndex="1" GridPane.columnSpan="3" GridPane.rowIndex="6" />
                     </GridPane>
                     <HBox alignment="CENTER_RIGHT" spacing="12.0">
-                        <Label fx:id="createStatusLabel" styleClass="status-label neutral-status" text="" HBox.hgrow="ALWAYS" wrapText="true" />
-                        <Button fx:id="createSubmitButton" onAction="#createUser" styleClass="primary-button compact-button" text="Create User" />
+                        <Label fx:id="createStatusLabel" text="" HBox.hgrow="ALWAYS" wrapText="true">
+                            <styleClass>
+                                <String fx:value="status-label" />
+                                <String fx:value="neutral-status" />
+                            </styleClass>
+                        </Label>
+                        <Button fx:id="createSubmitButton" onAction="#createUser" text="Create User">
+                            <styleClass>
+                                <String fx:value="primary-button" />
+                                <String fx:value="compact-button" />
+                            </styleClass>
+                        </Button>
                     </HBox>
                 </VBox>
             </VBox>
