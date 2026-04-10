@@ -128,16 +128,37 @@
     -fx-font-weight: 700;
 }
 
+.status-success {
+    -fx-text-fill: #15803d;
+}
+
 .dashboard-shell {
     -fx-background-color: linear-gradient(to bottom right, #f8fafc, #edf2f7);
 }
 
+.academic-shell {
+    -fx-background-color:
+        radial-gradient(center 18% 18%, radius 55%, rgba(125, 211, 252, 0.34), transparent 60%),
+        radial-gradient(center 88% 12%, radius 48%, rgba(16, 185, 129, 0.18), transparent 60%),
+        linear-gradient(to bottom right, #f6fbff, #edf7f4);
+}
+
 .student-shell {
-    -fx-background-color: linear-gradient(to bottom right, #f7fafc, #e0f2fe);
+    -fx-background-color:
+        radial-gradient(center 15% 18%, radius 50%, rgba(56, 189, 248, 0.22), transparent 60%),
+        linear-gradient(to bottom right, #f3fbff, #e0f2fe);
 }
 
 .teacher-shell {
-    -fx-background-color: linear-gradient(to bottom right, #fff7ed, #ffedd5);
+    -fx-background-color:
+        radial-gradient(center 18% 18%, radius 52%, rgba(251, 191, 36, 0.2), transparent 60%),
+        linear-gradient(to bottom right, #fffaf1, #ffedd5);
+}
+
+.admin-shell {
+    -fx-background-color:
+        radial-gradient(center 90% 8%, radius 50%, rgba(59, 130, 246, 0.16), transparent 58%),
+        linear-gradient(to bottom right, #eef2ff, #e2e8f0);
 }
 
 .topbar {
@@ -152,6 +173,14 @@
 .sidebar {
     -fx-background-color: linear-gradient(to bottom, #111827, #0f172a);
     -fx-pref-width: 220;
+}
+
+.academic-sidebar {
+    -fx-background-color: linear-gradient(to bottom, #0f766e, #155e75);
+}
+
+.admin-sidebar {
+    -fx-background-color: linear-gradient(to bottom, #111827, #1e293b);
 }
 
 .sidebar-brand {
@@ -234,6 +263,10 @@
     -fx-background-color: linear-gradient(to right, rgba(249, 115, 22, 0.95), rgba(217, 70, 239, 0.85));
 }
 
+.academic-banner {
+    -fx-background-color: linear-gradient(to right, rgba(14, 165, 233, 0.92), rgba(13, 148, 136, 0.94));
+}
+
 .admin-stats-banner {
     -fx-background-color: linear-gradient(to right, rgba(14, 116, 144, 0.92), rgba(37, 99, 235, 0.9));
 }
@@ -270,6 +303,18 @@
 .side-panel {
     -fx-min-width: 280px;
     -fx-pref-width: 300px;
+}
+
+.drawer-stack {
+    -fx-padding: 22 22 22 0;
+}
+
+.drawer-panel {
+    -fx-pref-width: 340px;
+    -fx-min-width: 320px;
+    -fx-background-color: white;
+    -fx-background-radius: 24;
+    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.10), 22, 0.16, 0, 10);
 }
 
 .admin-main-panel {

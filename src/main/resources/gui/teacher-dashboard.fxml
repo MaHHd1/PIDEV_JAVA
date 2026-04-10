@@ -1,15 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.MenuButton?>
 <?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.PasswordField?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="gui.TeacherDashboardController" styleClass="dashboard-shell teacher-shell">
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="gui.TeacherDashboardController" styleClass="dashboard-shell academic-shell teacher-shell">
+    <left>
+        <VBox spacing="16.0" styleClass="sidebar academic-sidebar">
+            <padding>
+                <Insets bottom="20.0" left="18.0" right="18.0" top="20.0" />
+            </padding>
+            <Label styleClass="sidebar-brand" text="Teacher Hub" />
+            <Label styleClass="sidebar-copy" text="Manage your profile, review students, and keep your account secure." wrapText="true" />
+            <Button maxWidth="1.7976931348623157E308" onAction="#showProfilePage" styleClass="sidebar-button" text="Profile" />
+            <Button maxWidth="1.7976931348623157E308" onAction="#showStudentsPage" styleClass="sidebar-button" text="Student Profiles" />
+            <Button maxWidth="1.7976931348623157E308" onAction="#showChangePasswordPage" styleClass="sidebar-button" text="Change Password" />
+            <VBox VBox.vgrow="ALWAYS" />
+            <Label styleClass="sidebar-foot" text="Teacher workspace" wrapText="true" />
+        </VBox>
+    </left>
     <top>
         <HBox alignment="CENTER_LEFT" spacing="18.0" styleClass="topbar profile-topbar">
             <VBox spacing="4.0">
@@ -24,6 +41,9 @@
                 </VBox>
                 <MenuButton fx:id="profileMenuButton" styleClass="profile-menu-button" text="TU">
                     <items>
+                        <MenuItem onAction="#showProfilePage" text="Profile" />
+                        <MenuItem onAction="#showStudentsPage" text="Student profiles" />
+                        <MenuItem onAction="#showChangePasswordPage" text="Change password" />
                         <MenuItem onAction="#handleProfileLogout" text="Disconnect" />
                     </items>
                 </MenuButton>
@@ -31,24 +51,59 @@
         </HBox>
     </top>
     <center>
-        <VBox spacing="18.0" styleClass="dashboard-content">
+        <StackPane styleClass="dashboard-content">
             <padding>
                 <Insets bottom="22.0" left="22.0" right="22.0" top="22.0" />
             </padding>
-            <VBox spacing="10.0" styleClass="hero-banner teacher-banner">
-                <Label styleClass="eyebrow" text="Teacher Space" />
-                <Label styleClass="hero-title small-hero" text="Stay on top of your teaching profile, workload, and course rhythm." wrapText="true" />
+
+            <VBox fx:id="profileSection" spacing="18.0">
+                <VBox spacing="10.0" styleClass="hero-banner academic-banner">
+                    <Label styleClass="eyebrow" text="Teacher Space" />
+                    <Label styleClass="hero-title small-hero" text="Stay on top of your profile, teaching status, and classroom rhythm." wrapText="true" />
+                </VBox>
+                <HBox spacing="18.0" VBox.vgrow="ALWAYS">
+                    <VBox spacing="10.0" styleClass="panel-card" HBox.hgrow="ALWAYS">
+                        <Label styleClass="panel-title" text="Profile Snapshot" />
+                        <ListView fx:id="profileList" VBox.vgrow="ALWAYS" />
+                    </VBox>
+                    <VBox spacing="10.0" styleClass="panel-card side-panel" HBox.hgrow="ALWAYS">
+                        <Label styleClass="panel-title" text="Teaching Focus" />
+                        <ListView fx:id="teachingList" VBox.vgrow="ALWAYS" />
+                    </VBox>
+                </HBox>
             </VBox>
-            <HBox spacing="18.0" VBox.vgrow="ALWAYS">
-                <VBox spacing="10.0" styleClass="panel-card" HBox.hgrow="ALWAYS">
-                    <Label styleClass="panel-title" text="Profile Snapshot" />
-                    <ListView fx:id="profileList" VBox.vgrow="ALWAYS" />
+
+            <VBox fx:id="studentsSection" managed="false" spacing="18.0" visible="false">
+                <VBox spacing="10.0" styleClass="hero-banner academic-banner">
+                    <Label styleClass="eyebrow" text="Students" />
+                    <Label styleClass="hero-title small-hero" text="Browse student profiles from the teacher dashboard." wrapText="true" />
                 </VBox>
-                <VBox spacing="10.0" styleClass="panel-card side-panel" HBox.hgrow="ALWAYS">
-                    <Label styleClass="panel-title" text="Teaching Focus" />
-                    <ListView fx:id="teachingList" VBox.vgrow="ALWAYS" />
+                <HBox spacing="18.0" VBox.vgrow="ALWAYS">
+                    <VBox spacing="10.0" styleClass="panel-card" HBox.hgrow="ALWAYS">
+                        <Label styleClass="panel-title" text="Student Profiles" />
+                        <ListView fx:id="studentsList" VBox.vgrow="ALWAYS" />
+                    </VBox>
+                    <VBox spacing="10.0" styleClass="panel-card side-panel" HBox.hgrow="ALWAYS">
+                        <Label styleClass="panel-title" text="Teacher Notes" />
+                        <ListView fx:id="studentInsightsList" VBox.vgrow="ALWAYS" />
+                    </VBox>
+                </HBox>
+            </VBox>
+
+            <VBox fx:id="changePasswordSection" managed="false" spacing="18.0" visible="false">
+                <VBox spacing="10.0" styleClass="hero-banner academic-banner">
+                    <Label styleClass="eyebrow" text="Security" />
+                    <Label styleClass="hero-title small-hero" text="Update your teacher account password." wrapText="true" />
                 </VBox>
-            </HBox>
-        </VBox>
+                <VBox maxWidth="520.0" spacing="14.0" styleClass="panel-card">
+                    <Label styleClass="panel-title" text="Change Password" />
+                    <PasswordField fx:id="currentPasswordField" promptText="Current password" styleClass="input-field" />
+                    <PasswordField fx:id="newPasswordField" promptText="New password" styleClass="input-field" />
+                    <PasswordField fx:id="confirmPasswordField" promptText="Confirm new password" styleClass="input-field" />
+                    <Button maxWidth="1.7976931348623157E308" onAction="#handleChangePassword" styleClass="primary-button" text="Update password" />
+                    <Label fx:id="changePasswordFeedbackLabel" styleClass="status-label" wrapText="true" />
+                </VBox>
+            </VBox>
+        </StackPane>
     </center>
 </BorderPane>

@@ -1,6 +1,7 @@
 package gui;
 
 import entities.Enseignant;
+import entities.Etudiant;
 import entities.Utilisateur;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -8,10 +9,16 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.MenuButton;
+import javafx.scene.control.PasswordField;
+import javafx.scene.layout.VBox;
+import services.AuthService;
+import services.EtudiantService;
 import utils.SceneManager;
 import utils.UserSession;
 
 import java.io.IOException;
+import java.sql.SQLException;
+import java.util.List;
 
 public class TeacherDashboardController {
 
@@ -36,13 +43,47 @@ public class TeacherDashboardController {
     @FXML
     private ListView<String> teachingList;
 
+    @FXML
+    private ListView<String> studentsList;
+
+    @FXML
+    private ListView<String> studentInsightsList;
+
+    @FXML
+    private VBox profileSection;
+
+    @FXML
+    private VBox studentsSection;
+
+    @FXML
+    private VBox changePasswordSection;
+
+    @FXML
+    private PasswordField currentPasswordField;
+
+    @FXML
+    private PasswordField newPasswordField;
+
+    @FXML
+    private PasswordField confirmPasswordField;
+
+    @FXML
+    private Label changePasswordFeedbackLabel;
+
     private final ObservableList<String> profileItems = FXCollections.observableArrayList();
     private final ObservableList<String> teachingItems = FXCollections.observableArrayList();
+    private final ObservableList<String> studentItems = FXCollections.observableArrayList();
+    private final ObservableList<String> studentInsightItems = FXCollections.observableArrayList();
+
+    private final AuthService authService = new AuthService();
+    private final EtudiantService etudiantService = new EtudiantService();
 
     @FXML
     private void initialize() {
         profileList.setItems(profileItems);
         teachingList.setItems(teachingItems);
+        studentsList.setItems(studentItems);
+        studentInsightsList.setItems(studentInsightItems);
 
         Utilisateur utilisateur = UserSession.getCurrentUser();
         if (utilisateur instanceof Enseignant) {
@@ -59,7 +100,8 @@ public class TeacherDashboardController {
                     "Teacher ID: " + enseignant.getMatriculeEnseignant(),
                     "Diploma: " + enseignant.getDiplome(),
                     "Speciality: " + enseignant.getSpecialite(),
-                    "Contract: " + enseignant.getTypeContrat()
+                    "Contract: " + enseignant.getTypeContrat(),
+                    "Status: " + enseignant.getStatut()
             );
         }
 
@@ -69,12 +111,138 @@ public class TeacherDashboardController {
                 "Track upcoming student interactions",
                 "Refresh academic content and announcements"
         );
+
+        loadStudentProfiles();
+        showProfilePage();
     }
 
     @FXML
     private void handleProfileLogout() throws IOException {
         UserSession.clear();
         SceneManager.switchScene("/gui/login.fxml", "Campus Access");
+    }
+
+    @FXML
+    private void showProfilePage() {
+        setSectionVisibility(true, false, false);
+    }
+
+    @FXML
+    private void showStudentsPage() {
+        setSectionVisibility(false, true, false);
+    }
+
+    @FXML
+    private void showChangePasswordPage() {
+        if (changePasswordFeedbackLabel != null) {
+            changePasswordFeedbackLabel.setText("");
+            changePasswordFeedbackLabel.getStyleClass().remove("status-success");
+        }
+        if (currentPasswordField != null) {
+            currentPasswordField.clear();
+        }
+        if (newPasswordField != null) {
+            newPasswordField.clear();
+        }
+        if (confirmPasswordField != null) {
+            confirmPasswordField.clear();
+        }
+        setSectionVisibility(false, false, true);
+    }
+
+    @FXML
+    private void handleChangePassword() {
+        Utilisateur currentUser = UserSession.getCurrentUser();
+        if (currentUser == null) {
+            setChangePasswordFeedback("No active user session.", false);
+            return;
+        }
+
+        String currentPassword = currentPasswordField.getText() != null ? currentPasswordField.getText() : "";
+        String newPassword = newPasswordField.getText() != null ? newPasswordField.getText() : "";
+        String confirmPassword = confirmPasswordField.getText() != null ? confirmPasswordField.getText() : "";
+
+        if (currentPassword.isEmpty() || newPassword.isEmpty() || confirmPassword.isEmpty()) {
+            setChangePasswordFeedback("Fill current password, new password, and confirmation.", false);
+            return;
+        }
+        if (!newPassword.equals(confirmPassword)) {
+            setChangePasswordFeedback("Password confirmation does not match.", false);
+            return;
+        }
+        if (newPassword.length() < 8) {
+            setChangePasswordFeedback("Password must contain at least 8 characters.", false);
+            return;
+        }
+
+        try {
+            boolean updated = authService.changePassword(currentUser, currentPassword, newPassword);
+            if (updated) {
+                setChangePasswordFeedback("Password updated successfully.", true);
+                currentPasswordField.clear();
+                newPasswordField.clear();
+                confirmPasswordField.clear();
+            } else {
+                setChangePasswordFeedback("Current password is incorrect.", false);
+            }
+        } catch (SQLException | IOException e) {
+            setChangePasswordFeedback("Password update failed: " + e.getMessage(), false);
+        }
+    }
+
+    private void loadStudentProfiles() {
+        try {
+            List<Etudiant> etudiants = etudiantService.getAll();
+            if (etudiants.isEmpty()) {
+                studentItems.setAll("No student profiles found.");
+                studentInsightItems.setAll("Student registry is currently empty.");
+                return;
+            }
+
+            studentItems.setAll(etudiants.stream()
+                    .map(etudiant -> etudiant.getNomComplet()
+                            + " | " + etudiant.getMatricule()
+                            + " | " + etudiant.getNiveauEtudeAbrege()
+                            + " | " + etudiant.getSpecialisation())
+                    .toList());
+
+            long activeStudents = etudiants.stream().filter(Etudiant::isActif).count();
+            studentInsightItems.setAll(
+                    "Total students: " + etudiants.size(),
+                    "Active students: " + activeStudents,
+                    "Browse profiles before planning follow-up sessions.",
+                    "Use this panel as a quick student directory."
+            );
+        } catch (SQLException e) {
+            studentItems.setAll("Failed to load students: " + e.getMessage());
+            studentInsightItems.setAll("Student data is unavailable right now.");
+        }
+    }
+
+    private void setSectionVisibility(boolean profileVisible, boolean studentsVisible, boolean changePasswordVisible) {
+        if (profileSection != null) {
+            profileSection.setVisible(profileVisible);
+            profileSection.setManaged(profileVisible);
+        }
+        if (studentsSection != null) {
+            studentsSection.setVisible(studentsVisible);
+            studentsSection.setManaged(studentsVisible);
+        }
+        if (changePasswordSection != null) {
+            changePasswordSection.setVisible(changePasswordVisible);
+            changePasswordSection.setManaged(changePasswordVisible);
+        }
+    }
+
+    private void setChangePasswordFeedback(String message, boolean success) {
+        if (changePasswordFeedbackLabel == null) {
+            return;
+        }
+        changePasswordFeedbackLabel.setText(message != null ? message : "");
+        changePasswordFeedbackLabel.getStyleClass().remove("status-success");
+        if (success) {
+            changePasswordFeedbackLabel.getStyleClass().add("status-success");
+        }
     }
 
     private String buildInitials(Utilisateur utilisateur) {

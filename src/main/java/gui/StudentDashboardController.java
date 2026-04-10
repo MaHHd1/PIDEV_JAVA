@@ -8,10 +8,14 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.MenuButton;
+import javafx.scene.control.PasswordField;
+import javafx.scene.layout.VBox;
+import services.AuthService;
 import utils.SceneManager;
 import utils.UserSession;
 
 import java.io.IOException;
+import java.sql.SQLException;
 
 public class StudentDashboardController {
 
@@ -36,8 +40,28 @@ public class StudentDashboardController {
     @FXML
     private ListView<String> focusList;
 
+    @FXML
+    private VBox profileSection;
+
+    @FXML
+    private VBox changePasswordSection;
+
+    @FXML
+    private PasswordField currentPasswordField;
+
+    @FXML
+    private PasswordField newPasswordField;
+
+    @FXML
+    private PasswordField confirmPasswordField;
+
+    @FXML
+    private Label changePasswordFeedbackLabel;
+
     private final ObservableList<String> profileItems = FXCollections.observableArrayList();
     private final ObservableList<String> focusItems = FXCollections.observableArrayList();
+
+    private final AuthService authService = new AuthService();
 
     @FXML
     private void initialize() {
@@ -69,6 +93,8 @@ public class StudentDashboardController {
                 "Continue from your current specialization",
                 "Prepare for upcoming platform modules"
         );
+
+        showProfilePage();
     }
 
     @FXML
@@ -77,11 +103,90 @@ public class StudentDashboardController {
         SceneManager.switchScene("/gui/login.fxml", "Campus Access");
     }
 
+    @FXML
+    private void showProfilePage() {
+        setSectionVisibility(true, false);
+    }
+
+    @FXML
+    private void showChangePasswordPage() {
+        if (changePasswordFeedbackLabel != null) {
+            changePasswordFeedbackLabel.setText("");
+            changePasswordFeedbackLabel.getStyleClass().remove("status-success");
+        }
+        if (currentPasswordField != null) currentPasswordField.clear();
+        if (newPasswordField != null) newPasswordField.clear();
+        if (confirmPasswordField != null) confirmPasswordField.clear();
+        setSectionVisibility(false, true);
+    }
+
+    @FXML
+    private void handleChangePassword() {
+        Utilisateur currentUser = UserSession.getCurrentUser();
+        if (currentUser == null) {
+            setChangePasswordFeedback("No active user session.", false);
+            return;
+        }
+
+        String currentPassword = currentPasswordField.getText() != null ? currentPasswordField.getText() : "";
+        String newPassword = newPasswordField.getText() != null ? newPasswordField.getText() : "";
+        String confirmPassword = confirmPasswordField.getText() != null ? confirmPasswordField.getText() : "";
+
+        if (currentPassword.isEmpty() || newPassword.isEmpty() || confirmPassword.isEmpty()) {
+            setChangePasswordFeedback("Fill current password, new password, and confirmation.", false);
+            return;
+        }
+        if (!newPassword.equals(confirmPassword)) {
+            setChangePasswordFeedback("Password confirmation does not match.", false);
+            return;
+        }
+        if (newPassword.length() < 8) {
+            setChangePasswordFeedback("Password must contain at least 8 characters.", false);
+            return;
+        }
+
+        try {
+            boolean updated = authService.changePassword(currentUser, currentPassword, newPassword);
+            if (updated) {
+                setChangePasswordFeedback("Password updated successfully.", true);
+                currentPasswordField.clear();
+                newPasswordField.clear();
+                confirmPasswordField.clear();
+            } else {
+                setChangePasswordFeedback("Current password is incorrect.", false);
+            }
+        } catch (SQLException | IOException e) {
+            setChangePasswordFeedback("Password update failed: " + e.getMessage(), false);
+        }
+    }
+
     private String buildInitials(Utilisateur utilisateur) {
         String prenom = utilisateur.getPrenom() != null && !utilisateur.getPrenom().isBlank()
                 ? utilisateur.getPrenom().substring(0, 1).toUpperCase() : "";
         String nom = utilisateur.getNom() != null && !utilisateur.getNom().isBlank()
                 ? utilisateur.getNom().substring(0, 1).toUpperCase() : "";
         return prenom + nom;
+    }
+
+    private void setSectionVisibility(boolean profileVisible, boolean changePasswordVisible) {
+        if (profileSection != null) {
+            profileSection.setVisible(profileVisible);
+            profileSection.setManaged(profileVisible);
+        }
+        if (changePasswordSection != null) {
+            changePasswordSection.setVisible(changePasswordVisible);
+            changePasswordSection.setManaged(changePasswordVisible);
+        }
+    }
+
+    private void setChangePasswordFeedback(String message, boolean success) {
+        if (changePasswordFeedbackLabel == null) {
+            return;
+        }
+        changePasswordFeedbackLabel.setText(message != null ? message : "");
+        changePasswordFeedbackLabel.getStyleClass().remove("status-success");
+        if (success) {
+            changePasswordFeedbackLabel.getStyleClass().add("status-success");
+        }
     }
 }
