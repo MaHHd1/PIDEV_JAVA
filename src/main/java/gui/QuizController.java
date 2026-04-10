@@ -1,8 +1,10 @@
 package gui;
 
+import entities.Cours;
 import entities.Question;
 import entities.Reponse;
 import entities.Quiz;
+import entities.ResultatQuiz;
 import entities.Utilisateur;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -12,15 +14,19 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.util.StringConverter;
+import services.CoursService;
 import services.QuestionService;
 import services.QuizService;
 import services.ReponseService;
+import services.ResultatQuizService;
 import utils.SceneManager;
 import utils.UserSession;
 
 import java.io.IOException;
 import java.net.URL;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.ResourceBundle;
 
@@ -56,6 +62,7 @@ public class QuizController implements Initializable {
     @FXML private Label detailQuizDispoLabel;
     @FXML private Label detailQuizDescLabel;
     @FXML private Label detailQuizInstructionsLabel;
+    @FXML private Label detailQuizCoursLabel;
 
     // ── PAGE 2 : FORMULAIRE QUIZ ──────────────────────────────────
     @FXML private VBox      quizFormSection;
@@ -74,8 +81,10 @@ public class QuizController implements Initializable {
     @FXML private Label      quizDateDebutErrorLabel;
     @FXML private DatePicker quizDateFinPicker;
     @FXML private Label      quizDateFinErrorLabel;
-    @FXML private TextField  quizIdCoursField;
-    @FXML private Label      quizIdCoursErrorLabel;
+
+    @FXML private ComboBox<Cours> quizCoursCombo;
+    @FXML private Label           quizCoursErrorLabel;
+
     @FXML private TextArea   quizInstructionsArea;
     @FXML private Label      quizInstructionsErrorLabel;
     @FXML private TextArea   quizDescriptionArea;
@@ -110,7 +119,7 @@ public class QuizController implements Initializable {
     @FXML private Label     questionTexteErrorLabel;
     @FXML private ComboBox<String> questionTypeCombo;
     @FXML private Label     questionTypeErrorLabel;
-    @FXML private Label     questionTypeHintLabel;       // hint affiché dans le panel Paramètres
+    @FXML private Label     questionTypeHintLabel;
     @FXML private Spinner<Integer> questionPointsSpinner;
     @FXML private Label     questionPointsErrorLabel;
     @FXML private Spinner<Integer> questionOrdreSpinner;
@@ -119,24 +128,19 @@ public class QuizController implements Initializable {
     @FXML private Label     questionFormStatusLabel;
 
     // ── Panels dynamiques réponses (PAGE 4) ──────────────────────
-
-    // Vrai / Faux
     @FXML private VBox        reponsesVraiFauxPanel;
     @FXML private RadioButton vraiFauxVraiRadio;
     @FXML private RadioButton vraiFauxFauxRadio;
     @FXML private Label       vraiFauxErrorLabel;
 
-    // Choix unique
     @FXML private VBox  reponsesChoixUniquePanel;
     @FXML private VBox  choixUniqueReponsesContainer;
     @FXML private Label choixUniqueErrorLabel;
 
-    // Choix multiple
     @FXML private VBox  reponsesChoixMultiplePanel;
     @FXML private VBox  choixMultipleReponsesContainer;
     @FXML private Label choixMultipleErrorLabel;
 
-    // Texte libre
     @FXML private VBox     reponsesTexteLibrePanel;
     @FXML private TextArea texteLibreReponseArea;
     @FXML private Label    texteLibreErrorLabel;
@@ -166,6 +170,26 @@ public class QuizController implements Initializable {
     @FXML private TextField reponseMediaUrlField;
     @FXML private Label     reponseFormStatusLabel;
 
+    // ── PAGE 6 : RÉSULTATS ────────────────────────────────────────
+    @FXML private VBox  resultatsSection;
+    @FXML private Label resultatsSectionTitleLabel;
+    @FXML private Label resultatsSectionSubtitleLabel;
+    @FXML private Label resultatsMessageLabel;
+
+    @FXML private Label statsMoyenneLabel;
+    @FXML private Label statsMeilleurLabel;
+    @FXML private Label statsPlusBas;
+    @FXML private Label statsTotalLabel;
+
+    @FXML private TableView<Object[]>  resultatsTable;
+    @FXML private TableColumn<Object[], String>  resNomColumn;
+    @FXML private TableColumn<Object[], String>  resPrenomColumn;
+    @FXML private TableColumn<Object[], String>  resMatriculeColumn;
+    @FXML private TableColumn<Object[], Double>  resScoreColumn;
+    @FXML private TableColumn<Object[], String>  resPointsColumn;
+    @FXML private TableColumn<Object[], String>  resDateColumn;
+    @FXML private TableColumn<Object[], String>  resMentionColumn;
+
     // ── État interne ──────────────────────────────────────────────
     private Quiz     selectedQuiz     = null;
     private Quiz     editingQuiz      = null;
@@ -174,16 +198,21 @@ public class QuizController implements Initializable {
     private Question editingQuestion  = null;
     private Reponse  editingReponse   = null;
 
-    // ToggleGroup pour choix_unique (créé en code car partagé entre lignes dynamiques)
     private final ToggleGroup choixUniqueGroup = new ToggleGroup();
 
-    private final QuizService     quizService     = new QuizService();
-    private final QuestionService questionService = new QuestionService();
-    private final ReponseService  reponseService  = new ReponseService();
+    private final QuizService          quizService          = new QuizService();
+    private final QuestionService      questionService      = new QuestionService();
+    private final ReponseService       reponseService       = new ReponseService();
+    private final CoursService         coursService         = new CoursService();
+    private final ResultatQuizService  resultatQuizService  = new ResultatQuizService();
 
     private final ObservableList<Quiz>     quizList     = FXCollections.observableArrayList();
     private final ObservableList<Question> questionList = FXCollections.observableArrayList();
     private final ObservableList<Reponse>  reponseList  = FXCollections.observableArrayList();
+    private final ObservableList<Object[]> resultatList = FXCollections.observableArrayList();
+
+    private static final DateTimeFormatter DT_FMT =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     // ═════════════════════════════════════════════════════════════
     // INITIALISATION
@@ -200,7 +229,22 @@ public class QuizController implements Initializable {
             quizCorrectionApresCombo.setItems(FXCollections.observableArrayList(
                     "Immédiate", "Après soumission", "Manuelle"));
 
-        // ComboBox question — déclenche onTypeChanged à chaque sélection
+        // ComboBox cours
+        if (quizCoursCombo != null) {
+            quizCoursCombo.setConverter(new StringConverter<Cours>() {
+                @Override
+                public String toString(Cours c) {
+                    if (c == null) return "— Aucun cours —";
+                    String code = (c.getCodeCours() != null && !c.getCodeCours().isEmpty())
+                            ? "[" + c.getCodeCours() + "] " : "";
+                    return code + c.getTitre();
+                }
+                @Override public Cours fromString(String s) { return null; }
+            });
+            loadCoursList();
+        }
+
+        // ComboBox question
         if (questionTypeCombo != null) {
             questionTypeCombo.setItems(FXCollections.observableArrayList(
                     "choix_unique", "choix_multiple", "vrai_faux", "texte_libre"));
@@ -218,14 +262,17 @@ public class QuizController implements Initializable {
                 ((TableColumn<Quiz, Void>) quizActionsColumn).setCellFactory(col -> new TableCell<>() {
                     private final Button btnEdit  = new Button("✏ Modifier");
                     private final Button btnQuest = new Button("❓ Questions");
+                    private final Button btnRes   = new Button("📊 Résultats");
                     private final Button btnDel   = new Button("🗑 Supprimer");
-                    private final HBox   box      = new HBox(6, btnEdit, btnQuest, btnDel);
+                    private final HBox   box      = new HBox(6, btnEdit, btnQuest, btnRes, btnDel);
                     {
                         btnEdit .getStyleClass().addAll("secondary-button", "table-action-button");
                         btnQuest.getStyleClass().addAll("primary-button",   "table-action-button");
+                        btnRes  .getStyleClass().addAll("secondary-button", "table-action-button");
                         btnDel  .getStyleClass().addAll("danger-button",    "table-action-button");
                         btnEdit .setOnAction(e -> startEditQuiz(getTableView().getItems().get(getIndex())));
                         btnQuest.setOnAction(e -> openQuestionsPage(getTableView().getItems().get(getIndex())));
+                        btnRes  .setOnAction(e -> openResultatsPage(getTableView().getItems().get(getIndex())));
                         btnDel  .setOnAction(e -> confirmDeleteQuiz(getTableView().getItems().get(getIndex())));
                     }
                     @Override protected void updateItem(Void item, boolean empty) {
@@ -298,6 +345,9 @@ public class QuizController implements Initializable {
             reponsesTable.setItems(reponseList);
         }
 
+        // TableView résultats
+        setupResultatsTable();
+
         // Listeners dates quiz
         if (quizDateDebutPicker != null)
             quizDateDebutPicker.valueProperty().addListener((obs, ov, nv) -> updateDateRangeInfo());
@@ -316,12 +366,30 @@ public class QuizController implements Initializable {
     }
 
     // ═════════════════════════════════════════════════════════════
+    // CHARGEMENT DES COURS
+    // ═════════════════════════════════════════════════════════════
+    private void loadCoursList() {
+        if (quizCoursCombo == null) return;
+        try {
+            List<Cours> cours = coursService.getAll();
+            ObservableList<Cours> items = FXCollections.observableArrayList();
+            items.add(null);
+            items.addAll(cours);
+            quizCoursCombo.setItems(items);
+        } catch (Exception e) {
+            System.err.println("Impossible de charger les cours : " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    // ═════════════════════════════════════════════════════════════
     // NAVIGATION
     // ═════════════════════════════════════════════════════════════
     private void showOnly(VBox target) {
         for (VBox s : new VBox[]{
                 quizListSection, quizFormSection,
-                questionsSection, questionFormSection, reponsesSection })
+                questionsSection, questionFormSection,
+                reponsesSection, resultatsSection })
             if (s != null) { s.setVisible(false); s.setManaged(false); }
         if (target != null) { target.setVisible(true); target.setManaged(true); }
     }
@@ -377,6 +445,7 @@ public class QuizController implements Initializable {
         showOnly(quizFormSection);
         setText(sectionTitleLabel,  "Nouveau quiz");
         setText(quizFormTitleLabel, "Nouveau quiz");
+        loadCoursList();
         clearQuizForm();
     }
 
@@ -396,10 +465,12 @@ public class QuizController implements Initializable {
             if (quizTentativesSpinner.getValue() != null)    quiz.setNombreTentativesAutorisees(quizTentativesSpinner.getValue());
             if (quizDateDebutPicker.getValue() != null)      quiz.setDateDebutDisponibilite(quizDateDebutPicker.getValue().atStartOfDay());
             if (quizDateFinPicker.getValue() != null)        quiz.setDateFinDisponibilite(quizDateFinPicker.getValue().atTime(23, 59));
-            if (quizIdCoursField != null && !quizIdCoursField.getText().trim().isEmpty()) {
-                try { quiz.setIdCours(Integer.parseInt(quizIdCoursField.getText().trim())); }
-                catch (NumberFormatException ignored) {}
+
+            if (quizCoursCombo != null) {
+                Cours coursSelectionne = quizCoursCombo.getValue();
+                quiz.setIdCours(coursSelectionne != null ? coursSelectionne.getId() : null);
             }
+
             if (quizInstructionsArea != null) quiz.setInstructions(quizInstructionsArea.getText().trim());
             if (quizDescriptionArea  != null) quiz.setDescription(quizDescriptionArea.getText().trim());
 
@@ -508,7 +579,6 @@ public class QuizController implements Initializable {
                 saveReponsesInline(question);
             } else {
                 questionService.update(question);
-                // Supprimer les anciennes réponses et recréer
                 List<Reponse> old = reponseService.getByQuestion(question.getId());
                 for (Reponse r : old) reponseService.delete(r.getId().intValue());
                 saveReponsesInline(question);
@@ -562,7 +632,6 @@ public class QuizController implements Initializable {
         }
     }
 
-    // ── Ajout de lignes réponses dynamiques ──────────────────────
     @FXML private void addChoixUniqueRow() {
         if (choixUniqueReponsesContainer == null) return;
         int index = choixUniqueReponsesContainer.getChildren().size() + 1;
@@ -606,7 +675,6 @@ public class QuizController implements Initializable {
         choixMultipleReponsesContainer.getChildren().add(row);
     }
 
-    // ── Sauvegarde des réponses inline ───────────────────────────
     private void saveReponsesInline(Question question) throws Exception {
         String type = question.getTypeQuestion();
         if (type == null) return;
@@ -715,6 +783,134 @@ public class QuizController implements Initializable {
     }
 
     // ═════════════════════════════════════════════════════════════
+    // PAGE 6 — RÉSULTATS
+    // ═════════════════════════════════════════════════════════════
+
+    /** Configure les colonnes de la TableView résultats avec CellValueFactory personnalisées. */
+    private void setupResultatsTable() {
+        if (resultatsTable == null) return;
+
+        resNomColumn.setCellValueFactory(cd ->
+                new javafx.beans.property.SimpleStringProperty(
+                        cd.getValue()[1] != null ? (String) cd.getValue()[1] : "—"));
+
+        resPrenomColumn.setCellValueFactory(cd ->
+                new javafx.beans.property.SimpleStringProperty(
+                        cd.getValue()[2] != null ? (String) cd.getValue()[2] : "—"));
+
+        resMatriculeColumn.setCellValueFactory(cd ->
+                new javafx.beans.property.SimpleStringProperty(
+                        cd.getValue()[3] != null ? (String) cd.getValue()[3] : "—"));
+
+        resScoreColumn.setCellValueFactory(cd -> {
+            ResultatQuiz r = (ResultatQuiz) cd.getValue()[0];
+            return new javafx.beans.property.SimpleObjectProperty<>(r.getScore());
+        });
+        resScoreColumn.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(Double score, boolean empty) {
+                super.updateItem(score, empty);
+                if (empty || score == null) {
+                    setText(null); setStyle("");
+                } else {
+                    setText(String.format("%.1f %%", score));
+                    if (score >= 75)
+                        setStyle("-fx-text-fill:#16a34a; -fx-font-weight:700;");
+                    else if (score >= 60)
+                        setStyle("-fx-text-fill:#b45309; -fx-font-weight:700;");
+                    else
+                        setStyle("-fx-text-fill:#dc2626; -fx-font-weight:700;");
+                }
+            }
+        });
+
+        resPointsColumn.setCellValueFactory(cd -> {
+            ResultatQuiz r = (ResultatQuiz) cd.getValue()[0];
+            return new javafx.beans.property.SimpleStringProperty(
+                    r.getEarnedPoints() + " / " + r.getTotalPoints());
+        });
+
+        resDateColumn.setCellValueFactory(cd -> {
+            ResultatQuiz r = (ResultatQuiz) cd.getValue()[0];
+            String date = r.getDatePassation() != null
+                    ? r.getDatePassation().format(DT_FMT) : "—";
+            return new javafx.beans.property.SimpleStringProperty(date);
+        });
+
+        resMentionColumn.setCellValueFactory(cd -> {
+            ResultatQuiz r = (ResultatQuiz) cd.getValue()[0];
+            return new javafx.beans.property.SimpleStringProperty(mention(r.getScore()));
+        });
+
+        resultatsTable.setItems(resultatList);
+    }
+
+    /** Ouvre la page résultats pour un quiz donné. */
+    private void openResultatsPage(Quiz quiz) {
+        currentQuiz = quiz;
+        showOnly(resultatsSection);
+        setText(sectionTitleLabel,             "Résultats — " + quiz.getTitre());
+        setText(sectionSubtitleLabel,          "Notes et performances des étudiants.");
+        setText(resultatsSectionTitleLabel,    quiz.getTitre());
+        setText(resultatsSectionSubtitleLabel,
+                "Durée : " + (quiz.getDureeMinutes() != null ? quiz.getDureeMinutes() + " min" : "—")
+                        + " · Tentatives max : "
+                        + (quiz.getNombreTentativesAutorisees() != null
+                        ? quiz.getNombreTentativesAutorisees() : "—"));
+        loadResultats(quiz);
+    }
+
+    /** Action du bouton "← Retour quiz" depuis la page résultats. */
+    @FXML
+    private void backToQuizListFromResultats() {
+        currentQuiz = null;
+        showQuizListPage();
+    }
+
+    /** Charge les résultats depuis la BD et met à jour la TableView + cartes stats. */
+    private void loadResultats(Quiz quiz) {
+        resultatList.clear();
+        setText(resultatsMessageLabel, "");
+        resetStatsLabels();
+
+        try {
+            List<Object[]> rows = resultatQuizService.getByQuizWithEtudiant(quiz.getId());
+
+            if (rows.isEmpty()) {
+                setText(resultatsMessageLabel, "Aucun étudiant n'a encore passé ce quiz.");
+                return;
+            }
+
+            resultatList.setAll(rows);
+
+            // Statistiques agrégées
+            double[] stats = resultatQuizService.getStatsQuiz(quiz.getId());
+            setText(statsMoyenneLabel,  String.format("%.1f %%", stats[0]));
+            setText(statsMeilleurLabel, String.format("%.1f %%", stats[1]));
+            setText(statsPlusBas,       String.format("%.1f %%", stats[2]));
+            setText(statsTotalLabel,    String.valueOf((int) stats[3]));
+
+        } catch (Exception e) {
+            setStatus(resultatsMessageLabel, "Chargement impossible : " + e.getMessage(), true);
+            e.printStackTrace();
+        }
+    }
+
+    private void resetStatsLabels() {
+        setText(statsMoyenneLabel,  "—");
+        setText(statsMeilleurLabel, "—");
+        setText(statsPlusBas,       "—");
+        setText(statsTotalLabel,    "—");
+    }
+
+    private static String mention(double score) {
+        if (score >= 90) return "🏆 Excellent";
+        if (score >= 75) return "✅ Bien";
+        if (score >= 60) return "📘 Passable";
+        return "❌ Insuffisant";
+    }
+
+    // ═════════════════════════════════════════════════════════════
     // CHARGEMENT
     // ═════════════════════════════════════════════════════════════
     private void loadQuizList() {
@@ -769,6 +965,7 @@ public class QuizController implements Initializable {
         showOnly(quizFormSection);
         setText(sectionTitleLabel,  "Modifier le quiz");
         setText(quizFormTitleLabel, "Modifier le quiz");
+        loadCoursList();
         populateQuizForm(quiz);
     }
 
@@ -808,6 +1005,25 @@ public class QuizController implements Initializable {
         setText(detailQuizDispoLabel,      quiz.getDateFinDisponibilite() != null
                 ? quiz.getDateFinDisponibilite().toLocalDate().toString() : "-");
         setText(detailQuizDescLabel,       safe(quiz.getDescription()));
+
+        if (detailQuizCoursLabel != null) {
+            if (quiz.getIdCours() != null) {
+                try {
+                    Cours cours = coursService.getById(quiz.getIdCours());
+                    if (cours != null) {
+                        String code = (cours.getCodeCours() != null && !cours.getCodeCours().isEmpty())
+                                ? "[" + cours.getCodeCours() + "] " : "";
+                        setText(detailQuizCoursLabel, code + cours.getTitre());
+                    } else {
+                        setText(detailQuizCoursLabel, "ID " + quiz.getIdCours());
+                    }
+                } catch (Exception e) {
+                    setText(detailQuizCoursLabel, "ID " + quiz.getIdCours());
+                }
+            } else {
+                setText(detailQuizCoursLabel, "—");
+            }
+        }
     }
 
     private void populateQuizForm(Quiz quiz) {
@@ -823,16 +1039,21 @@ public class QuizController implements Initializable {
             quizDateDebutPicker.setValue(quiz.getDateDebutDisponibilite().toLocalDate());
         if (quizDateFinPicker        != null && quiz.getDateFinDisponibilite() != null)
             quizDateFinPicker.setValue(quiz.getDateFinDisponibilite().toLocalDate());
-        if (quizIdCoursField         != null && quiz.getIdCours() != null)
-            quizIdCoursField.setText(String.valueOf(quiz.getIdCours()));
         if (quizInstructionsArea     != null) quizInstructionsArea.setText(safe(quiz.getInstructions()));
         if (quizDescriptionArea      != null) quizDescriptionArea.setText(safe(quiz.getDescription()));
+
+        if (quizCoursCombo != null && quiz.getIdCours() != null) {
+            quizCoursCombo.getItems().stream()
+                    .filter(c -> c != null && c.getId().equals(quiz.getIdCours()))
+                    .findFirst()
+                    .ifPresent(c -> quizCoursCombo.setValue(c));
+        }
     }
 
     private void updateDateRangeInfo() {
         if (quizDateRangeInfoLabel == null) return;
-        LocalDate d = quizDateDebutPicker != null ? quizDateDebutPicker.getValue() : null;
-        LocalDate f = quizDateFinPicker   != null ? quizDateFinPicker.getValue()   : null;
+        java.time.LocalDate d = quizDateDebutPicker != null ? quizDateDebutPicker.getValue() : null;
+        java.time.LocalDate f = quizDateFinPicker   != null ? quizDateFinPicker.getValue()   : null;
         if (d == null && f == null) {
             setText(quizDateRangeInfoLabel, "Sélectionnez les deux dates pour voir la période.");
             quizDateRangeInfoLabel.setStyle("-fx-text-fill:#64748b;");
@@ -971,7 +1192,6 @@ public class QuizController implements Initializable {
         if (questionExplicationArea != null)
             questionExplicationArea.setText(safe(q.getExplicationReponse()));
 
-        // Pré-remplir les réponses existantes dans les widgets
         try {
             List<Reponse> reponses = reponseService.getByQuestion(q.getId());
             String type = q.getTypeQuestion();
@@ -1062,8 +1282,8 @@ public class QuizController implements Initializable {
             setText(quizDateFinErrorLabel, "La date de clôture est obligatoire."); ok = false;
         }
         if (quizDateDebutPicker != null && quizDateFinPicker != null) {
-            LocalDate d = quizDateDebutPicker.getValue();
-            LocalDate f = quizDateFinPicker.getValue();
+            java.time.LocalDate d = quizDateDebutPicker.getValue();
+            java.time.LocalDate f = quizDateFinPicker.getValue();
             if (d != null && f != null && !f.isAfter(d)) {
                 setText(quizDateFinErrorLabel, "La date de clôture doit être après la date d'ouverture."); ok = false;
             }
@@ -1120,12 +1340,11 @@ public class QuizController implements Initializable {
         return true;
     }
 
-    // ─── Nettoyage erreurs ──
     private void clearQuizFormErrors() {
         setText(quizTitreErrorLabel, "");       setText(quizTypeErrorLabel, "");
         setText(quizCorrectionErrorLabel, "");  setText(quizDureeErrorLabel, "");
         setText(quizTentativesErrorLabel, "");  setText(quizDateDebutErrorLabel, "");
-        setText(quizDateFinErrorLabel, "");     setText(quizIdCoursErrorLabel, "");
+        setText(quizDateFinErrorLabel, "");     setText(quizCoursErrorLabel, "");
         setText(quizInstructionsErrorLabel, "");setText(quizDescriptionErrorLabel, "");
         setText(quizFormStatusLabel, "");
     }
@@ -1143,7 +1362,6 @@ public class QuizController implements Initializable {
         setText(texteLibreErrorLabel,          "");
     }
 
-    // ─── Nettoyage formulaires ──
     private void clearQuizForm() {
         clearQuizFormErrors();
         if (quizTitreField           != null) quizTitreField.clear();
@@ -1151,7 +1369,7 @@ public class QuizController implements Initializable {
         if (quizCorrectionApresCombo != null) quizCorrectionApresCombo.setValue(null);
         if (quizDateDebutPicker      != null) quizDateDebutPicker.setValue(null);
         if (quizDateFinPicker        != null) quizDateFinPicker.setValue(null);
-        if (quizIdCoursField         != null) quizIdCoursField.clear();
+        if (quizCoursCombo           != null) quizCoursCombo.setValue(null);
         if (quizInstructionsArea     != null) quizInstructionsArea.clear();
         if (quizDescriptionArea      != null) quizDescriptionArea.clear();
         if (quizDateRangeInfoLabel   != null)
@@ -1166,14 +1384,12 @@ public class QuizController implements Initializable {
         if (questionPointsSpinner   != null) questionPointsSpinner.getValueFactory().setValue(1);
         if (questionOrdreSpinner    != null) questionOrdreSpinner.getValueFactory().setValue(1);
 
-        // Reset panels réponses
-        if (vraiFauxVraiRadio           != null) vraiFauxVraiRadio.setSelected(false);
-        if (vraiFauxFauxRadio           != null) vraiFauxFauxRadio.setSelected(false);
+        if (vraiFauxVraiRadio              != null) vraiFauxVraiRadio.setSelected(false);
+        if (vraiFauxFauxRadio              != null) vraiFauxFauxRadio.setSelected(false);
         if (choixUniqueReponsesContainer   != null) choixUniqueReponsesContainer.getChildren().clear();
         if (choixMultipleReponsesContainer != null) choixMultipleReponsesContainer.getChildren().clear();
         if (texteLibreReponseArea          != null) texteLibreReponseArea.clear();
 
-        // Masquer tous les panels
         hidePanel(reponsesVraiFauxPanel);
         hidePanel(reponsesChoixUniquePanel);
         hidePanel(reponsesChoixMultiplePanel);

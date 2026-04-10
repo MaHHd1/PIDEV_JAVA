@@ -217,4 +217,54 @@ public class ResultatQuizService implements IService<ResultatQuiz> {
 
         return r;
     }
+    /**
+     * Retourne les résultats d'un quiz enrichis avec nom/prénom/matricule de l'étudiant.
+     * Retourne une liste de tableaux Object[] :
+     *   [0] ResultatQuiz, [1] nom, [2] prenom, [3] matricule
+     */
+    public List<Object[]> getByQuizWithEtudiant(long quizId) throws SQLException {
+        List<Object[]> list = new ArrayList<>();
+        String sql = "SELECT rq.*, u.nom, u.prenom, e.matricule " +
+                "FROM resultat_quiz rq " +
+                "JOIN utilisateur u ON rq.id_etudiant = u.id " +
+                "LEFT JOIN etudiant e ON rq.id_etudiant = e.id " +
+                "WHERE rq.quiz_id = ? " +
+                "ORDER BY rq.score DESC, rq.date_passation ASC";
+        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+            ps.setLong(1, quizId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    ResultatQuiz r = mapResultat(rs);
+                    String nom      = rs.getString("nom");
+                    String prenom   = rs.getString("prenom");
+                    String matricule = rs.getString("matricule");
+                    list.add(new Object[]{r, nom, prenom, matricule});
+                }
+            }
+        }
+        return list;
+    }
+
+    /**
+     * Statistiques agrégées pour un quiz.
+     * Retourne double[] : [0] moyenne, [1] meilleur, [2] plus bas, [3] nb tentatives
+     */
+    public double[] getStatsQuiz(long quizId) throws SQLException {
+        String sql = "SELECT AVG(score), MAX(score), MIN(score), COUNT(*) " +
+                "FROM resultat_quiz WHERE quiz_id = ?";
+        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+            ps.setLong(1, quizId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return new double[]{
+                            rs.wasNull() ? 0 : rs.getDouble(1),
+                            rs.getDouble(2),
+                            rs.getDouble(3),
+                            rs.getDouble(4)
+                    };
+                }
+            }
+        }
+        return new double[]{0, 0, 0, 0};
+    }
 }

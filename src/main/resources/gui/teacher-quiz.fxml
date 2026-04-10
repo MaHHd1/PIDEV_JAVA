@@ -96,16 +96,17 @@
                         <Label styleClass="panel-title" text="Liste des quiz"/>
                         <TableView fx:id="quizTable" VBox.vgrow="ALWAYS">
                             <columns>
-                                <TableColumn fx:id="quizTitreColumn"     prefWidth="220.0" text="Titre"/>
-                                <TableColumn fx:id="quizTypeColumn"      prefWidth="120.0" text="Type"/>
+                                <TableColumn fx:id="quizTitreColumn"     prefWidth="200.0" text="Titre"/>
+                                <TableColumn fx:id="quizTypeColumn"      prefWidth="110.0" text="Type"/>
                                 <TableColumn fx:id="quizDureeColumn"     prefWidth="90.0"  text="Durée (min)"/>
                                 <TableColumn fx:id="quizQuestionsColumn" prefWidth="100.0" text="Cours"/>
-                                <TableColumn fx:id="quizDispoColumn"     prefWidth="180.0" text="Disponible jusqu'au"/>
-                                <TableColumn fx:id="quizActionsColumn"   prefWidth="260.0" text="Actions"/>
+                                <TableColumn fx:id="quizDispoColumn"     prefWidth="160.0" text="Disponible jusqu'au"/>
+                                <TableColumn fx:id="quizActionsColumn"   prefWidth="320.0" text="Actions"/>
                             </columns>
                         </TableView>
                     </VBox>
 
+                    <!-- ── Fiche quiz (panneau latéral) ── -->
                     <VBox fx:id="quizDetailsPanel" managed="false" visible="false"
                           spacing="14.0" styleClass="panel-card modules-detail-panel">
                         <HBox alignment="CENTER_LEFT" spacing="10.0">
@@ -130,8 +131,10 @@
                             <Label fx:id="detailQuizCorrectionLabel" styleClass="detail-value detail-multiline wide-detail" text="-" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
                             <Label styleClass="detail-key" text="Disponibilité" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
                             <Label fx:id="detailQuizDispoLabel"      styleClass="detail-value detail-multiline wide-detail" text="-" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="4"/>
-                            <Label styleClass="detail-key" text="Description"   GridPane.columnIndex="0" GridPane.rowIndex="5"/>
-                            <Label fx:id="detailQuizDescLabel"       styleClass="detail-value detail-multiline wide-detail" text="-" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="5"/>
+                            <Label styleClass="detail-key" text="Cours"         GridPane.columnIndex="0" GridPane.rowIndex="5"/>
+                            <Label fx:id="detailQuizCoursLabel"      styleClass="detail-value detail-multiline wide-detail" text="—" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="5"/>
+                            <Label styleClass="detail-key" text="Description"   GridPane.columnIndex="0" GridPane.rowIndex="6"/>
+                            <Label fx:id="detailQuizDescLabel"       styleClass="detail-value detail-multiline wide-detail" text="-" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="6"/>
                         </GridPane>
                         <HBox spacing="8.0">
                             <Button onAction="#editSelectedQuiz"
@@ -160,6 +163,8 @@
                     <content>
                         <VBox spacing="20.0">
                             <padding><Insets bottom="10.0" right="4.0"/></padding>
+
+                            <!-- ── Informations générales ── -->
                             <VBox spacing="16.0" styleClass="panel-card">
                                 <HBox alignment="CENTER_LEFT" spacing="10.0">
                                     <Label text="📝" style="-fx-font-size:18px;"/>
@@ -193,6 +198,8 @@
                                     <Label fx:id="quizInstructionsErrorLabel" styleClass="field-error-label" text="" wrapText="true"/>
                                 </VBox>
                             </VBox>
+
+                            <!-- ── Paramètres ── -->
                             <VBox spacing="16.0" styleClass="panel-card">
                                 <HBox alignment="CENTER_LEFT" spacing="10.0">
                                     <Label text="⚙️" style="-fx-font-size:18px;"/>
@@ -210,12 +217,17 @@
                                         <Label fx:id="quizTentativesErrorLabel" styleClass="field-error-label" text="" wrapText="true"/>
                                     </VBox>
                                     <VBox spacing="6.0" HBox.hgrow="ALWAYS">
-                                        <Label styleClass="detail-key" text="ID du cours (optionnel)"/>
-                                        <TextField fx:id="quizIdCoursField" promptText="Ex : 12" styleClass="input-field"/>
-                                        <Label fx:id="quizIdCoursErrorLabel" styleClass="field-error-label" text="" wrapText="true"/>
+                                        <Label styleClass="detail-key" text="Cours associé (optionnel)"/>
+                                        <ComboBox fx:id="quizCoursCombo"
+                                                  maxWidth="1.7976931348623157E308"
+                                                  promptText="— Sélectionnez un cours —"/>
+                                        <Label fx:id="quizCoursErrorLabel"
+                                               styleClass="field-error-label" text="" wrapText="true"/>
                                     </VBox>
                                 </HBox>
                             </VBox>
+
+                            <!-- ── Période de disponibilité ── -->
                             <VBox spacing="16.0" styleClass="panel-card">
                                 <HBox alignment="CENTER_LEFT" spacing="10.0">
                                     <Label text="📅" style="-fx-font-size:18px;"/>
@@ -246,6 +258,8 @@
                                            styleClass="dashboard-subsection" wrapText="true" HBox.hgrow="ALWAYS"/>
                                 </HBox>
                             </VBox>
+
+                            <!-- ── Barre d'action ── -->
                             <HBox alignment="CENTER_RIGHT" spacing="12.0">
                                 <Label fx:id="quizFormStatusLabel" styleClass="status-label neutral-status"
                                        text="" HBox.hgrow="ALWAYS" wrapText="true"/>
@@ -307,17 +321,15 @@
                         </ScrollPane>
                         <Label fx:id="detailQuestionExplicationLabel" styleClass="sidebar-copy" text="" wrapText="true"/>
                         <HBox spacing="8.0">
-                            <Button onAction="#editSelectedQuestion"           styleClass="secondary-button compact-button" text="✏  Modifier"/>
+                            <Button onAction="#editSelectedQuestion"             styleClass="secondary-button compact-button" text="✏  Modifier"/>
                             <Button onAction="#manageReponsesOfSelectedQuestion" styleClass="primary-button compact-button"   text="💬  Réponses"/>
-                            <Button onAction="#deleteSelectedQuestion"         styleClass="danger-button compact-button"     text="🗑  Supprimer"/>
+                            <Button onAction="#deleteSelectedQuestion"           styleClass="danger-button compact-button"     text="🗑  Supprimer"/>
                         </HBox>
                     </VBox>
                 </HBox>
             </VBox>
 
-            <!-- ══════════════════════════════════════════════════════
-                 PAGE 4 : FORMULAIRE QUESTION  (avec panels réponses)
-                 ══════════════════════════════════════════════════════ -->
+            <!-- ── PAGE 4 : FORMULAIRE QUESTION ─────────────────── -->
             <VBox fx:id="questionFormSection" managed="false" visible="false" spacing="20.0">
                 <VBox spacing="6.0" styleClass="hero-banner create-banner">
                     <padding><Insets bottom="20.0" left="24.0" right="24.0" top="20.0"/></padding>
@@ -333,7 +345,6 @@
                         <VBox spacing="20.0">
                             <padding><Insets bottom="10.0" right="4.0"/></padding>
 
-                            <!-- ── Contenu question ── -->
                             <VBox spacing="16.0" styleClass="panel-card">
                                 <HBox alignment="CENTER_LEFT" spacing="10.0">
                                     <Label text="❓" style="-fx-font-size:18px;"/>
@@ -353,7 +364,6 @@
                                 </VBox>
                             </VBox>
 
-                            <!-- ── Paramètres ── -->
                             <VBox spacing="16.0" styleClass="panel-card">
                                 <HBox alignment="CENTER_LEFT" spacing="10.0">
                                     <Label text="⚙️" style="-fx-font-size:18px;"/>
@@ -378,18 +388,13 @@
                                                  editable="true" maxWidth="1.7976931348623157E308"/>
                                     </VBox>
                                 </HBox>
-                                <!-- Hint contextuel affiché sous le ComboBox dès la sélection du type -->
                                 <Label fx:id="questionTypeHintLabel"
                                        styleClass="status-label neutral-status"
                                        text="" wrapText="true"
                                        style="-fx-padding: 8 12 8 12; -fx-background-radius: 6;"/>
                             </VBox>
 
-                            <!-- ══════════════════════════════════════
-                                 PANELS DYNAMIQUES PAR TYPE DE RÉPONSE
-                                 ══════════════════════════════════════ -->
-
-                            <!-- ── VRAI / FAUX ── -->
+                            <!-- VRAI / FAUX -->
                             <VBox fx:id="reponsesVraiFauxPanel" managed="false" visible="false"
                                   spacing="14.0" styleClass="panel-card">
                                 <HBox alignment="CENTER_LEFT" spacing="10.0">
@@ -410,7 +415,7 @@
                                 <Label fx:id="vraiFauxErrorLabel" styleClass="field-error-label" text="" wrapText="true"/>
                             </VBox>
 
-                            <!-- ── CHOIX UNIQUE ── -->
+                            <!-- CHOIX UNIQUE -->
                             <VBox fx:id="reponsesChoixUniquePanel" managed="false" visible="false"
                                   spacing="14.0" styleClass="panel-card">
                                 <HBox alignment="CENTER_LEFT" spacing="10.0">
@@ -427,7 +432,7 @@
                                 <Label fx:id="choixUniqueErrorLabel" styleClass="field-error-label" text="" wrapText="true"/>
                             </VBox>
 
-                            <!-- ── CHOIX MULTIPLE ── -->
+                            <!-- CHOIX MULTIPLE -->
                             <VBox fx:id="reponsesChoixMultiplePanel" managed="false" visible="false"
                                   spacing="14.0" styleClass="panel-card">
                                 <HBox alignment="CENTER_LEFT" spacing="10.0">
@@ -444,7 +449,7 @@
                                 <Label fx:id="choixMultipleErrorLabel" styleClass="field-error-label" text="" wrapText="true"/>
                             </VBox>
 
-                            <!-- ── TEXTE LIBRE ── -->
+                            <!-- TEXTE LIBRE -->
                             <VBox fx:id="reponsesTexteLibrePanel" managed="false" visible="false"
                                   spacing="14.0" styleClass="panel-card">
                                 <HBox alignment="CENTER_LEFT" spacing="10.0">
@@ -459,7 +464,7 @@
                                 <Label fx:id="texteLibreErrorLabel" styleClass="field-error-label" text="" wrapText="true"/>
                             </VBox>
 
-                            <!-- ── Barre d'action ── -->
+                            <!-- Barre d'action -->
                             <HBox alignment="CENTER_RIGHT" spacing="12.0" style="-fx-padding: 4 0 8 0;">
                                 <Label fx:id="questionFormStatusLabel"
                                        styleClass="status-label neutral-status"
@@ -543,6 +548,67 @@
                         </HBox>
                     </VBox>
                 </HBox>
+            </VBox>
+
+            <!-- ── PAGE 6 : RÉSULTATS PAR QUIZ ──────────────────── -->
+            <VBox fx:id="resultatsSection" managed="false" visible="false" spacing="18.0">
+                <HBox spacing="18.0">
+                    <VBox spacing="10.0" styleClass="hero-banner teacher-banner" HBox.hgrow="ALWAYS">
+                        <Label styleClass="eyebrow" text="Résultats des étudiants"/>
+                        <Label fx:id="resultatsSectionTitleLabel" styleClass="hero-title small-hero"
+                               text="Résultats du quiz" wrapText="true"/>
+                        <Label fx:id="resultatsSectionSubtitleLabel" styleClass="hero-copy"
+                               text="Consultez les notes et performances de chaque étudiant." wrapText="true"/>
+                    </VBox>
+                    <VBox alignment="CENTER_RIGHT" spacing="10.0">
+                        <Button onAction="#backToQuizListFromResultats"
+                                styleClass="secondary-button compact-button" text="← Retour quiz"/>
+                        <Label fx:id="resultatsMessageLabel"
+                               styleClass="status-label neutral-status" text="" wrapText="true"/>
+                    </VBox>
+                </HBox>
+
+                <!-- Cartes statistiques -->
+                <HBox spacing="14.0">
+                    <VBox spacing="4.0" styleClass="panel-card" HBox.hgrow="ALWAYS" alignment="CENTER"
+                          style="-fx-padding:16;">
+                        <Label styleClass="eyebrow" text="Moyenne de la classe"/>
+                        <Label fx:id="statsMoyenneLabel" styleClass="hero-title small-hero" text="—"/>
+                    </VBox>
+                    <VBox spacing="4.0" styleClass="panel-card" HBox.hgrow="ALWAYS" alignment="CENTER"
+                          style="-fx-padding:16;">
+                        <Label styleClass="eyebrow" text="Meilleur score"/>
+                        <Label fx:id="statsMeilleurLabel" styleClass="hero-title small-hero" text="—"
+                               style="-fx-text-fill:#16a34a;"/>
+                    </VBox>
+                    <VBox spacing="4.0" styleClass="panel-card" HBox.hgrow="ALWAYS" alignment="CENTER"
+                          style="-fx-padding:16;">
+                        <Label styleClass="eyebrow" text="Score le plus bas"/>
+                        <Label fx:id="statsPlusBas" styleClass="hero-title small-hero" text="—"
+                               style="-fx-text-fill:#dc2626;"/>
+                    </VBox>
+                    <VBox spacing="4.0" styleClass="panel-card" HBox.hgrow="ALWAYS" alignment="CENTER"
+                          style="-fx-padding:16;">
+                        <Label styleClass="eyebrow" text="Tentatives totales"/>
+                        <Label fx:id="statsTotalLabel" styleClass="hero-title small-hero" text="—"/>
+                    </VBox>
+                </HBox>
+
+                <!-- Tableau résultats -->
+                <VBox spacing="10.0" styleClass="panel-card" VBox.vgrow="ALWAYS">
+                    <Label styleClass="panel-title" text="Détail par étudiant"/>
+                    <TableView fx:id="resultatsTable" VBox.vgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="resNomColumn"       prefWidth="140.0" text="Nom"/>
+                            <TableColumn fx:id="resPrenomColumn"    prefWidth="130.0" text="Prénom"/>
+                            <TableColumn fx:id="resMatriculeColumn" prefWidth="120.0" text="Matricule"/>
+                            <TableColumn fx:id="resScoreColumn"     prefWidth="110.0" text="Score (%)"/>
+                            <TableColumn fx:id="resPointsColumn"    prefWidth="130.0" text="Points obtenus"/>
+                            <TableColumn fx:id="resDateColumn"      prefWidth="160.0" text="Date de passation"/>
+                            <TableColumn fx:id="resMentionColumn"   prefWidth="140.0" text="Mention"/>
+                        </columns>
+                    </TableView>
+                </VBox>
             </VBox>
 
         </StackPane>
