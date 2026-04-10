@@ -279,7 +279,7 @@ public class StudentDashboardController {
     }
     @FXML
     private void openQuizHub() throws IOException {
-        SceneManager.switchScene("/gui/student-quiz.fxml", "Quiz Hub");
+        SceneManager.switchScene("/gui/student_quiz.fxml", "Quiz Hub");
     }
     @FXML
     private void handleContenuSecondaryAction() {

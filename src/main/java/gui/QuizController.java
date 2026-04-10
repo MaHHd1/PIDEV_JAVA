@@ -110,12 +110,36 @@ public class QuizController implements Initializable {
     @FXML private Label     questionTexteErrorLabel;
     @FXML private ComboBox<String> questionTypeCombo;
     @FXML private Label     questionTypeErrorLabel;
+    @FXML private Label     questionTypeHintLabel;       // hint affiché dans le panel Paramètres
     @FXML private Spinner<Integer> questionPointsSpinner;
     @FXML private Label     questionPointsErrorLabel;
     @FXML private Spinner<Integer> questionOrdreSpinner;
     @FXML private TextArea  questionExplicationArea;
     @FXML private Label     questionExplicationErrorLabel;
     @FXML private Label     questionFormStatusLabel;
+
+    // ── Panels dynamiques réponses (PAGE 4) ──────────────────────
+
+    // Vrai / Faux
+    @FXML private VBox        reponsesVraiFauxPanel;
+    @FXML private RadioButton vraiFauxVraiRadio;
+    @FXML private RadioButton vraiFauxFauxRadio;
+    @FXML private Label       vraiFauxErrorLabel;
+
+    // Choix unique
+    @FXML private VBox  reponsesChoixUniquePanel;
+    @FXML private VBox  choixUniqueReponsesContainer;
+    @FXML private Label choixUniqueErrorLabel;
+
+    // Choix multiple
+    @FXML private VBox  reponsesChoixMultiplePanel;
+    @FXML private VBox  choixMultipleReponsesContainer;
+    @FXML private Label choixMultipleErrorLabel;
+
+    // Texte libre
+    @FXML private VBox     reponsesTexteLibrePanel;
+    @FXML private TextArea texteLibreReponseArea;
+    @FXML private Label    texteLibreErrorLabel;
 
     // ── PAGE 5 : RÉPONSES ─────────────────────────────────────────
     @FXML private VBox  reponsesSection;
@@ -145,10 +169,13 @@ public class QuizController implements Initializable {
     // ── État interne ──────────────────────────────────────────────
     private Quiz     selectedQuiz     = null;
     private Quiz     editingQuiz      = null;
-    private Quiz     currentQuiz      = null;   // quiz dont on gère les questions
+    private Quiz     currentQuiz      = null;
     private Question selectedQuestion = null;
     private Question editingQuestion  = null;
     private Reponse  editingReponse   = null;
+
+    // ToggleGroup pour choix_unique (créé en code car partagé entre lignes dynamiques)
+    private final ToggleGroup choixUniqueGroup = new ToggleGroup();
 
     private final QuizService     quizService     = new QuizService();
     private final QuestionService questionService = new QuestionService();
@@ -165,7 +192,7 @@ public class QuizController implements Initializable {
     @SuppressWarnings("unchecked")
     public void initialize(URL location, ResourceBundle resources) {
 
-        // ── ComboBox quiz ──
+        // ComboBox quiz
         if (quizTypeCombo != null)
             quizTypeCombo.setItems(FXCollections.observableArrayList(
                     "QCM", "Vrai/Faux", "Texte libre", "Mixte"));
@@ -173,19 +200,19 @@ public class QuizController implements Initializable {
             quizCorrectionApresCombo.setItems(FXCollections.observableArrayList(
                     "Immédiate", "Après soumission", "Manuelle"));
 
-        // ── ComboBox question ──
+        // ComboBox question — déclenche onTypeChanged à chaque sélection
         if (questionTypeCombo != null) {
             questionTypeCombo.setItems(FXCollections.observableArrayList(
                     "choix_unique", "choix_multiple", "vrai_faux", "texte_libre"));
-            questionTypeCombo.valueProperty().addListener((obs, old, nv) -> updateTypeHint(nv));
+            questionTypeCombo.valueProperty().addListener((obs, old, nv) -> onTypeChanged(nv));
         }
 
-        // ── TableView quiz ──
+        // TableView quiz
         if (quizTable != null) {
-            setupColumn(quizTitreColumn,    "titre");
-            setupColumn(quizTypeColumn,     "typeQuiz");
-            setupColumn(quizDureeColumn,    "dureeMinutes");
-            setupColumn(quizDispoColumn,    "dateFinDisponibilite");
+            setupColumn(quizTitreColumn, "titre");
+            setupColumn(quizTypeColumn,  "typeQuiz");
+            setupColumn(quizDureeColumn, "dureeMinutes");
+            setupColumn(quizDispoColumn, "dateFinDisponibilite");
 
             if (quizActionsColumn != null) {
                 ((TableColumn<Quiz, Void>) quizActionsColumn).setCellFactory(col -> new TableCell<>() {
@@ -207,13 +234,12 @@ public class QuizController implements Initializable {
                     }
                 });
             }
-
             quizTable.setItems(quizList);
             quizTable.getSelectionModel().selectedItemProperty().addListener(
                     (obs, old, nw) -> { selectedQuiz = nw; updateQuizDetailPanel(nw); });
         }
 
-        // ── TableView questions ──
+        // TableView questions
         if (questionsTable != null) {
             setupColumn(qOrdreColumn,  "ordreAffichage");
             setupColumn(qTexteColumn,  "texte");
@@ -240,13 +266,12 @@ public class QuizController implements Initializable {
                     }
                 });
             }
-
             questionsTable.setItems(questionList);
             questionsTable.getSelectionModel().selectedItemProperty().addListener(
                     (obs, old, nw) -> { selectedQuestion = nw; updateQuestionDetailPanel(nw); });
         }
 
-        // ── TableView réponses ──
+        // TableView réponses
         if (reponsesTable != null) {
             setupColumn(rOrdreColumn,    "ordreAffichage");
             setupColumn(rTexteColumn,    "texteReponse");
@@ -273,17 +298,17 @@ public class QuizController implements Initializable {
             reponsesTable.setItems(reponseList);
         }
 
-        // ── Listeners dates quiz ──
+        // Listeners dates quiz
         if (quizDateDebutPicker != null)
             quizDateDebutPicker.valueProperty().addListener((obs, ov, nv) -> updateDateRangeInfo());
         if (quizDateFinPicker != null)
             quizDateFinPicker.valueProperty().addListener((obs, ov, nv) -> updateDateRangeInfo());
 
-        // ── Profil ──
+        // Profil
         Utilisateur u = UserSession.getCurrentUser();
         if (u != null) setCurrentUser(u.getNomComplet(), u.getType());
 
-        // ── Page initiale ──
+        // Page initiale
         showOnly(quizListSection);
         setText(sectionTitleLabel,    "Gestion des Quiz");
         setText(sectionSubtitleLabel, "Créez, modifiez et organisez vos quiz et leurs questions.");
@@ -291,7 +316,7 @@ public class QuizController implements Initializable {
     }
 
     // ═════════════════════════════════════════════════════════════
-    // NAVIGATION — toutes les sections du même FXML
+    // NAVIGATION
     // ═════════════════════════════════════════════════════════════
     private void showOnly(VBox target) {
         for (VBox s : new VBox[]{
@@ -322,40 +347,24 @@ public class QuizController implements Initializable {
         loadQuizList();
     }
 
-    @FXML
-    private void closeQuizDetails() {
-        if (quizDetailsPanel != null) {
-            quizDetailsPanel.setVisible(false);
-            quizDetailsPanel.setManaged(false);
-        }
+    @FXML private void closeQuizDetails() {
+        if (quizDetailsPanel != null) { quizDetailsPanel.setVisible(false); quizDetailsPanel.setManaged(false); }
         selectedQuiz = null;
         if (quizTable != null) quizTable.getSelectionModel().clearSelection();
     }
 
-    @FXML
-    private void editSelectedQuiz() {
-        if (selectedQuiz == null) {
-            setStatus(quizListMessageLabel, "Sélectionnez un quiz à modifier.", true);
-            return;
-        }
+    @FXML private void editSelectedQuiz() {
+        if (selectedQuiz == null) { setStatus(quizListMessageLabel, "Sélectionnez un quiz à modifier.", true); return; }
         startEditQuiz(selectedQuiz);
     }
 
-    @FXML
-    private void deleteSelectedQuiz() {
-        if (selectedQuiz == null) {
-            setStatus(quizListMessageLabel, "Sélectionnez un quiz à supprimer.", true);
-            return;
-        }
+    @FXML private void deleteSelectedQuiz() {
+        if (selectedQuiz == null) { setStatus(quizListMessageLabel, "Sélectionnez un quiz à supprimer.", true); return; }
         confirmDeleteQuiz(selectedQuiz);
     }
 
-    @FXML
-    private void manageQuestionsOfSelectedQuiz() {
-        if (selectedQuiz == null) {
-            setStatus(quizListMessageLabel, "Sélectionnez d'abord un quiz.", true);
-            return;
-        }
+    @FXML private void manageQuestionsOfSelectedQuiz() {
+        if (selectedQuiz == null) { setStatus(quizListMessageLabel, "Sélectionnez d'abord un quiz.", true); return; }
         openQuestionsPage(selectedQuiz);
     }
 
@@ -371,50 +380,34 @@ public class QuizController implements Initializable {
         clearQuizForm();
     }
 
-    @FXML
-    private void cancelQuizForm() {
+    @FXML private void cancelQuizForm() {
         editingQuiz = null;
         showQuizListPage();
     }
 
-    @FXML
-    private void saveQuiz() {
+    @FXML private void saveQuiz() {
         if (!validateQuizForm()) return;
         try {
             Quiz quiz = (editingQuiz != null) ? editingQuiz : new Quiz();
             quiz.setTitre(quizTitreField.getText().trim());
-            if (quizTypeCombo.getValue() != null)
-                quiz.setTypeQuiz(quizTypeCombo.getValue());
-            if (quizCorrectionApresCombo.getValue() != null)
-                quiz.setAfficherCorrectionApres(quizCorrectionApresCombo.getValue());
-            if (quizDureeSpinner.getValue() != null)
-                quiz.setDureeMinutes(quizDureeSpinner.getValue());
-            if (quizTentativesSpinner.getValue() != null)
-                quiz.setNombreTentativesAutorisees(quizTentativesSpinner.getValue());
-            if (quizDateDebutPicker.getValue() != null)
-                quiz.setDateDebutDisponibilite(quizDateDebutPicker.getValue().atStartOfDay());
-            if (quizDateFinPicker.getValue() != null)
-                quiz.setDateFinDisponibilite(quizDateFinPicker.getValue().atTime(23, 59));
+            if (quizTypeCombo.getValue() != null)            quiz.setTypeQuiz(quizTypeCombo.getValue());
+            if (quizCorrectionApresCombo.getValue() != null) quiz.setAfficherCorrectionApres(quizCorrectionApresCombo.getValue());
+            if (quizDureeSpinner.getValue() != null)         quiz.setDureeMinutes(quizDureeSpinner.getValue());
+            if (quizTentativesSpinner.getValue() != null)    quiz.setNombreTentativesAutorisees(quizTentativesSpinner.getValue());
+            if (quizDateDebutPicker.getValue() != null)      quiz.setDateDebutDisponibilite(quizDateDebutPicker.getValue().atStartOfDay());
+            if (quizDateFinPicker.getValue() != null)        quiz.setDateFinDisponibilite(quizDateFinPicker.getValue().atTime(23, 59));
             if (quizIdCoursField != null && !quizIdCoursField.getText().trim().isEmpty()) {
                 try { quiz.setIdCours(Integer.parseInt(quizIdCoursField.getText().trim())); }
                 catch (NumberFormatException ignored) {}
             }
-            if (quizInstructionsArea != null)
-                quiz.setInstructions(quizInstructionsArea.getText().trim());
-            if (quizDescriptionArea != null)
-                quiz.setDescription(quizDescriptionArea.getText().trim());
+            if (quizInstructionsArea != null) quiz.setInstructions(quizInstructionsArea.getText().trim());
+            if (quizDescriptionArea  != null) quiz.setDescription(quizDescriptionArea.getText().trim());
 
             Utilisateur u = UserSession.getCurrentUser();
-            if (u != null && quiz.getCreateur() == null)
-                quiz.setCreateur(u);
+            if (u != null && quiz.getCreateur() == null) quiz.setCreateur(u);
 
-            if (editingQuiz == null) {
-                quizService.create(quiz);
-                setStatus(quizFormStatusLabel, "Quiz créé avec succès ✔", false);
-            } else {
-                quizService.update(quiz);
-                setStatus(quizFormStatusLabel, "Quiz modifié avec succès ✔", false);
-            }
+            if (editingQuiz == null) { quizService.create(quiz); setStatus(quizFormStatusLabel, "Quiz créé ✔", false); }
+            else                     { quizService.update(quiz); setStatus(quizFormStatusLabel, "Quiz modifié ✔", false); }
 
             editingQuiz = null;
             loadQuizList();
@@ -423,8 +416,7 @@ public class QuizController implements Initializable {
             setText(sectionSubtitleLabel, "Créez, modifiez et organisez vos quiz et leurs questions.");
 
         } catch (Exception e) {
-            setStatus(quizFormStatusLabel,
-                    "Erreur (" + e.getClass().getSimpleName() + ") : " + e.getMessage(), true);
+            setStatus(quizFormStatusLabel, "Erreur (" + e.getClass().getSimpleName() + ") : " + e.getMessage(), true);
             e.printStackTrace();
         }
     }
@@ -432,11 +424,6 @@ public class QuizController implements Initializable {
     // ═════════════════════════════════════════════════════════════
     // PAGE 3 — LISTE QUESTIONS
     // ═════════════════════════════════════════════════════════════
-
-    /**
-     * Navigation vers la page questions pour un quiz donné.
-     * Appelée depuis le bouton table "❓ Questions" et depuis le panneau détail.
-     */
     private void openQuestionsPage(Quiz quiz) {
         currentQuiz = quiz;
         selectedQuestion = null;
@@ -445,64 +432,38 @@ public class QuizController implements Initializable {
         setText(sectionSubtitleLabel,          "Gérez les questions de ce quiz.");
         setText(questionsSectionTitleLabel,    quiz.getTitre());
         setText(questionsSectionSubtitleLabel, "Ajoutez, modifiez ou supprimez les questions.");
-        if (questionDetailsPanel != null) {
-            questionDetailsPanel.setVisible(false);
-            questionDetailsPanel.setManaged(false);
-        }
+        if (questionDetailsPanel != null) { questionDetailsPanel.setVisible(false); questionDetailsPanel.setManaged(false); }
         loadQuestions();
     }
 
-    @FXML
-    private void closeQuestionDetails() {
-        if (questionDetailsPanel != null) {
-            questionDetailsPanel.setVisible(false);
-            questionDetailsPanel.setManaged(false);
-        }
+    @FXML private void closeQuestionDetails() {
+        if (questionDetailsPanel != null) { questionDetailsPanel.setVisible(false); questionDetailsPanel.setManaged(false); }
         selectedQuestion = null;
         if (questionsTable != null) questionsTable.getSelectionModel().clearSelection();
     }
 
-    @FXML
-    private void editSelectedQuestion() {
-        if (selectedQuestion == null) {
-            setStatus(questionsMessageLabel, "Sélectionnez une question à modifier.", true);
-            return;
-        }
+    @FXML private void editSelectedQuestion() {
+        if (selectedQuestion == null) { setStatus(questionsMessageLabel, "Sélectionnez une question.", true); return; }
         startEditQuestion(selectedQuestion);
     }
 
-    @FXML
-    private void deleteSelectedQuestion() {
-        if (selectedQuestion == null) {
-            setStatus(questionsMessageLabel, "Sélectionnez une question à supprimer.", true);
-            return;
-        }
+    @FXML private void deleteSelectedQuestion() {
+        if (selectedQuestion == null) { setStatus(questionsMessageLabel, "Sélectionnez une question.", true); return; }
         confirmDeleteQuestion(selectedQuestion);
     }
 
-    @FXML
-    private void manageReponsesOfSelectedQuestion() {
-        if (selectedQuestion == null) {
-            setStatus(questionsMessageLabel, "Sélectionnez une question d'abord.", true);
-            return;
-        }
+    @FXML private void manageReponsesOfSelectedQuestion() {
+        if (selectedQuestion == null) { setStatus(questionsMessageLabel, "Sélectionnez une question.", true); return; }
         openReponsesFor(selectedQuestion);
     }
 
     // ═════════════════════════════════════════════════════════════
     // PAGE 4 — FORMULAIRE QUESTION
     // ═════════════════════════════════════════════════════════════
-
-    /**
-     * CORRECTION PRINCIPALE : méthode référencée dans teacher-quiz.fxml ligne 341
-     * via onAction="#showQuestionCreateForm". Elle doit être dans QuizController
-     * puisque teacher-quiz.fxml déclare fx:controller="gui.QuizController".
-     */
     @FXML
     public void showQuestionCreateForm() {
         if (currentQuiz == null) {
-            setStatus(questionsMessageLabel,
-                    "Erreur : aucun quiz sélectionné. Revenez à la liste.", true);
+            setStatus(questionsMessageLabel, "Erreur : aucun quiz sélectionné.", true);
             return;
         }
         editingQuestion = null;
@@ -512,43 +473,45 @@ public class QuizController implements Initializable {
         clearQuestionForm();
     }
 
-    @FXML
-    private void cancelQuestionForm() {
+    @FXML private void cancelQuestionForm() {
         editingQuestion = null;
         if (currentQuiz != null) openQuestionsPage(currentQuiz);
         else showQuizListPage();
     }
 
-    @FXML
-    private void saveQuestion() {
+    @FXML private void saveQuestion() {
         if (currentQuiz == null) {
-            setStatus(questionFormStatusLabel,
-                    "Erreur : aucun quiz associé. Revenez à la liste.", true);
+            setStatus(questionFormStatusLabel, "Erreur : aucun quiz associé.", true);
             return;
         }
         if (!validateQuestionForm()) return;
         try {
-            Question question = (editingQuestion != null) ? editingQuestion : new Question();
+            boolean isNew = (editingQuestion == null);
+            Question question = isNew ? new Question() : editingQuestion;
+
             question.setTexte(questionTexteArea.getText().trim());
-            if (questionTypeCombo.getValue() != null)
-                question.setTypeQuestion(questionTypeCombo.getValue());
+            String type = questionTypeCombo.getValue();
+            question.setTypeQuestion(type);
             if (questionPointsSpinner.getValue() != null)
                 question.setPoints(questionPointsSpinner.getValue());
             if (questionOrdreSpinner != null && questionOrdreSpinner.getValue() != null)
                 question.setOrdreAffichage(questionOrdreSpinner.getValue());
             if (questionExplicationArea != null)
                 question.setExplicationReponse(questionExplicationArea.getText().trim());
-
             question.setQuiz(currentQuiz);
 
             Utilisateur u = UserSession.getCurrentUser();
-            if (u != null && question.getCreateur() == null)
-                question.setCreateur(u);
+            if (u != null && question.getCreateur() == null) question.setCreateur(u);
 
-            if (editingQuestion == null) {
+            if (isNew) {
                 questionService.create(question);
+                saveReponsesInline(question);
             } else {
                 questionService.update(question);
+                // Supprimer les anciennes réponses et recréer
+                List<Reponse> old = reponseService.getByQuestion(question.getId());
+                for (Reponse r : old) reponseService.delete(r.getId().intValue());
+                saveReponsesInline(question);
             }
 
             editingQuestion = null;
@@ -561,31 +524,170 @@ public class QuizController implements Initializable {
         }
     }
 
+    // ── CHANGEMENT DE TYPE → affiche le bon panel de réponses ────
+    private void onTypeChanged(String type) {
+        hidePanel(reponsesVraiFauxPanel);
+        hidePanel(reponsesChoixUniquePanel);
+        hidePanel(reponsesChoixMultiplePanel);
+        hidePanel(reponsesTexteLibrePanel);
+
+        if (type == null) { setText(questionTypeHintLabel, ""); return; }
+
+        switch (type) {
+            case "vrai_faux" -> {
+                showPanel(reponsesVraiFauxPanel);
+                setStatus(questionTypeHintLabel, "ℹ  Sélectionnez la bonne réponse ci-dessous.", false);
+            }
+            case "choix_unique" -> {
+                showPanel(reponsesChoixUniquePanel);
+                if (choixUniqueReponsesContainer != null
+                        && choixUniqueReponsesContainer.getChildren().isEmpty()) {
+                    addChoixUniqueRow(); addChoixUniqueRow();
+                }
+                setStatus(questionTypeHintLabel, "ℹ  Saisissez les réponses et sélectionnez la correcte (●).", false);
+            }
+            case "choix_multiple" -> {
+                showPanel(reponsesChoixMultiplePanel);
+                if (choixMultipleReponsesContainer != null
+                        && choixMultipleReponsesContainer.getChildren().isEmpty()) {
+                    addChoixMultipleRow(); addChoixMultipleRow();
+                }
+                setStatus(questionTypeHintLabel, "ℹ  Saisissez les réponses et cochez les correctes (☑).", false);
+            }
+            case "texte_libre" -> {
+                showPanel(reponsesTexteLibrePanel);
+                setStatus(questionTypeHintLabel, "ℹ  Saisissez la réponse correcte de référence.", false);
+            }
+            default -> setText(questionTypeHintLabel, "");
+        }
+    }
+
+    // ── Ajout de lignes réponses dynamiques ──────────────────────
+    @FXML private void addChoixUniqueRow() {
+        if (choixUniqueReponsesContainer == null) return;
+        int index = choixUniqueReponsesContainer.getChildren().size() + 1;
+
+        RadioButton radio = new RadioButton();
+        radio.setToggleGroup(choixUniqueGroup);
+
+        TextField field = new TextField();
+        field.setPromptText("Réponse " + index + "…");
+        field.getStyleClass().add("input-field");
+        HBox.setHgrow(field, javafx.scene.layout.Priority.ALWAYS);
+
+        Button btnDel = new Button("🗑");
+        btnDel.getStyleClass().addAll("danger-button", "compact-button");
+
+        HBox row = new HBox(10, radio, field, btnDel);
+        row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        btnDel.setOnAction(e -> choixUniqueReponsesContainer.getChildren().remove(row));
+
+        choixUniqueReponsesContainer.getChildren().add(row);
+    }
+
+    @FXML private void addChoixMultipleRow() {
+        if (choixMultipleReponsesContainer == null) return;
+        int index = choixMultipleReponsesContainer.getChildren().size() + 1;
+
+        CheckBox check = new CheckBox();
+
+        TextField field = new TextField();
+        field.setPromptText("Réponse " + index + "…");
+        field.getStyleClass().add("input-field");
+        HBox.setHgrow(field, javafx.scene.layout.Priority.ALWAYS);
+
+        Button btnDel = new Button("🗑");
+        btnDel.getStyleClass().addAll("danger-button", "compact-button");
+
+        HBox row = new HBox(10, check, field, btnDel);
+        row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        btnDel.setOnAction(e -> choixMultipleReponsesContainer.getChildren().remove(row));
+
+        choixMultipleReponsesContainer.getChildren().add(row);
+    }
+
+    // ── Sauvegarde des réponses inline ───────────────────────────
+    private void saveReponsesInline(Question question) throws Exception {
+        String type = question.getTypeQuestion();
+        if (type == null) return;
+
+        switch (type) {
+            case "vrai_faux" -> {
+                boolean vraiCorrect = vraiFauxVraiRadio != null && vraiFauxVraiRadio.isSelected();
+                Reponse vrai = new Reponse();
+                vrai.setTexteReponse("Vrai"); vrai.setEstCorrecte(vraiCorrect);
+                vrai.setOrdreAffichage(1);    vrai.setQuestion(question);
+                reponseService.create(vrai);
+
+                Reponse faux = new Reponse();
+                faux.setTexteReponse("Faux"); faux.setEstCorrecte(!vraiCorrect);
+                faux.setOrdreAffichage(2);    faux.setQuestion(question);
+                reponseService.create(faux);
+            }
+            case "choix_unique" -> {
+                if (choixUniqueReponsesContainer == null) return;
+                int ordre = 1;
+                for (var node : choixUniqueReponsesContainer.getChildren()) {
+                    if (!(node instanceof HBox row)) continue;
+                    RadioButton radio = (RadioButton) row.getChildren().get(0);
+                    TextField   field = (TextField)   row.getChildren().get(1);
+                    String texte = field.getText().trim();
+                    if (texte.isEmpty()) continue;
+                    Reponse r = new Reponse();
+                    r.setTexteReponse(texte); r.setEstCorrecte(radio.isSelected());
+                    r.setOrdreAffichage(ordre++); r.setQuestion(question);
+                    reponseService.create(r);
+                }
+            }
+            case "choix_multiple" -> {
+                if (choixMultipleReponsesContainer == null) return;
+                int ordre = 1;
+                for (var node : choixMultipleReponsesContainer.getChildren()) {
+                    if (!(node instanceof HBox row)) continue;
+                    CheckBox  check = (CheckBox)  row.getChildren().get(0);
+                    TextField field = (TextField) row.getChildren().get(1);
+                    String texte = field.getText().trim();
+                    if (texte.isEmpty()) continue;
+                    Reponse r = new Reponse();
+                    r.setTexteReponse(texte); r.setEstCorrecte(check.isSelected());
+                    r.setOrdreAffichage(ordre++); r.setQuestion(question);
+                    reponseService.create(r);
+                }
+            }
+            case "texte_libre" -> {
+                String texte = texteLibreReponseArea != null
+                        ? texteLibreReponseArea.getText().trim() : "";
+                if (!texte.isEmpty()) {
+                    Reponse r = new Reponse();
+                    r.setTexteReponse(texte); r.setEstCorrecte(true);
+                    r.setOrdreAffichage(1);   r.setQuestion(question);
+                    reponseService.create(r);
+                }
+            }
+        }
+    }
+
     // ═════════════════════════════════════════════════════════════
     // PAGE 5 — RÉPONSES
     // ═════════════════════════════════════════════════════════════
-    @FXML
-    private void backToQuestionsFromReponses() {
+    @FXML private void backToQuestionsFromReponses() {
         if (currentQuiz != null) openQuestionsPage(currentQuiz);
         else showQuizListPage();
     }
 
-    @FXML
-    private void showReponseCreateForm() {
+    @FXML private void showReponseCreateForm() {
         editingReponse = null;
         setText(reponseFormTitleLabel, "Nouvelle réponse");
         clearReponseForm();
         showPanel(reponseFormPanel);
     }
 
-    @FXML
-    private void closeReponseForm() {
+    @FXML private void closeReponseForm() {
         editingReponse = null;
         hidePanel(reponseFormPanel);
     }
 
-    @FXML
-    private void saveReponse() {
+    @FXML private void saveReponse() {
         if (!validateReponseForm()) return;
         try {
             Reponse reponse = (editingReponse != null) ? editingReponse : new Reponse();
@@ -593,28 +695,21 @@ public class QuizController implements Initializable {
             reponse.setEstCorrecte(reponseCorrecteCheck != null && reponseCorrecteCheck.isSelected());
             if (reponseOrdreSpinner != null && reponseOrdreSpinner.getValue() != null)
                 reponse.setOrdreAffichage(reponseOrdreSpinner.getValue());
-            if (reponseFeedbackArea != null)
-                reponse.setFeedbackSpecifique(reponseFeedbackArea.getText().trim());
-            if (reponseMediaUrlField != null)
-                reponse.setMediaUrl(reponseMediaUrlField.getText().trim());
-
+            if (reponseFeedbackArea  != null) reponse.setFeedbackSpecifique(reponseFeedbackArea.getText().trim());
+            if (reponseMediaUrlField != null) reponse.setMediaUrl(reponseMediaUrlField.getText().trim());
             reponse.setQuestion(selectedQuestion);
 
-            if (editingReponse == null) {
-                reponseService.create(reponse);
-                setStatus(reponseFormStatusLabel, "Réponse créée ✔", false);
-            } else {
-                reponseService.update(reponse);
-                setStatus(reponseFormStatusLabel, "Réponse modifiée ✔", false);
-            }
+            if (editingReponse == null) reponseService.create(reponse);
+            else                        reponseService.update(reponse);
 
+            setStatus(reponseFormStatusLabel,
+                    editingReponse == null ? "Réponse créée ✔" : "Réponse modifiée ✔", false);
             editingReponse = null;
             hidePanel(reponseFormPanel);
             loadReponses(selectedQuestion.getId());
 
         } catch (Exception e) {
-            setStatus(reponseFormStatusLabel,
-                    "Erreur (" + e.getClass().getSimpleName() + ") : " + e.getMessage(), true);
+            setStatus(reponseFormStatusLabel, "Erreur : " + e.getMessage(), true);
             e.printStackTrace();
         }
     }
@@ -632,8 +727,7 @@ public class QuizController implements Initializable {
                     ? quizService.getByCreateur(u.getId().intValue())
                     : quizService.getAll();
             quizList.setAll(list);
-            if (list.isEmpty())
-                setText(quizListMessageLabel, "Aucun quiz créé pour le moment.");
+            if (list.isEmpty()) setText(quizListMessageLabel, "Aucun quiz créé pour le moment.");
         } catch (Exception e) {
             setStatus(quizListMessageLabel, "Chargement impossible : " + e.getMessage(), true);
             e.printStackTrace();
@@ -647,8 +741,7 @@ public class QuizController implements Initializable {
         try {
             List<Question> list = questionService.getByQuiz(currentQuiz.getId());
             questionList.setAll(list);
-            if (list.isEmpty())
-                setText(questionsMessageLabel, "Aucune question pour ce quiz.");
+            if (list.isEmpty()) setText(questionsMessageLabel, "Aucune question pour ce quiz.");
         } catch (Exception e) {
             setStatus(questionsMessageLabel, "Chargement impossible : " + e.getMessage(), true);
             e.printStackTrace();
@@ -661,8 +754,7 @@ public class QuizController implements Initializable {
         try {
             List<Reponse> list = reponseService.getByQuestion(questionId);
             reponseList.setAll(list);
-            if (list.isEmpty())
-                setText(reponsesMessageLabel, "Aucune réponse pour cette question.");
+            if (list.isEmpty()) setText(reponsesMessageLabel, "Aucune réponse pour cette question.");
         } catch (Exception e) {
             setStatus(reponsesMessageLabel, "Chargement impossible : " + e.getMessage(), true);
             e.printStackTrace();
@@ -709,8 +801,7 @@ public class QuizController implements Initializable {
         setText(detailQuizMetaLabel,       safe(quiz.getTypeQuiz()) + " · "
                 + (quiz.getDureeMinutes() != null ? quiz.getDureeMinutes() + " min" : "-"));
         setText(detailQuizTypeLabel,       safe(quiz.getTypeQuiz()));
-        setText(detailQuizDureeLabel,      quiz.getDureeMinutes() != null
-                ? quiz.getDureeMinutes() + " min" : "-");
+        setText(detailQuizDureeLabel,      quiz.getDureeMinutes() != null ? quiz.getDureeMinutes() + " min" : "-");
         setText(detailQuizTentativesLabel, quiz.getNombreTentativesAutorisees() != null
                 ? String.valueOf(quiz.getNombreTentativesAutorisees()) : "-");
         setText(detailQuizCorrectionLabel, safe(quiz.getAfficherCorrectionApres()));
@@ -724,18 +815,18 @@ public class QuizController implements Initializable {
         if (quizTitreField           != null) quizTitreField.setText(safe(quiz.getTitre()));
         if (quizTypeCombo            != null) quizTypeCombo.setValue(quiz.getTypeQuiz());
         if (quizCorrectionApresCombo != null) quizCorrectionApresCombo.setValue(quiz.getAfficherCorrectionApres());
-        if (quizDureeSpinner      != null && quiz.getDureeMinutes() != null)
+        if (quizDureeSpinner         != null && quiz.getDureeMinutes() != null)
             quizDureeSpinner.getValueFactory().setValue(quiz.getDureeMinutes());
-        if (quizTentativesSpinner != null && quiz.getNombreTentativesAutorisees() != null)
+        if (quizTentativesSpinner    != null && quiz.getNombreTentativesAutorisees() != null)
             quizTentativesSpinner.getValueFactory().setValue(quiz.getNombreTentativesAutorisees());
-        if (quizDateDebutPicker   != null && quiz.getDateDebutDisponibilite() != null)
+        if (quizDateDebutPicker      != null && quiz.getDateDebutDisponibilite() != null)
             quizDateDebutPicker.setValue(quiz.getDateDebutDisponibilite().toLocalDate());
-        if (quizDateFinPicker     != null && quiz.getDateFinDisponibilite() != null)
+        if (quizDateFinPicker        != null && quiz.getDateFinDisponibilite() != null)
             quizDateFinPicker.setValue(quiz.getDateFinDisponibilite().toLocalDate());
-        if (quizIdCoursField      != null && quiz.getIdCours() != null)
+        if (quizIdCoursField         != null && quiz.getIdCours() != null)
             quizIdCoursField.setText(String.valueOf(quiz.getIdCours()));
-        if (quizInstructionsArea  != null) quizInstructionsArea.setText(safe(quiz.getInstructions()));
-        if (quizDescriptionArea   != null) quizDescriptionArea.setText(safe(quiz.getDescription()));
+        if (quizInstructionsArea     != null) quizInstructionsArea.setText(safe(quiz.getInstructions()));
+        if (quizDescriptionArea      != null) quizDescriptionArea.setText(safe(quiz.getDescription()));
     }
 
     private void updateDateRangeInfo() {
@@ -783,8 +874,6 @@ public class QuizController implements Initializable {
         setText(reponsesSectionSubtitleLabel, "Type : " + safe(q.getTypeQuestion())
                 + " · " + (q.getPoints() != null ? q.getPoints() + " pts" : "-"));
         hidePanel(reponseFormPanel);
-
-        // Masquer la case "correcte" pour texte_libre
         boolean isTextLibre = "texte_libre".equals(q.getTypeQuestion());
         if (reponseCorrecteCheck != null) {
             reponseCorrecteCheck.setVisible(!isTextLibre);
@@ -804,8 +893,7 @@ public class QuizController implements Initializable {
             try {
                 questionService.delete(q.getId().intValue());
                 if (selectedQuestion != null && selectedQuestion.getId().equals(q.getId())) {
-                    selectedQuestion = null;
-                    closeQuestionDetails();
+                    selectedQuestion = null; closeQuestionDetails();
                 }
                 setStatus(questionsMessageLabel, "Question supprimée.", false);
                 loadQuestions();
@@ -848,7 +936,6 @@ public class QuizController implements Initializable {
         setText(detailQuestionMetaLabel,        safe(q.getTypeQuestion())
                 + " · " + (q.getPoints() != null ? q.getPoints() + " pts" : "-"));
         setText(detailQuestionExplicationLabel, safe(q.getExplicationReponse()));
-
         if (detailReponsesContainer != null) {
             detailReponsesContainer.getChildren().clear();
             try {
@@ -857,8 +944,7 @@ public class QuizController implements Initializable {
                     String icone = Boolean.TRUE.equals(r.getEstCorrecte()) ? "✅ " : "❌ ";
                     Label lbl = new Label(icone + safe(r.getTexteReponse()));
                     lbl.setWrapText(true);
-                    lbl.getStyleClass().add(Boolean.TRUE.equals(r.getEstCorrecte())
-                            ? "detail-value" : "detail-key");
+                    lbl.getStyleClass().add(Boolean.TRUE.equals(r.getEstCorrecte()) ? "detail-value" : "detail-key");
                     detailReponsesContainer.getChildren().add(lbl);
                 }
                 if (reponses.isEmpty()) {
@@ -884,13 +970,56 @@ public class QuizController implements Initializable {
             questionOrdreSpinner.getValueFactory().setValue(q.getOrdreAffichage());
         if (questionExplicationArea != null)
             questionExplicationArea.setText(safe(q.getExplicationReponse()));
+
+        // Pré-remplir les réponses existantes dans les widgets
+        try {
+            List<Reponse> reponses = reponseService.getByQuestion(q.getId());
+            String type = q.getTypeQuestion();
+            if (type == null) return;
+            switch (type) {
+                case "vrai_faux" -> {
+                    for (Reponse r : reponses) {
+                        if ("Vrai".equalsIgnoreCase(r.getTexteReponse()) && Boolean.TRUE.equals(r.getEstCorrecte()))
+                            if (vraiFauxVraiRadio != null) vraiFauxVraiRadio.setSelected(true);
+                        if ("Faux".equalsIgnoreCase(r.getTexteReponse()) && Boolean.TRUE.equals(r.getEstCorrecte()))
+                            if (vraiFauxFauxRadio != null) vraiFauxFauxRadio.setSelected(true);
+                    }
+                }
+                case "choix_unique" -> {
+                    if (choixUniqueReponsesContainer != null)
+                        choixUniqueReponsesContainer.getChildren().clear();
+                    choixUniqueGroup.getToggles().clear();
+                    for (Reponse r : reponses) {
+                        addChoixUniqueRow();
+                        HBox row = (HBox) choixUniqueReponsesContainer.getChildren()
+                                .get(choixUniqueReponsesContainer.getChildren().size() - 1);
+                        ((RadioButton) row.getChildren().get(0)).setSelected(Boolean.TRUE.equals(r.getEstCorrecte()));
+                        ((TextField)   row.getChildren().get(1)).setText(safe(r.getTexteReponse()));
+                    }
+                }
+                case "choix_multiple" -> {
+                    if (choixMultipleReponsesContainer != null)
+                        choixMultipleReponsesContainer.getChildren().clear();
+                    for (Reponse r : reponses) {
+                        addChoixMultipleRow();
+                        HBox row = (HBox) choixMultipleReponsesContainer.getChildren()
+                                .get(choixMultipleReponsesContainer.getChildren().size() - 1);
+                        ((CheckBox)  row.getChildren().get(0)).setSelected(Boolean.TRUE.equals(r.getEstCorrecte()));
+                        ((TextField) row.getChildren().get(1)).setText(safe(r.getTexteReponse()));
+                    }
+                }
+                case "texte_libre" -> {
+                    if (!reponses.isEmpty() && texteLibreReponseArea != null)
+                        texteLibreReponseArea.setText(safe(reponses.get(0).getTexteReponse()));
+                }
+            }
+        } catch (Exception e) { e.printStackTrace(); }
     }
 
     private void populateReponseForm(Reponse r) {
         clearReponseForm();
         if (reponseTexteArea     != null) reponseTexteArea.setText(safe(r.getTexteReponse()));
-        if (reponseCorrecteCheck != null) reponseCorrecteCheck.setSelected(
-                Boolean.TRUE.equals(r.getEstCorrecte()));
+        if (reponseCorrecteCheck != null) reponseCorrecteCheck.setSelected(Boolean.TRUE.equals(r.getEstCorrecte()));
         if (reponseOrdreSpinner  != null && r.getOrdreAffichage() != null)
             reponseOrdreSpinner.getValueFactory().setValue(r.getOrdreAffichage());
         if (reponseFeedbackArea  != null) reponseFeedbackArea.setText(safe(r.getFeedbackSpecifique()));
@@ -898,34 +1027,15 @@ public class QuizController implements Initializable {
     }
 
     // ═════════════════════════════════════════════════════════════
-    // HINTS TYPE QUESTION
+    // HINTS
     // ═════════════════════════════════════════════════════════════
-    private void updateTypeHint(String type) {
-        if (type == null) { setText(questionFormStatusLabel, ""); return; }
-        switch (type) {
-            case "choix_unique"   -> setStatus(questionFormStatusLabel,
-                    "Choix unique : une seule réponse correcte. Marquez exactement une réponse.", false);
-            case "choix_multiple" -> setStatus(questionFormStatusLabel,
-                    "Choix multiple : plusieurs bonnes réponses. Marquez toutes les correctes.", false);
-            case "vrai_faux"      -> setStatus(questionFormStatusLabel,
-                    "Vrai / Faux : ajoutez « Vrai » et « Faux », marquez la correcte.", false);
-            case "texte_libre"    -> setStatus(questionFormStatusLabel,
-                    "Texte libre : aucune réponse à prédéfinir — correction manuelle.", false);
-            default               -> setText(questionFormStatusLabel, "");
-        }
-    }
-
     private void updateReponsesHint(String type) {
         if (type == null || reponsesMessageLabel == null) return;
         switch (type) {
-            case "choix_unique"   -> setStatus(reponsesMessageLabel,
-                    "ℹ Choix unique : marquez exactement une réponse comme correcte.", false);
-            case "choix_multiple" -> setStatus(reponsesMessageLabel,
-                    "ℹ Choix multiple : marquez toutes les réponses correctes.", false);
-            case "vrai_faux"      -> setStatus(reponsesMessageLabel,
-                    "ℹ Vrai / Faux : créez « Vrai » et « Faux », marquez la correcte.", false);
-            case "texte_libre"    -> setStatus(reponsesMessageLabel,
-                    "ℹ Texte libre : aucune réponse à marquer — correction manuelle.", false);
+            case "choix_unique"   -> setStatus(reponsesMessageLabel, "ℹ  Une seule réponse correcte.", false);
+            case "choix_multiple" -> setStatus(reponsesMessageLabel, "ℹ  Plusieurs réponses correctes possibles.", false);
+            case "vrai_faux"      -> setStatus(reponsesMessageLabel, "ℹ  Vérifiez la bonne réponse.", false);
+            case "texte_libre"    -> setStatus(reponsesMessageLabel, "ℹ  Correction manuelle.", false);
             default               -> setText(reponsesMessageLabel, "");
         }
     }
@@ -955,8 +1065,7 @@ public class QuizController implements Initializable {
             LocalDate d = quizDateDebutPicker.getValue();
             LocalDate f = quizDateFinPicker.getValue();
             if (d != null && f != null && !f.isAfter(d)) {
-                setText(quizDateFinErrorLabel,
-                        "La date de clôture doit être après la date d'ouverture."); ok = false;
+                setText(quizDateFinErrorLabel, "La date de clôture doit être après la date d'ouverture."); ok = false;
             }
         }
         return ok;
@@ -968,8 +1077,36 @@ public class QuizController implements Initializable {
         if (questionTexteArea != null && questionTexteArea.getText().trim().isEmpty()) {
             setText(questionTexteErrorLabel, "L'énoncé est obligatoire."); ok = false;
         }
-        if (questionTypeCombo != null && questionTypeCombo.getValue() == null) {
-            setText(questionTypeErrorLabel, "Veuillez choisir un type."); ok = false;
+        String type = questionTypeCombo != null ? questionTypeCombo.getValue() : null;
+        if (type == null) {
+            setText(questionTypeErrorLabel, "Veuillez choisir un type."); return false;
+        }
+        switch (type) {
+            case "vrai_faux" -> {
+                boolean aucun = (vraiFauxVraiRadio == null || !vraiFauxVraiRadio.isSelected())
+                        && (vraiFauxFauxRadio == null || !vraiFauxFauxRadio.isSelected());
+                if (aucun) { setText(vraiFauxErrorLabel, "Sélectionnez Vrai ou Faux."); ok = false; }
+            }
+            case "choix_unique" -> {
+                if (choixUniqueReponsesContainer == null || choixUniqueReponsesContainer.getChildren().isEmpty()) {
+                    setText(choixUniqueErrorLabel, "Ajoutez au moins une réponse."); ok = false;
+                } else {
+                    boolean hasCorrect = choixUniqueReponsesContainer.getChildren().stream()
+                            .filter(n -> n instanceof HBox)
+                            .anyMatch(n -> ((RadioButton) ((HBox) n).getChildren().get(0)).isSelected());
+                    if (!hasCorrect) { setText(choixUniqueErrorLabel, "Sélectionnez la bonne réponse (●)."); ok = false; }
+                }
+            }
+            case "choix_multiple" -> {
+                if (choixMultipleReponsesContainer == null || choixMultipleReponsesContainer.getChildren().isEmpty()) {
+                    setText(choixMultipleErrorLabel, "Ajoutez au moins une réponse."); ok = false;
+                } else {
+                    boolean hasCorrect = choixMultipleReponsesContainer.getChildren().stream()
+                            .filter(n -> n instanceof HBox)
+                            .anyMatch(n -> ((CheckBox) ((HBox) n).getChildren().get(0)).isSelected());
+                    if (!hasCorrect) { setText(choixMultipleErrorLabel, "Cochez au moins une réponse correcte."); ok = false; }
+                }
+            }
         }
         return ok;
     }
@@ -983,25 +1120,30 @@ public class QuizController implements Initializable {
         return true;
     }
 
-    // ── Nettoyage erreurs ──
+    // ─── Nettoyage erreurs ──
     private void clearQuizFormErrors() {
-        setText(quizTitreErrorLabel, "");        setText(quizTypeErrorLabel, "");
-        setText(quizCorrectionErrorLabel, "");   setText(quizDureeErrorLabel, "");
-        setText(quizTentativesErrorLabel, "");   setText(quizDateDebutErrorLabel, "");
-        setText(quizDateFinErrorLabel, "");      setText(quizIdCoursErrorLabel, "");
-        setText(quizInstructionsErrorLabel, ""); setText(quizDescriptionErrorLabel, "");
+        setText(quizTitreErrorLabel, "");       setText(quizTypeErrorLabel, "");
+        setText(quizCorrectionErrorLabel, "");  setText(quizDureeErrorLabel, "");
+        setText(quizTentativesErrorLabel, "");  setText(quizDateDebutErrorLabel, "");
+        setText(quizDateFinErrorLabel, "");     setText(quizIdCoursErrorLabel, "");
+        setText(quizInstructionsErrorLabel, "");setText(quizDescriptionErrorLabel, "");
         setText(quizFormStatusLabel, "");
     }
 
     private void clearQuestionFormErrors() {
         setText(questionTexteErrorLabel,       "");
         setText(questionTypeErrorLabel,        "");
+        setText(questionTypeHintLabel,         "");
         setText(questionPointsErrorLabel,      "");
         setText(questionExplicationErrorLabel, "");
         setText(questionFormStatusLabel,       "");
+        setText(vraiFauxErrorLabel,            "");
+        setText(choixUniqueErrorLabel,         "");
+        setText(choixMultipleErrorLabel,       "");
+        setText(texteLibreErrorLabel,          "");
     }
 
-    // ── Nettoyage formulaires ──
+    // ─── Nettoyage formulaires ──
     private void clearQuizForm() {
         clearQuizFormErrors();
         if (quizTitreField           != null) quizTitreField.clear();
@@ -1023,6 +1165,19 @@ public class QuizController implements Initializable {
         if (questionExplicationArea != null) questionExplicationArea.clear();
         if (questionPointsSpinner   != null) questionPointsSpinner.getValueFactory().setValue(1);
         if (questionOrdreSpinner    != null) questionOrdreSpinner.getValueFactory().setValue(1);
+
+        // Reset panels réponses
+        if (vraiFauxVraiRadio           != null) vraiFauxVraiRadio.setSelected(false);
+        if (vraiFauxFauxRadio           != null) vraiFauxFauxRadio.setSelected(false);
+        if (choixUniqueReponsesContainer   != null) choixUniqueReponsesContainer.getChildren().clear();
+        if (choixMultipleReponsesContainer != null) choixMultipleReponsesContainer.getChildren().clear();
+        if (texteLibreReponseArea          != null) texteLibreReponseArea.clear();
+
+        // Masquer tous les panels
+        hidePanel(reponsesVraiFauxPanel);
+        hidePanel(reponsesChoixUniquePanel);
+        hidePanel(reponsesChoixMultiplePanel);
+        hidePanel(reponsesTexteLibrePanel);
     }
 
     private void clearReponseForm() {

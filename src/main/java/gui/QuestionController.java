@@ -17,6 +17,7 @@ import services.ReponseService;
 import utils.UserSession;
 
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
 
@@ -42,7 +43,6 @@ public class QuestionController implements Initializable {
     @FXML private TableColumn<?,?>   qPointsColumn;
     @FXML private TableColumn<?,?>   qActionsColumn;
 
-    // Panneau détail question
     @FXML private VBox  questionDetailsPanel;
     @FXML private Label detailQuestionTexteLabel;
     @FXML private Label detailQuestionMetaLabel;
@@ -56,13 +56,34 @@ public class QuestionController implements Initializable {
     @FXML private Label     questionTexteErrorLabel;
     @FXML private ComboBox<String> questionTypeCombo;
     @FXML private Label     questionTypeErrorLabel;
-    @FXML private Label     questionTypeHintLabel;      // ← hint visible dans le panneau Paramètres
+    @FXML private Label     questionTypeHintLabel;
     @FXML private Spinner<Integer> questionPointsSpinner;
-    @FXML private Label     questionPointsErrorLabel;
     @FXML private Spinner<Integer> questionOrdreSpinner;
     @FXML private TextArea  questionExplicationArea;
-    @FXML private Label     questionExplicationErrorLabel;
-    @FXML private Label     questionFormStatusLabel;    // ← réservé aux erreurs de sauvegarde
+    @FXML private Label     questionFormStatusLabel;
+
+    // ── Panels dynamiques réponses ────────────────────────────────
+
+    // Vrai / Faux
+    @FXML private VBox        reponsesVraiFauxPanel;
+    @FXML private RadioButton vraiFauxVraiRadio;
+    @FXML private RadioButton vraiFauxFauxRadio;
+    @FXML private Label       vraiFauxErrorLabel;
+
+    // Choix unique
+    @FXML private VBox  reponsesChoixUniquePanel;
+    @FXML private VBox  choixUniqueReponsesContainer;
+    @FXML private Label choixUniqueErrorLabel;
+
+    // Choix multiple
+    @FXML private VBox  reponsesChoixMultiplePanel;
+    @FXML private VBox  choixMultipleReponsesContainer;
+    @FXML private Label choixMultipleErrorLabel;
+
+    // Texte libre
+    @FXML private VBox     reponsesTexteLibrePanel;
+    @FXML private TextArea texteLibreReponseArea;
+    @FXML private Label    texteLibreErrorLabel;
 
     // ── PAGE 3 : LISTE RÉPONSES ───────────────────────────────────
     @FXML private VBox  reponsesSection;
@@ -77,7 +98,6 @@ public class QuestionController implements Initializable {
     @FXML private TableColumn<?,?>  rFeedbackColumn;
     @FXML private TableColumn<?,?>  rActionsColumn;
 
-    // Formulaire réponse inline
     @FXML private VBox      reponseFormPanel;
     @FXML private Label     reponseFormTitleLabel;
     @FXML private TextArea  reponseTexteArea;
@@ -96,6 +116,9 @@ public class QuestionController implements Initializable {
     private Question editingQuestion  = null;
     private Reponse  editingReponse   = null;
 
+    // ToggleGroup créé en code (non injecté via FXML) pour choix unique
+    private final ToggleGroup choixUniqueGroup = new ToggleGroup();
+
     private final QuestionService questionService = new QuestionService();
     private final ReponseService  reponseService  = new ReponseService();
 
@@ -107,13 +130,10 @@ public class QuestionController implements Initializable {
     @SuppressWarnings("unchecked")
     public void initialize(URL location, ResourceBundle resources) {
 
-        // ComboBox types de question
         if (questionTypeCombo != null) {
             questionTypeCombo.setItems(FXCollections.observableArrayList(
                     "choix_unique", "choix_multiple", "vrai_faux", "texte_libre"));
-
-            // Hint contextuel affiché dans le panneau Paramètres via questionTypeHintLabel
-            questionTypeCombo.valueProperty().addListener((obs, old, nv) -> updateTypeHint(nv));
+            questionTypeCombo.valueProperty().addListener((obs, old, nv) -> onTypeChanged(nv));
         }
 
         // TableView questions
@@ -173,18 +193,13 @@ public class QuestionController implements Initializable {
                     }
                 });
             }
-
             reponsesTable.setItems(reponseList);
         }
 
-        // Profil utilisateur
         Utilisateur u = UserSession.getCurrentUser();
         if (u != null) setCurrentUser(u.getNomComplet(), u.getType());
     }
 
-    /**
-     * Appelé par QuizController pour injecter le quiz parent.
-     */
     public void initWithQuiz(Quiz quiz) {
         this.currentQuiz = quiz;
         setText(sectionTitleLabel,             "Questions — " + quiz.getTitre());
@@ -202,18 +217,15 @@ public class QuestionController implements Initializable {
         if (target != null) { target.setVisible(true); target.setManaged(true); }
     }
 
-    // ── PAGE 1 : QUESTIONS ────────────────────────────────────────
-    @FXML
-    public void showQuizListPage() {
+    // ── PAGE 1 ────────────────────────────────────────────────────
+    @FXML public void showQuizListPage() {
         if (questionsSection != null)
             questionsSection.getScene().getWindow().hide();
     }
 
-    @FXML
-    public void showQuestionCreateForm() {
+    @FXML public void showQuestionCreateForm() {
         if (currentQuiz == null) {
-            setStatus(questionsMessageLabel,
-                    "Erreur : aucun quiz associé. Fermez et réouvrez la fenêtre.", true);
+            setStatus(questionsMessageLabel, "Erreur : aucun quiz associé.", true);
             return;
         }
         editingQuestion = null;
@@ -223,8 +235,7 @@ public class QuestionController implements Initializable {
         clearQuestionForm();
     }
 
-    @FXML
-    private void closeQuestionDetails() {
+    @FXML private void closeQuestionDetails() {
         if (questionDetailsPanel != null) {
             questionDetailsPanel.setVisible(false);
             questionDetailsPanel.setManaged(false);
@@ -233,49 +244,134 @@ public class QuestionController implements Initializable {
         if (questionsTable != null) questionsTable.getSelectionModel().clearSelection();
     }
 
-    @FXML
-    private void editSelectedQuestion() {
-        if (selectedQuestion == null) {
-            setStatus(questionsMessageLabel, "Sélectionnez une question à modifier.", true);
-            return;
-        }
+    @FXML private void editSelectedQuestion() {
+        if (selectedQuestion == null) { setStatus(questionsMessageLabel, "Sélectionnez une question.", true); return; }
         startEditQuestion(selectedQuestion);
     }
 
-    @FXML
-    private void deleteSelectedQuestion() {
-        if (selectedQuestion == null) {
-            setStatus(questionsMessageLabel, "Sélectionnez une question à supprimer.", true);
-            return;
-        }
+    @FXML private void deleteSelectedQuestion() {
+        if (selectedQuestion == null) { setStatus(questionsMessageLabel, "Sélectionnez une question.", true); return; }
         confirmDeleteQuestion(selectedQuestion);
     }
 
-    @FXML
-    private void manageReponsesOfSelectedQuestion() {
-        if (selectedQuestion == null) {
-            setStatus(questionsMessageLabel, "Sélectionnez une question d'abord.", true);
-            return;
-        }
+    @FXML private void manageReponsesOfSelectedQuestion() {
+        if (selectedQuestion == null) { setStatus(questionsMessageLabel, "Sélectionnez une question.", true); return; }
         openReponsesFor(selectedQuestion);
     }
 
-    // ── PAGE 2 : FORMULAIRE QUESTION ─────────────────────────────
-    @FXML
-    private void cancelQuestionForm() {
+    // ── CHANGEMENT DE TYPE → affichage du bon panel ───────────────
+    private void onTypeChanged(String type) {
+        // Masquer tous les panels de réponses
+        hidePanel(reponsesVraiFauxPanel);
+        hidePanel(reponsesChoixUniquePanel);
+        hidePanel(reponsesChoixMultiplePanel);
+        hidePanel(reponsesTexteLibrePanel);
+
+        if (type == null) {
+            setText(questionTypeHintLabel, "");
+            return;
+        }
+
+        switch (type) {
+            case "vrai_faux" -> {
+                showPanel(reponsesVraiFauxPanel);
+                setStatus(questionTypeHintLabel,
+                        "ℹ  Sélectionnez la bonne réponse ci-dessous.", false);
+            }
+            case "choix_unique" -> {
+                showPanel(reponsesChoixUniquePanel);
+                // Ajouter 2 lignes par défaut si le conteneur est vide
+                if (choixUniqueReponsesContainer != null
+                        && choixUniqueReponsesContainer.getChildren().isEmpty()) {
+                    addChoixUniqueRow();
+                    addChoixUniqueRow();
+                }
+                setStatus(questionTypeHintLabel,
+                        "ℹ  Saisissez les réponses et sélectionnez la correcte (●).", false);
+            }
+            case "choix_multiple" -> {
+                showPanel(reponsesChoixMultiplePanel);
+                if (choixMultipleReponsesContainer != null
+                        && choixMultipleReponsesContainer.getChildren().isEmpty()) {
+                    addChoixMultipleRow();
+                    addChoixMultipleRow();
+                }
+                setStatus(questionTypeHintLabel,
+                        "ℹ  Saisissez les réponses et cochez les correctes (☑).", false);
+            }
+            case "texte_libre" -> {
+                showPanel(reponsesTexteLibrePanel);
+                setStatus(questionTypeHintLabel,
+                        "ℹ  Saisissez la réponse correcte de référence.", false);
+            }
+            default -> setText(questionTypeHintLabel, "");
+        }
+    }
+
+    // ── AJOUT DE LIGNES RÉPONSE DYNAMIQUES ───────────────────────
+
+    /**
+     * Ajoute une ligne [● TextField  🗑] dans le panel Choix unique.
+     */
+    @FXML private void addChoixUniqueRow() {
+        if (choixUniqueReponsesContainer == null) return;
+        int index = choixUniqueReponsesContainer.getChildren().size() + 1;
+
+        RadioButton radio = new RadioButton();
+        radio.setToggleGroup(choixUniqueGroup);
+        radio.setUserData(index);
+
+        TextField field = new TextField();
+        field.setPromptText("Réponse " + index + "…");
+        field.getStyleClass().add("input-field");
+        HBox.setHgrow(field, javafx.scene.layout.Priority.ALWAYS);
+
+        Button btnDel = new Button("🗑");
+        btnDel.getStyleClass().addAll("danger-button", "compact-button");
+
+        HBox row = new HBox(10, radio, field, btnDel);
+        row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        btnDel.setOnAction(e -> choixUniqueReponsesContainer.getChildren().remove(row));
+
+        choixUniqueReponsesContainer.getChildren().add(row);
+    }
+
+    /**
+     * Ajoute une ligne [☐ TextField  🗑] dans le panel Choix multiple.
+     */
+    @FXML private void addChoixMultipleRow() {
+        if (choixMultipleReponsesContainer == null) return;
+        int index = choixMultipleReponsesContainer.getChildren().size() + 1;
+
+        CheckBox check = new CheckBox();
+
+        TextField field = new TextField();
+        field.setPromptText("Réponse " + index + "…");
+        field.getStyleClass().add("input-field");
+        HBox.setHgrow(field, javafx.scene.layout.Priority.ALWAYS);
+
+        Button btnDel = new Button("🗑");
+        btnDel.getStyleClass().addAll("danger-button", "compact-button");
+
+        HBox row = new HBox(10, check, field, btnDel);
+        row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        btnDel.setOnAction(e -> choixMultipleReponsesContainer.getChildren().remove(row));
+
+        choixMultipleReponsesContainer.getChildren().add(row);
+    }
+
+    // ── PAGE 2 : SAUVEGARDE ───────────────────────────────────────
+    @FXML private void cancelQuestionForm() {
         editingQuestion = null;
         showOnly(questionsSection);
         setText(sectionTitleLabel, "Questions — " + (currentQuiz != null ? currentQuiz.getTitre() : ""));
     }
 
-    @FXML
-    private void saveQuestion() {
+    @FXML private void saveQuestion() {
         if (currentQuiz == null) {
-            setStatus(questionFormStatusLabel,
-                    "Erreur critique : aucun quiz associé. Fermez et réouvrez la fenêtre.", true);
+            setStatus(questionFormStatusLabel, "Erreur critique : aucun quiz associé.", true);
             return;
         }
-
         if (!validateQuestionForm()) return;
 
         try {
@@ -283,16 +379,13 @@ public class QuestionController implements Initializable {
             Question question = isNew ? new Question() : editingQuestion;
 
             question.setTexte(questionTexteArea.getText().trim());
-
-            if (questionTypeCombo.getValue() != null)
-                question.setTypeQuestion(questionTypeCombo.getValue());
+            String type = questionTypeCombo.getValue();
+            question.setTypeQuestion(type);
 
             if (questionPointsSpinner.getValue() != null)
                 question.setPoints(questionPointsSpinner.getValue());
-
             if (questionOrdreSpinner != null && questionOrdreSpinner.getValue() != null)
                 question.setOrdreAffichage(questionOrdreSpinner.getValue());
-
             if (questionExplicationArea != null)
                 question.setExplicationReponse(questionExplicationArea.getText().trim());
 
@@ -304,16 +397,22 @@ public class QuestionController implements Initializable {
 
             if (isNew) {
                 questionService.create(question);
-                // Génération automatique des réponses selon le type
-                autoCreateReponses(question);
+                saveReponsesInline(question);
             } else {
                 questionService.update(question);
-                setStatus(questionFormStatusLabel, "Question modifiée avec succès ✔", false);
-                editingQuestion = null;
-                loadQuestions();
-                showOnly(questionsSection);
-                setText(sectionTitleLabel, "Questions — " + currentQuiz.getTitre());
+                // En mode édition, effacer les anciennes réponses et recréer
+                List<Reponse> old = reponseService.getByQuestion(question.getId());
+                for (Reponse r : old) reponseService.delete(r.getId().intValue());
+                saveReponsesInline(question);
             }
+
+            setStatus(questionFormStatusLabel,
+                    isNew ? "Question créée avec succès ✔" : "Question modifiée ✔", false);
+
+            editingQuestion = null;
+            loadQuestions();
+            showOnly(questionsSection);
+            setText(sectionTitleLabel, "Questions — " + currentQuiz.getTitre());
 
         } catch (Exception e) {
             setStatus(questionFormStatusLabel,
@@ -322,167 +421,130 @@ public class QuestionController implements Initializable {
         }
     }
 
-    // ── GÉNÉRATION AUTOMATIQUE DES RÉPONSES ──────────────────────
-
     /**
-     * Génère automatiquement les réponses selon le type de la question
-     * qui vient d'être créée, puis propose d'ouvrir la page des réponses.
+     * Lit les widgets du panel actif et crée les Reponse en BDD.
      */
-    private void autoCreateReponses(Question question) {
+    private void saveReponsesInline(Question question) throws Exception {
         String type = question.getTypeQuestion();
-
-        // Retour à la liste dans tous les cas
-        editingQuestion = null;
-        loadQuestions();
-        showOnly(questionsSection);
-        setText(sectionTitleLabel, "Questions — " + currentQuiz.getTitre());
-
-        if (type == null) {
-            setStatus(questionsMessageLabel, "Question créée ✔", false);
-            return;
-        }
+        if (type == null) return;
 
         switch (type) {
 
             case "vrai_faux" -> {
-                try {
-                    Reponse vrai = new Reponse();
-                    vrai.setTexteReponse("Vrai");
-                    vrai.setEstCorrecte(true);
-                    vrai.setOrdreAffichage(1);
-                    vrai.setQuestion(question);
-                    reponseService.create(vrai);
+                boolean vraiEstCorrect = vraiFauxVraiRadio != null && vraiFauxVraiRadio.isSelected();
 
-                    Reponse faux = new Reponse();
-                    faux.setTexteReponse("Faux");
-                    faux.setEstCorrecte(false);
-                    faux.setOrdreAffichage(2);
-                    faux.setQuestion(question);
-                    reponseService.create(faux);
+                Reponse vrai = new Reponse();
+                vrai.setTexteReponse("Vrai");
+                vrai.setEstCorrecte(vraiEstCorrect);
+                vrai.setOrdreAffichage(1);
+                vrai.setQuestion(question);
+                reponseService.create(vrai);
 
-                    setStatus(questionsMessageLabel,
-                            "Question créée ✔ · Réponses « Vrai » et « Faux » générées automatiquement.", false);
+                Reponse faux = new Reponse();
+                faux.setTexteReponse("Faux");
+                faux.setEstCorrecte(!vraiEstCorrect);
+                faux.setOrdreAffichage(2);
+                faux.setQuestion(question);
+                reponseService.create(faux);
+            }
 
-                    askOpenReponses(question,
-                            "Les réponses « Vrai » et « Faux » ont été créées.\n"
-                                    + "Voulez-vous vérifier et ajuster la bonne réponse ?");
+            case "choix_unique" -> {
+                if (choixUniqueReponsesContainer == null) return;
+                int ordre = 1;
+                for (var node : choixUniqueReponsesContainer.getChildren()) {
+                    if (!(node instanceof HBox row)) continue;
+                    RadioButton radio = (RadioButton) row.getChildren().get(0);
+                    TextField   field = (TextField)   row.getChildren().get(1);
+                    String texte = field.getText().trim();
+                    if (texte.isEmpty()) continue;
 
-                } catch (Exception e) {
-                    setStatus(questionsMessageLabel,
-                            "Question créée mais erreur à la génération des réponses : " + e.getMessage(), true);
-                    e.printStackTrace();
+                    Reponse r = new Reponse();
+                    r.setTexteReponse(texte);
+                    r.setEstCorrecte(radio.isSelected());
+                    r.setOrdreAffichage(ordre++);
+                    r.setQuestion(question);
+                    reponseService.create(r);
                 }
             }
 
-            case "choix_unique", "choix_multiple" -> {
-                ChoiceDialog<Integer> dialog = new ChoiceDialog<>(4, 2, 3, 4, 5, 6);
-                dialog.setTitle("Réponses automatiques");
-                dialog.setHeaderText("Question de type « " + type + " »");
-                dialog.setContentText("Combien de réponses vides souhaitez-vous créer ?");
+            case "choix_multiple" -> {
+                if (choixMultipleReponsesContainer == null) return;
+                int ordre = 1;
+                for (var node : choixMultipleReponsesContainer.getChildren()) {
+                    if (!(node instanceof HBox row)) continue;
+                    CheckBox  check = (CheckBox)  row.getChildren().get(0);
+                    TextField field = (TextField) row.getChildren().get(1);
+                    String texte = field.getText().trim();
+                    if (texte.isEmpty()) continue;
 
-                dialog.showAndWait().ifPresent(count -> {
-                    try {
-                        for (int i = 1; i <= count; i++) {
-                            Reponse r = new Reponse();
-                            r.setTexteReponse("Réponse " + i);
-                            r.setEstCorrecte(false);
-                            r.setOrdreAffichage(i);
-                            r.setQuestion(question);
-                            reponseService.create(r);
-                        }
-
-                        setStatus(questionsMessageLabel,
-                                "Question créée ✔ · " + count + " réponse(s) vide(s) générée(s).", false);
-
-                        askOpenReponses(question,
-                                count + " réponses vides ont été créées.\n"
-                                        + "Voulez-vous les compléter et marquer la/les correcte(s) maintenant ?");
-
-                    } catch (Exception e) {
-                        setStatus(questionsMessageLabel,
-                                "Question créée mais erreur à la génération : " + e.getMessage(), true);
-                        e.printStackTrace();
-                    }
-                });
+                    Reponse r = new Reponse();
+                    r.setTexteReponse(texte);
+                    r.setEstCorrecte(check.isSelected());
+                    r.setOrdreAffichage(ordre++);
+                    r.setQuestion(question);
+                    reponseService.create(r);
+                }
             }
 
-            case "texte_libre" ->
-                    setStatus(questionsMessageLabel,
-                            "Question « texte libre » créée ✔ · Aucune réponse prédéfinie (correction manuelle).", false);
-
-            default -> setStatus(questionsMessageLabel, "Question créée ✔", false);
+            case "texte_libre" -> {
+                String texte = texteLibreReponseArea != null
+                        ? texteLibreReponseArea.getText().trim() : "";
+                if (!texte.isEmpty()) {
+                    Reponse r = new Reponse();
+                    r.setTexteReponse(texte);
+                    r.setEstCorrecte(true);
+                    r.setOrdreAffichage(1);
+                    r.setQuestion(question);
+                    reponseService.create(r);
+                }
+            }
         }
     }
 
-    /**
-     * Propose d'ouvrir la page des réponses pour la question qui vient d'être créée.
-     */
-    private void askOpenReponses(Question question, String message) {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
-                message, ButtonType.YES, ButtonType.NO);
-        alert.setTitle("Éditer les réponses ?");
-        alert.setHeaderText(null);
-        alert.showAndWait().ifPresent(bt -> {
-            if (bt == ButtonType.YES) openReponsesFor(question);
-        });
-    }
-
     // ── PAGE 3 : RÉPONSES ─────────────────────────────────────────
-    @FXML
-    private void backToQuestionsFromReponses() {
+    @FXML private void backToQuestionsFromReponses() {
         showOnly(questionsSection);
         setText(sectionTitleLabel, "Questions — " + (currentQuiz != null ? currentQuiz.getTitre() : ""));
     }
 
-    @FXML
-    private void showReponseCreateForm() {
+    @FXML private void showReponseCreateForm() {
         editingReponse = null;
         setText(reponseFormTitleLabel, "Nouvelle réponse");
         clearReponseForm();
         showPanel(reponseFormPanel);
     }
 
-    @FXML
-    private void closeReponseForm() {
+    @FXML private void closeReponseForm() {
         editingReponse = null;
         hidePanel(reponseFormPanel);
     }
 
-    @FXML
-    private void saveReponse() {
+    @FXML private void saveReponse() {
         if (!validateReponseForm()) return;
         try {
             Reponse reponse = (editingReponse != null) ? editingReponse : new Reponse();
-
             reponse.setTexteReponse(reponseTexteArea.getText().trim());
             reponse.setEstCorrecte(reponseCorrecteCheck != null && reponseCorrecteCheck.isSelected());
-
             if (reponseOrdreSpinner != null && reponseOrdreSpinner.getValue() != null)
                 reponse.setOrdreAffichage(reponseOrdreSpinner.getValue());
-
             if (reponseFeedbackArea != null)
                 reponse.setFeedbackSpecifique(reponseFeedbackArea.getText().trim());
-
             if (reponseMediaUrlField != null)
                 reponse.setMediaUrl(reponseMediaUrlField.getText().trim());
-
             reponse.setQuestion(selectedQuestion);
 
-            if (editingReponse == null) {
-                reponseService.create(reponse);
-                setStatus(reponseFormStatusLabel, "Réponse créée ✔", false);
-            } else {
-                reponseService.update(reponse);
-                setStatus(reponseFormStatusLabel, "Réponse modifiée ✔", false);
-            }
+            if (editingReponse == null) reponseService.create(reponse);
+            else                        reponseService.update(reponse);
 
+            setStatus(reponseFormStatusLabel,
+                    editingReponse == null ? "Réponse créée ✔" : "Réponse modifiée ✔", false);
             editingReponse = null;
             hidePanel(reponseFormPanel);
             loadReponses(selectedQuestion.getId());
 
         } catch (Exception e) {
             setStatus(reponseFormStatusLabel,
-                    "Erreur (" + e.getClass().getSimpleName() + ") : " + e.getMessage(), true);
+                    "Erreur : " + e.getMessage(), true);
             e.printStackTrace();
         }
     }
@@ -495,12 +557,9 @@ public class QuestionController implements Initializable {
         try {
             List<Question> list = questionService.getByQuiz(currentQuiz.getId());
             questionList.setAll(list);
-            if (list.isEmpty())
-                setText(questionsMessageLabel, "Aucune question pour ce quiz.");
+            if (list.isEmpty()) setText(questionsMessageLabel, "Aucune question pour ce quiz.");
         } catch (Exception e) {
-            setStatus(questionsMessageLabel,
-                    "Chargement impossible : " + e.getMessage(), true);
-            e.printStackTrace();
+            setStatus(questionsMessageLabel, "Chargement impossible : " + e.getMessage(), true);
         }
     }
 
@@ -510,16 +569,13 @@ public class QuestionController implements Initializable {
         try {
             List<Reponse> list = reponseService.getByQuestion(questionId);
             reponseList.setAll(list);
-            if (list.isEmpty())
-                setText(reponsesMessageLabel, "Aucune réponse pour cette question.");
+            if (list.isEmpty()) setText(reponsesMessageLabel, "Aucune réponse pour cette question.");
         } catch (Exception e) {
-            setStatus(reponsesMessageLabel,
-                    "Chargement impossible : " + e.getMessage(), true);
-            e.printStackTrace();
+            setStatus(reponsesMessageLabel, "Chargement impossible : " + e.getMessage(), true);
         }
     }
 
-    // ── HELPERS PRIVÉS ────────────────────────────────────────────
+    // ── HELPERS ───────────────────────────────────────────────────
     private void startEditQuestion(Question q) {
         editingQuestion = q;
         showOnly(questionFormSection);
@@ -537,13 +593,11 @@ public class QuestionController implements Initializable {
                 + " · " + safe(String.valueOf(q.getPoints())) + " pts");
         hidePanel(reponseFormPanel);
 
-        // Masquer la case "correcte" pour le type texte_libre
         boolean isTextLibre = "texte_libre".equals(q.getTypeQuestion());
         if (reponseCorrecteCheck != null) {
             reponseCorrecteCheck.setVisible(!isTextLibre);
             reponseCorrecteCheck.setManaged(!isTextLibre);
         }
-
         updateReponsesHint(q.getTypeQuestion());
         loadReponses(q.getId());
     }
@@ -564,8 +618,7 @@ public class QuestionController implements Initializable {
                 setStatus(questionsMessageLabel, "Question supprimée.", false);
                 loadQuestions();
             } catch (Exception e) {
-                setStatus(questionsMessageLabel,
-                        "Suppression impossible : " + e.getMessage(), true);
+                setStatus(questionsMessageLabel, "Suppression impossible : " + e.getMessage(), true);
             }
         });
     }
@@ -588,8 +641,7 @@ public class QuestionController implements Initializable {
                 setStatus(reponsesMessageLabel, "Réponse supprimée.", false);
                 loadReponses(selectedQuestion.getId());
             } catch (Exception e) {
-                setStatus(reponsesMessageLabel,
-                        "Suppression impossible : " + e.getMessage(), true);
+                setStatus(reponsesMessageLabel, "Suppression impossible : " + e.getMessage(), true);
             }
         });
     }
@@ -641,69 +693,73 @@ public class QuestionController implements Initializable {
             questionOrdreSpinner.getValueFactory().setValue(q.getOrdreAffichage());
         if (questionExplicationArea != null)
             questionExplicationArea.setText(safe(q.getExplicationReponse()));
-        // Le listener sur questionTypeCombo déclenche updateTypeHint automatiquement
+
+        // Pré-remplir les réponses existantes
+        try {
+            List<Reponse> reponses = reponseService.getByQuestion(q.getId());
+            String type = q.getTypeQuestion();
+            if (type == null) return;
+
+            switch (type) {
+                case "vrai_faux" -> {
+                    for (Reponse r : reponses) {
+                        if ("Vrai".equalsIgnoreCase(r.getTexteReponse()) && Boolean.TRUE.equals(r.getEstCorrecte()))
+                            if (vraiFauxVraiRadio != null) vraiFauxVraiRadio.setSelected(true);
+                        if ("Faux".equalsIgnoreCase(r.getTexteReponse()) && Boolean.TRUE.equals(r.getEstCorrecte()))
+                            if (vraiFauxFauxRadio != null) vraiFauxFauxRadio.setSelected(true);
+                    }
+                }
+                case "choix_unique" -> {
+                    if (choixUniqueReponsesContainer != null)
+                        choixUniqueReponsesContainer.getChildren().clear();
+                    choixUniqueGroup.getToggles().clear();
+                    for (Reponse r : reponses) {
+                        addChoixUniqueRow();
+                        HBox row = (HBox) choixUniqueReponsesContainer.getChildren()
+                                .get(choixUniqueReponsesContainer.getChildren().size() - 1);
+                        ((RadioButton) row.getChildren().get(0)).setSelected(Boolean.TRUE.equals(r.getEstCorrecte()));
+                        ((TextField)   row.getChildren().get(1)).setText(safe(r.getTexteReponse()));
+                    }
+                }
+                case "choix_multiple" -> {
+                    if (choixMultipleReponsesContainer != null)
+                        choixMultipleReponsesContainer.getChildren().clear();
+                    for (Reponse r : reponses) {
+                        addChoixMultipleRow();
+                        HBox row = (HBox) choixMultipleReponsesContainer.getChildren()
+                                .get(choixMultipleReponsesContainer.getChildren().size() - 1);
+                        ((CheckBox)  row.getChildren().get(0)).setSelected(Boolean.TRUE.equals(r.getEstCorrecte()));
+                        ((TextField) row.getChildren().get(1)).setText(safe(r.getTexteReponse()));
+                    }
+                }
+                case "texte_libre" -> {
+                    if (!reponses.isEmpty() && texteLibreReponseArea != null)
+                        texteLibreReponseArea.setText(safe(reponses.get(0).getTexteReponse()));
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void populateReponseForm(Reponse r) {
         clearReponseForm();
         if (reponseTexteArea     != null) reponseTexteArea.setText(safe(r.getTexteReponse()));
-        if (reponseCorrecteCheck != null) reponseCorrecteCheck.setSelected(
-                Boolean.TRUE.equals(r.getEstCorrecte()));
+        if (reponseCorrecteCheck != null) reponseCorrecteCheck.setSelected(Boolean.TRUE.equals(r.getEstCorrecte()));
         if (reponseOrdreSpinner  != null && r.getOrdreAffichage() != null)
             reponseOrdreSpinner.getValueFactory().setValue(r.getOrdreAffichage());
         if (reponseFeedbackArea  != null) reponseFeedbackArea.setText(safe(r.getFeedbackSpecifique()));
         if (reponseMediaUrlField != null) reponseMediaUrlField.setText(safe(r.getMediaUrl()));
     }
 
-    // ── HINTS SELON LE TYPE ───────────────────────────────────────
-
-    /**
-     * Affiche le hint directement dans le panneau Paramètres (questionTypeHintLabel),
-     * juste sous le ComboBox — visible sans scroller, dès la sélection du type.
-     */
-    private void updateTypeHint(String type) {
-        if (type == null) {
-            setText(questionTypeHintLabel, "");
-            return;
-        }
-        switch (type) {
-            case "choix_unique" ->
-                    setStatus(questionTypeHintLabel,
-                            "ℹ  Choix unique : à la sauvegarde, vous choisirez le nombre de réponses vides à générer. "
-                                    + "Marquez ensuite exactement une réponse comme correcte.", false);
-            case "choix_multiple" ->
-                    setStatus(questionTypeHintLabel,
-                            "ℹ  Choix multiple : à la sauvegarde, vous choisirez le nombre de réponses vides à générer. "
-                                    + "Marquez toutes les réponses correctes.", false);
-            case "vrai_faux" ->
-                    setStatus(questionTypeHintLabel,
-                            "ℹ  Vrai / Faux : les réponses « Vrai » et « Faux » seront créées automatiquement à la sauvegarde.", false);
-            case "texte_libre" ->
-                    setStatus(questionTypeHintLabel,
-                            "ℹ  Texte libre : aucune réponse prédéfinie — la correction sera manuelle.", false);
-            default -> setText(questionTypeHintLabel, "");
-        }
-    }
-
-    /**
-     * Affiche un hint dans la page des réponses selon le type de la question parente.
-     */
     private void updateReponsesHint(String type) {
         if (type == null || reponsesMessageLabel == null) return;
         switch (type) {
-            case "choix_unique" ->
-                    setStatus(reponsesMessageLabel,
-                            "ℹ  Choix unique : marquez exactement une réponse comme correcte.", false);
-            case "choix_multiple" ->
-                    setStatus(reponsesMessageLabel,
-                            "ℹ  Choix multiple : marquez toutes les réponses correctes.", false);
-            case "vrai_faux" ->
-                    setStatus(reponsesMessageLabel,
-                            "ℹ  Vrai / Faux : vérifiez que la bonne réponse est bien marquée correcte.", false);
-            case "texte_libre" ->
-                    setStatus(reponsesMessageLabel,
-                            "ℹ  Texte libre : aucune réponse à marquer — correction manuelle.", false);
-            default -> setText(reponsesMessageLabel, "");
+            case "choix_unique"   -> setStatus(reponsesMessageLabel, "ℹ  Une seule réponse correcte.", false);
+            case "choix_multiple" -> setStatus(reponsesMessageLabel, "ℹ  Plusieurs réponses correctes possibles.", false);
+            case "vrai_faux"      -> setStatus(reponsesMessageLabel, "ℹ  Vérifiez la bonne réponse.", false);
+            case "texte_libre"    -> setStatus(reponsesMessageLabel, "ℹ  Correction manuelle.", false);
+            default               -> setText(reponsesMessageLabel, "");
         }
     }
 
@@ -711,14 +767,61 @@ public class QuestionController implements Initializable {
     private boolean validateQuestionForm() {
         boolean ok = true;
         clearQuestionFormErrors();
+
         if (questionTexteArea != null && questionTexteArea.getText().trim().isEmpty()) {
             setText(questionTexteErrorLabel, "L'énoncé est obligatoire.");
             ok = false;
         }
-        if (questionTypeCombo != null && questionTypeCombo.getValue() == null) {
+
+        String type = questionTypeCombo != null ? questionTypeCombo.getValue() : null;
+        if (type == null) {
             setText(questionTypeErrorLabel, "Veuillez choisir un type.");
-            ok = false;
+            return false;
         }
+
+        // Validation spécifique par type
+        switch (type) {
+            case "vrai_faux" -> {
+                boolean aucunSelectionne = (vraiFauxVraiRadio == null || !vraiFauxVraiRadio.isSelected())
+                        && (vraiFauxFauxRadio == null || !vraiFauxFauxRadio.isSelected());
+                if (aucunSelectionne) {
+                    setText(vraiFauxErrorLabel, "Sélectionnez la bonne réponse (Vrai ou Faux).");
+                    ok = false;
+                }
+            }
+            case "choix_unique" -> {
+                if (choixUniqueReponsesContainer == null
+                        || choixUniqueReponsesContainer.getChildren().isEmpty()) {
+                    setText(choixUniqueErrorLabel, "Ajoutez au moins une réponse.");
+                    ok = false;
+                } else {
+                    boolean hasCorrect = choixUniqueReponsesContainer.getChildren().stream()
+                            .filter(n -> n instanceof HBox)
+                            .anyMatch(n -> ((RadioButton) ((HBox) n).getChildren().get(0)).isSelected());
+                    if (!hasCorrect) {
+                        setText(choixUniqueErrorLabel, "Sélectionnez la bonne réponse (●).");
+                        ok = false;
+                    }
+                }
+            }
+            case "choix_multiple" -> {
+                if (choixMultipleReponsesContainer == null
+                        || choixMultipleReponsesContainer.getChildren().isEmpty()) {
+                    setText(choixMultipleErrorLabel, "Ajoutez au moins une réponse.");
+                    ok = false;
+                } else {
+                    boolean hasCorrect = choixMultipleReponsesContainer.getChildren().stream()
+                            .filter(n -> n instanceof HBox)
+                            .anyMatch(n -> ((CheckBox) ((HBox) n).getChildren().get(0)).isSelected());
+                    if (!hasCorrect) {
+                        setText(choixMultipleErrorLabel, "Cochez au moins une réponse correcte.");
+                        ok = false;
+                    }
+                }
+            }
+            // texte_libre : réponse optionnelle
+        }
+
         return ok;
     }
 
@@ -732,12 +835,14 @@ public class QuestionController implements Initializable {
     }
 
     private void clearQuestionFormErrors() {
-        setText(questionTexteErrorLabel,       "");
-        setText(questionTypeErrorLabel,        "");
-        setText(questionTypeHintLabel,         "");  // reset du hint
-        setText(questionPointsErrorLabel,      "");
-        setText(questionExplicationErrorLabel, "");
-        setText(questionFormStatusLabel,       "");
+        setText(questionTexteErrorLabel, "");
+        setText(questionTypeErrorLabel,  "");
+        setText(questionTypeHintLabel,   "");
+        setText(questionFormStatusLabel, "");
+        setText(vraiFauxErrorLabel,      "");
+        setText(choixUniqueErrorLabel,   "");
+        setText(choixMultipleErrorLabel, "");
+        setText(texteLibreErrorLabel,    "");
     }
 
     private void clearQuestionForm() {
@@ -747,6 +852,19 @@ public class QuestionController implements Initializable {
         if (questionExplicationArea != null) questionExplicationArea.clear();
         if (questionPointsSpinner   != null) questionPointsSpinner.getValueFactory().setValue(1);
         if (questionOrdreSpinner    != null) questionOrdreSpinner.getValueFactory().setValue(1);
+
+        // Reset panels réponses
+        if (vraiFauxVraiRadio != null) vraiFauxVraiRadio.setSelected(false);
+        if (vraiFauxFauxRadio != null) vraiFauxFauxRadio.setSelected(false);
+        if (choixUniqueReponsesContainer  != null) choixUniqueReponsesContainer.getChildren().clear();
+        if (choixMultipleReponsesContainer != null) choixMultipleReponsesContainer.getChildren().clear();
+        if (texteLibreReponseArea != null) texteLibreReponseArea.clear();
+
+        // Masquer tous les panels dynamiques
+        hidePanel(reponsesVraiFauxPanel);
+        hidePanel(reponsesChoixUniquePanel);
+        hidePanel(reponsesChoixMultiplePanel);
+        hidePanel(reponsesTexteLibrePanel);
     }
 
     private void clearReponseForm() {
