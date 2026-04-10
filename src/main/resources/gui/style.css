@@ -1,0 +1,370 @@
+.root {
+    -fx-font-family: "Segoe UI";
+}
+
+.app-shell {
+    -fx-background-color:
+        radial-gradient(center 15% 20%, radius 55%, rgba(242, 160, 72, 0.22), transparent 60%),
+        radial-gradient(center 85% 10%, radius 50%, rgba(46, 89, 217, 0.28), transparent 60%),
+        linear-gradient(to bottom right, #0f172a, #14213d, #1d3557);
+}
+
+.login-layout {
+    -fx-padding: 36 48 36 48;
+}
+
+.hero-panel {
+    -fx-padding: 34;
+    -fx-background-color: rgba(255, 255, 255, 0.08);
+    -fx-background-radius: 30;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.25), 24, 0.15, 0, 10);
+}
+
+.glass-card {
+    -fx-background-color: rgba(255, 255, 255, 0.9);
+    -fx-background-radius: 28;
+    -fx-effect: dropshadow(gaussian, rgba(11, 18, 32, 0.35), 30, 0.18, 0, 16);
+}
+
+.eyebrow {
+    -fx-text-fill: #fca311;
+    -fx-font-size: 14px;
+    -fx-font-weight: 800;
+}
+
+.hero-title {
+    -fx-text-fill: white;
+    -fx-font-size: 34px;
+    -fx-font-weight: 800;
+}
+
+.small-hero {
+    -fx-font-size: 28px;
+}
+
+.hero-copy {
+    -fx-text-fill: rgba(255, 255, 255, 0.78);
+    -fx-font-size: 15px;
+}
+
+.feature-block {
+    -fx-background-color: rgba(255, 255, 255, 0.06);
+    -fx-background-radius: 22;
+    -fx-padding: 18;
+}
+
+.feature-item {
+    -fx-text-fill: white;
+    -fx-font-size: 15px;
+}
+
+.card-title {
+    -fx-text-fill: #0f172a;
+    -fx-font-size: 28px;
+    -fx-font-weight: 800;
+}
+
+.card-subtitle {
+    -fx-text-fill: #4b5563;
+    -fx-font-size: 14px;
+}
+
+.input-field {
+    -fx-background-color: #f4f7fb;
+    -fx-background-radius: 14;
+    -fx-border-color: #dbe3ee;
+    -fx-border-radius: 14;
+    -fx-padding: 14 16 14 16;
+    -fx-font-size: 14px;
+}
+
+.inline-field {
+    -fx-pref-width: 290;
+}
+
+.inline-combo {
+    -fx-background-color: #f4f7fb;
+    -fx-background-radius: 14;
+    -fx-border-color: #dbe3ee;
+    -fx-border-radius: 14;
+}
+
+.input-field:focused {
+    -fx-border-color: #1d4ed8;
+    -fx-background-color: white;
+}
+
+.primary-button {
+    -fx-background-color: linear-gradient(to right, #f97316, #ef4444);
+    -fx-text-fill: white;
+    -fx-font-weight: 700;
+    -fx-background-radius: 14;
+    -fx-padding: 13 18 13 18;
+}
+
+.secondary-button {
+    -fx-background-color: #e5edf8;
+    -fx-text-fill: #1f2937;
+    -fx-font-weight: 700;
+    -fx-background-radius: 14;
+    -fx-padding: 13 18 13 18;
+}
+
+.danger-button {
+    -fx-background-color: #ef4444;
+    -fx-text-fill: white;
+    -fx-font-weight: 700;
+    -fx-background-radius: 14;
+    -fx-padding: 13 18 13 18;
+}
+
+.compact-button {
+    -fx-padding: 10 18 10 18;
+}
+
+.status-label {
+    -fx-text-fill: #b91c1c;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+}
+
+.status-success {
+    -fx-text-fill: #15803d;
+}
+
+.dashboard-shell {
+    -fx-background-color: linear-gradient(to bottom right, #f8fafc, #edf2f7);
+}
+
+.academic-shell {
+    -fx-background-color:
+        radial-gradient(center 18% 18%, radius 55%, rgba(125, 211, 252, 0.34), transparent 60%),
+        radial-gradient(center 88% 12%, radius 48%, rgba(16, 185, 129, 0.18), transparent 60%),
+        linear-gradient(to bottom right, #f6fbff, #edf7f4);
+}
+
+.student-shell {
+    -fx-background-color:
+        radial-gradient(center 15% 18%, radius 50%, rgba(56, 189, 248, 0.22), transparent 60%),
+        linear-gradient(to bottom right, #f3fbff, #e0f2fe);
+}
+
+.teacher-shell {
+    -fx-background-color:
+        radial-gradient(center 18% 18%, radius 52%, rgba(251, 191, 36, 0.2), transparent 60%),
+        linear-gradient(to bottom right, #fffaf1, #ffedd5);
+}
+
+.admin-shell {
+    -fx-background-color:
+        radial-gradient(center 90% 8%, radius 50%, rgba(59, 130, 246, 0.16), transparent 58%),
+        linear-gradient(to bottom right, #eef2ff, #e2e8f0);
+}
+
+.topbar {
+    -fx-background-color: #0f172a;
+    -fx-padding: 18 22 18 22;
+}
+
+.profile-topbar {
+    -fx-border-color: transparent transparent rgba(255, 255, 255, 0.06) transparent;
+}
+
+.sidebar {
+    -fx-background-color: linear-gradient(to bottom, #111827, #0f172a);
+    -fx-pref-width: 220;
+}
+
+.academic-sidebar {
+    -fx-background-color: linear-gradient(to bottom, #0f766e, #155e75);
+}
+
+.admin-sidebar {
+    -fx-background-color: linear-gradient(to bottom, #111827, #1e293b);
+}
+
+.sidebar-brand {
+    -fx-text-fill: white;
+    -fx-font-size: 24px;
+    -fx-font-weight: 900;
+}
+
+.sidebar-copy,
+.sidebar-foot {
+    -fx-text-fill: rgba(255, 255, 255, 0.68);
+    -fx-font-size: 13px;
+}
+
+.sidebar-button {
+    -fx-background-color: rgba(255, 255, 255, 0.07);
+    -fx-text-fill: white;
+    -fx-font-weight: 700;
+    -fx-background-radius: 16;
+    -fx-padding: 14 16 14 16;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.sidebar-button:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.14);
+}
+
+.dashboard-title {
+    -fx-text-fill: white;
+    -fx-font-size: 28px;
+    -fx-font-weight: 800;
+}
+
+.dashboard-subtitle {
+    -fx-text-fill: rgba(255, 255, 255, 0.72);
+    -fx-font-size: 14px;
+}
+
+.profile-chip {
+    -fx-background-color: rgba(255, 255, 255, 0.08);
+    -fx-background-radius: 18;
+    -fx-padding: 8 10 8 14;
+}
+
+.profile-name {
+    -fx-text-fill: white;
+    -fx-font-size: 13px;
+    -fx-font-weight: 800;
+}
+
+.profile-role {
+    -fx-text-fill: rgba(255, 255, 255, 0.68);
+    -fx-font-size: 12px;
+}
+
+.profile-menu-button {
+    -fx-background-color: linear-gradient(to right, #fb923c, #ef4444);
+    -fx-text-fill: white;
+    -fx-font-weight: 900;
+    -fx-background-radius: 999;
+    -fx-min-width: 42;
+    -fx-min-height: 42;
+    -fx-pref-width: 42;
+    -fx-pref-height: 42;
+    -fx-padding: 0;
+}
+
+.profile-menu-button .arrow {
+    -fx-opacity: 0;
+}
+
+.stat-card, .panel-card, .hero-banner {
+    -fx-background-color: white;
+    -fx-background-radius: 24;
+    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.08), 18, 0.14, 0, 8);
+    -fx-padding: 18;
+}
+
+.hero-banner {
+    -fx-background-color: linear-gradient(to right, rgba(249, 115, 22, 0.95), rgba(217, 70, 239, 0.85));
+}
+
+.academic-banner {
+    -fx-background-color: linear-gradient(to right, rgba(14, 165, 233, 0.92), rgba(13, 148, 136, 0.94));
+}
+
+.admin-stats-banner {
+    -fx-background-color: linear-gradient(to right, rgba(14, 116, 144, 0.92), rgba(37, 99, 235, 0.9));
+}
+
+.create-banner {
+    -fx-background-color: linear-gradient(to right, rgba(34, 197, 94, 0.88), rgba(16, 185, 129, 0.92));
+}
+
+.student-banner {
+    -fx-background-color: linear-gradient(to right, rgba(14, 165, 233, 0.9), rgba(37, 99, 235, 0.92));
+}
+
+.teacher-banner {
+    -fx-background-color: linear-gradient(to right, rgba(249, 115, 22, 0.92), rgba(234, 88, 12, 0.96));
+}
+
+.stat-title, .panel-title {
+    -fx-text-fill: #475569;
+    -fx-font-size: 13px;
+    -fx-font-weight: 800;
+}
+
+.panel-title {
+    -fx-text-fill: #0f172a;
+    -fx-font-size: 16px;
+}
+
+.stat-value {
+    -fx-text-fill: #0f172a;
+    -fx-font-size: 30px;
+    -fx-font-weight: 900;
+}
+
+.side-panel {
+    -fx-min-width: 280px;
+    -fx-pref-width: 300px;
+}
+
+.drawer-stack {
+    -fx-padding: 22 22 22 0;
+}
+
+.drawer-panel {
+    -fx-pref-width: 340px;
+    -fx-min-width: 320px;
+    -fx-background-color: white;
+    -fx-background-radius: 24;
+    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.10), 22, 0.16, 0, 10);
+}
+
+.admin-main-panel {
+    -fx-min-width: 760px;
+}
+
+.details-panel {
+    -fx-min-width: 360px;
+    -fx-pref-width: 360px;
+}
+
+.create-panel {
+    -fx-max-width: 980px;
+}
+
+.detail-key {
+    -fx-text-fill: #64748b;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+}
+
+.detail-value {
+    -fx-text-fill: #0f172a;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+}
+
+.table-action-button {
+    -fx-font-size: 11px;
+    -fx-padding: 8 10 8 10;
+}
+
+.neutral-status {
+    -fx-text-fill: #334155;
+}
+
+.table-view,
+.list-view {
+    -fx-background-color: transparent;
+    -fx-background-radius: 18;
+    -fx-border-color: #e5e7eb;
+    -fx-border-radius: 18;
+}
+
+.table-view .column-header-background {
+    -fx-background-color: #eff6ff;
+}
+
+.table-row-cell:selected,
+.list-cell:filled:selected,
+.list-cell:filled:selected:hover {
+    -fx-background-color: #dbeafe;
+}
