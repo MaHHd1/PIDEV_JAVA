@@ -19,8 +19,10 @@ import utils.UserSession;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class TeacherDashboardController {
+    private static final Pattern STRONG_PASSWORD_PATTERN = Pattern.compile("^(?=.*[A-Z])(?=.*\\d).{8,}$");
 
     @FXML
     private Label welcomeLabel;
@@ -170,8 +172,8 @@ public class TeacherDashboardController {
             setChangePasswordFeedback("Password confirmation does not match.", false);
             return;
         }
-        if (newPassword.length() < 8) {
-            setChangePasswordFeedback("Password must contain at least 8 characters.", false);
+        if (!isStrongPassword(newPassword)) {
+            setChangePasswordFeedback("Password must contain at least 8 characters, one uppercase letter, and one number.", false);
             return;
         }
 
@@ -251,5 +253,9 @@ public class TeacherDashboardController {
         String nom = utilisateur.getNom() != null && !utilisateur.getNom().isBlank()
                 ? utilisateur.getNom().substring(0, 1).toUpperCase() : "";
         return prenom + nom;
+    }
+
+    private boolean isStrongPassword(String password) {
+        return STRONG_PASSWORD_PATTERN.matcher(password).matches();
     }
 }

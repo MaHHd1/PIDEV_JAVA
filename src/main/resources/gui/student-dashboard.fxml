@@ -49,6 +49,7 @@
             <HBox HBox.hgrow="ALWAYS" />
             <HBox alignment="CENTER_RIGHT" spacing="10.0" styleClass="profile-chip">
                 <VBox alignment="CENTER_RIGHT" spacing="2.0">
+                    <Label styleClass="profile-caption" text="Connected User" />
                     <Label fx:id="currentUserNameLabel" styleClass="profile-name" text="Student User" />
                     <Label fx:id="currentUserRoleLabel" styleClass="profile-role" text="etudiant" />
                 </VBox>

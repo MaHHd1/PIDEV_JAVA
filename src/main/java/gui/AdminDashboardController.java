@@ -9,12 +9,16 @@ import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
+import javafx.scene.chart.PieChart;
+import javafx.scene.chart.BarChart;
+import javafx.scene.chart.XYChart;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
+import javafx.scene.control.ListCell;
 import javafx.scene.control.MenuButton;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
@@ -24,6 +28,8 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.util.Callback;
+import javafx.util.StringConverter;
 import services.AuthService;
 import services.UtilisateurService;
 import utils.SceneManager;
@@ -34,12 +40,20 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 public class AdminDashboardController {
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
+    private static final Pattern PHONE_PATTERN = Pattern.compile("^(\\+?[0-9]{1,3})?[0-9]{8,15}$");
+    private static final Pattern STRONG_PASSWORD_PATTERN = Pattern.compile("^(?=.*[A-Z])(?=.*\\d).{8,}$");
+    private static final Map<String, String> UI_LABELS = createUiLabels();
 
     @FXML
     private Label sectionTitleLabel;
@@ -147,7 +161,9 @@ public class AdminDashboardController {
     private TableColumn<StatRow, String> valueColumn;
 
     @FXML
-    private ListView<String> statsInsightsList;
+    private BarChart<String, Number> usersRoleBarChart;
+    @FXML
+    private PieChart usersPieChart;
 
     @FXML
     private ComboBox<String> createRoleCombo;
@@ -169,30 +185,40 @@ public class AdminDashboardController {
 
     @FXML
     private TextField createIdentifierField;
+    @FXML
+    private ComboBox<String> createIdentifierCombo;
 
     @FXML
     private Label createFieldOneLabel;
 
     @FXML
     private TextField createFieldOneField;
+    @FXML
+    private ComboBox<String> createFieldOneCombo;
 
     @FXML
     private Label createFieldTwoLabel;
 
     @FXML
     private TextField createFieldTwoField;
+    @FXML
+    private ComboBox<String> createFieldTwoCombo;
 
     @FXML
     private Label createFieldThreeLabel;
 
     @FXML
     private TextField createFieldThreeField;
+    @FXML
+    private ComboBox<String> createFieldThreeCombo;
 
     @FXML
     private Label createFieldFourLabel;
 
     @FXML
     private TextField createFieldFourField;
+    @FXML
+    private ComboBox<String> createFieldFourCombo;
 
     @FXML
     private Label createDateLabel;
@@ -212,10 +238,15 @@ public class AdminDashboardController {
     @FXML
     private javafx.scene.control.Button createSubmitButton;
 
+    @FXML
+    private javafx.scene.control.Button createBackButton;
+
+    @FXML
+    private javafx.scene.control.Button createClearButton;
+
     private final ObservableList<UtilisateurRow> masterRows = FXCollections.observableArrayList();
     private final ObservableList<String> activityItems = FXCollections.observableArrayList();
     private final ObservableList<StatRow> statRows = FXCollections.observableArrayList();
-    private final ObservableList<String> statsInsights = FXCollections.observableArrayList();
     private final FilteredList<UtilisateurRow> filteredRows = new FilteredList<>(masterRows, row -> true);
     private final UtilisateurService utilisateurService = new UtilisateurService();
     private final AuthService authService = new AuthService();
@@ -248,8 +279,7 @@ public class AdminDashboardController {
     @FXML
     private void showCreatePage() {
         setSectionVisibility(false, false, true);
-        sectionTitleLabel.setText("Create User");
-        sectionSubtitleLabel.setText("Add a new admin, student, or teacher using typed database-backed input controls.");
+        updateCreateSectionHeader();
     }
 
     @FXML
@@ -266,21 +296,10 @@ public class AdminDashboardController {
     @FXML
     private void createUser() {
         String role = createRoleCombo.getValue();
-        if (role == null || createNomField.getText().trim().isEmpty() || createPrenomField.getText().trim().isEmpty()
-                || createEmailField.getText().trim().isEmpty() || createPasswordField.getText().trim().isEmpty()) {
-            if (editingUtilisateur == null || createPasswordField.getText().trim().isEmpty()) {
-                if (editingUtilisateur != null && !createPasswordField.getText().trim().isEmpty()) {
-                    createStatusLabel.setText("Fill the required fields before saving.");
-                }
-            }
-        }
-
-        if (role == null || createNomField.getText().trim().isEmpty() || createPrenomField.getText().trim().isEmpty()
-                || createEmailField.getText().trim().isEmpty()
-                || (editingUtilisateur == null && createPasswordField.getText().trim().isEmpty())) {
-            createStatusLabel.setText(editingUtilisateur == null
-                    ? "Fill the required fields before creating a user."
-                    : "Fill the required fields before saving.");
+        String validationError = validateCreateForm(role);
+        if (validationError != null) {
+            createStatusLabel.setText(validationError);
+            showValidationAlert(validationError);
             return;
         }
 
@@ -290,17 +309,40 @@ public class AdminDashboardController {
                 Utilisateur utilisateur = buildUtilisateurFromCreateForm(role, hashedPassword);
                 utilisateurService.createUtilisateur(utilisateur);
                 createStatusLabel.setText("User created successfully: " + utilisateur.getNomComplet());
+                showInfo("User created", "User created successfully: " + utilisateur.getNomComplet());
             } else {
                 applyCreateFormToExisting(editingUtilisateur);
                 utilisateurService.updateUtilisateur(editingUtilisateur);
                 createStatusLabel.setText("User updated successfully: " + editingUtilisateur.getNomComplet());
+                showInfo("User updated", "User updated successfully: " + editingUtilisateur.getNomComplet());
             }
             clearCreateForm();
             loadDashboardData();
             showUsersPage();
         } catch (IOException | SQLException e) {
             createStatusLabel.setText((editingUtilisateur == null ? "Create failed: " : "Update failed: ") + e.getMessage());
+            showError("Save failed", e.getMessage());
         }
+    }
+
+    @FXML
+    private void cancelEditMode() {
+        enterCreateMode("administrateur");
+    }
+
+    @FXML
+    private void resetCreateFormView() {
+        if (editingUtilisateur != null) {
+            populateCreateFormForEdit(editingUtilisateur);
+            createStatusLabel.setText("Editing " + editingUtilisateur.getNomComplet() + ". Form restored.");
+            return;
+        }
+
+        String selectedRole = createRoleCombo.getValue() == null ? "administrateur" : createRoleCombo.getValue();
+        clearCreateFormFields();
+        createRoleCombo.setValue(selectedRole);
+        updateCreateFormForRole(selectedRole);
+        createStatusLabel.setText("Form cleared. Ready to add a new user.");
     }
 
     private void configureCurrentUserHeader() {
@@ -328,6 +370,7 @@ public class AdminDashboardController {
 
         roleFilterCombo.setItems(FXCollections.observableArrayList("All", "administrateur", "enseignant", "etudiant"));
         roleFilterCombo.setValue("All");
+        configureComboDisplay(roleFilterCombo);
         searchField.textProperty().addListener((obs, oldValue, newValue) -> applyFilters());
         roleFilterCombo.valueProperty().addListener((obs, oldValue, newValue) -> applyFilters());
 
@@ -366,32 +409,77 @@ public class AdminDashboardController {
         metricColumn.setCellValueFactory(new PropertyValueFactory<>("metric"));
         valueColumn.setCellValueFactory(new PropertyValueFactory<>("value"));
         statisticsTable.setItems(statRows);
-        statsInsightsList.setItems(statsInsights);
     }
 
     private void configureCreateForm() {
         createRoleCombo.setItems(FXCollections.observableArrayList("administrateur", "enseignant", "etudiant"));
         createRoleCombo.setValue("administrateur");
+        createIdentifierCombo.setItems(FXCollections.observableArrayList(
+                "Direction Generale", "Scolarite", "Ressources Humaines", "Finances", "Informatique", "Communication", "Recherche"
+        ));
+        createFieldOneCombo.setItems(FXCollections.observableArrayList(
+                "Responsable administratif", "Chef de service", "Coordinateur", "Assistant administratif", "Directeur"
+        ));
+        createFieldTwoCombo.setItems(FXCollections.observableArrayList(
+                "GL", "IA", "DS", "Cybersecurite", "Reseaux", "IoT", "Cloud", "DevOps", "Finance", "RH"
+        ));
+        createFieldThreeCombo.setItems(FXCollections.observableArrayList("CDI", "CDD", "Vacataire", "Contractuel"));
+        createFieldFourCombo.setItems(FXCollections.observableArrayList("actif", "inactif", "conge", "retraite"));
+        createFieldTwoCombo.setEditable(true);
+        configureComboDisplay(createRoleCombo);
+        configureComboDisplay(createIdentifierCombo);
+        configureComboDisplay(createFieldOneCombo);
+        configureComboDisplay(createFieldTwoCombo);
+        configureComboDisplay(createFieldThreeCombo);
+        configureComboDisplay(createFieldFourCombo);
         createRoleCombo.valueProperty().addListener((obs, oldValue, newValue) -> updateCreateFormForRole(newValue));
+        createBackButton.setVisible(false);
+        createBackButton.setManaged(false);
         updateCreateFormForRole(createRoleCombo.getValue());
     }
 
     private void updateCreateFormForRole(String role) {
+        showCombo(createIdentifierCombo, createIdentifierField, false);
+        showCombo(createFieldOneCombo, createFieldOneField, false);
+        showCombo(createFieldTwoCombo, createFieldTwoField, false);
+        showCombo(createFieldThreeCombo, createFieldThreeField, false);
+        showCombo(createFieldFourCombo, createFieldFourField, false);
+
         if ("etudiant".equals(role)) {
-            createIdentifierLabel.setText("Matricule");
-            createFieldOneLabel.setText("Niveau");
-            createFieldTwoLabel.setText("Specialisation");
-            createFieldThreeLabel.setText("Telephone");
-            createFieldFourLabel.setText("Statut");
-            createDateLabel.setText("Date naissance");
-            createAreaLabel.setText("Adresse");
+            createIdentifierLabel.setText("Student ID");
+            createFieldOneLabel.setText("Level");
+            createFieldTwoLabel.setText("Specialization");
+            createFieldThreeLabel.setText("Phone");
+            createFieldFourLabel.setText("Status");
+            createDateLabel.setText("Birth Date");
+            createAreaLabel.setText("Address");
             createFieldFourLabel.setVisible(true);
+            createFieldFourLabel.setManaged(true);
             createFieldFourField.setVisible(true);
+            createFieldFourField.setManaged(true);
             createDateLabel.setVisible(true);
+            createDateLabel.setManaged(true);
             createDatePicker.setVisible(true);
+            createDatePicker.setManaged(true);
             createAreaLabel.setVisible(true);
+            createAreaLabel.setManaged(true);
             createAreaField.setVisible(true);
-            createFieldFourField.setText("actif");
+            createAreaField.setManaged(true);
+
+            createFieldOneCombo.setItems(FXCollections.observableArrayList(
+                    "Licence 1", "Licence 2", "Licence 3", "Master 1", "Master 2", "Doctorat"
+            ));
+            createFieldFourCombo.setItems(FXCollections.observableArrayList("actif", "inactif", "diplome", "suspendu"));
+            showCombo(createFieldOneCombo, createFieldOneField, true);
+            showCombo(createFieldTwoCombo, createFieldTwoField, true);
+            showCombo(createFieldFourCombo, createFieldFourField, true);
+
+            if (createFieldOneCombo.getValue() == null) {
+                createFieldOneCombo.setValue("Licence 1");
+            }
+            if (createFieldFourCombo.getValue() == null) {
+                createFieldFourCombo.setValue("actif");
+            }
             createDatePicker.setValue(LocalDate.of(2000, 1, 1));
             createAreaField.setText("Desktop created student");
             return;
@@ -400,44 +488,84 @@ public class AdminDashboardController {
         if ("enseignant".equals(role)) {
             createIdentifierLabel.setText("Teacher ID");
             createFieldOneLabel.setText("Diploma");
-            createFieldTwoLabel.setText("Speciality");
+            createFieldTwoLabel.setText("Specialty");
             createFieldThreeLabel.setText("Contract");
-            createFieldFourLabel.setText("Experience");
+            createFieldFourLabel.setText("Status");
             createDateLabel.setText("Unused");
-            createAreaLabel.setText("Disponibilites");
+            createAreaLabel.setText("Availability");
             createFieldFourLabel.setVisible(true);
+            createFieldFourLabel.setManaged(true);
             createFieldFourField.setVisible(true);
+            createFieldFourField.setManaged(true);
             createDateLabel.setVisible(false);
+            createDateLabel.setManaged(false);
             createDatePicker.setVisible(false);
+            createDatePicker.setManaged(false);
             createAreaLabel.setVisible(true);
+            createAreaLabel.setManaged(true);
             createAreaField.setVisible(true);
-            createFieldFourField.setText("0");
+            createAreaField.setManaged(true);
+            createFieldOneCombo.setItems(FXCollections.observableArrayList("Licence", "Master", "Doctorat", "HDR", "Ingenieur"));
+            createFieldTwoCombo.setItems(FXCollections.observableArrayList(
+                    "Informatique", "Mathematiques", "Physique", "Chimie", "Biologie", "Economie", "Langues", "Droit", "Gestion"
+            ));
+            createFieldThreeCombo.setItems(FXCollections.observableArrayList("CDI", "CDD", "Vacataire", "Contractuel"));
+            createFieldFourCombo.setItems(FXCollections.observableArrayList("actif", "inactif", "conge", "retraite"));
+            showCombo(createFieldOneCombo, createFieldOneField, true);
+            showCombo(createFieldTwoCombo, createFieldTwoField, true);
+            showCombo(createFieldThreeCombo, createFieldThreeField, true);
+            showCombo(createFieldFourCombo, createFieldFourField, true);
+
+            if (createFieldThreeCombo.getValue() == null) {
+                createFieldThreeCombo.setValue("CDI");
+            }
+            if (createFieldFourCombo.getValue() == null) {
+                createFieldFourCombo.setValue("actif");
+            }
             createAreaField.setText("");
             return;
         }
 
-        createIdentifierLabel.setText("Departement");
-        createFieldOneLabel.setText("Fonction");
-        createFieldTwoLabel.setText("Telephone");
-        createFieldThreeLabel.setText("Actif");
+        createIdentifierLabel.setText("Department");
+        createFieldOneLabel.setText("Function");
+        createFieldTwoLabel.setText("Phone");
+        createFieldThreeLabel.setText("Status");
         createFieldFourLabel.setVisible(false);
+        createFieldFourLabel.setManaged(false);
         createFieldFourField.setVisible(false);
+        createFieldFourField.setManaged(false);
         createDateLabel.setVisible(false);
+        createDateLabel.setManaged(false);
         createDatePicker.setVisible(false);
+        createDatePicker.setManaged(false);
         createAreaLabel.setVisible(false);
+        createAreaLabel.setManaged(false);
         createAreaField.setVisible(false);
-        createFieldThreeField.setText("true");
+        createAreaField.setManaged(false);
+        showCombo(createIdentifierCombo, createIdentifierField, true);
+        showCombo(createFieldOneCombo, createFieldOneField, true);
+        showCombo(createFieldThreeCombo, createFieldThreeField, true);
+        createFieldThreeCombo.setItems(FXCollections.observableArrayList("actif", "inactif"));
+        if (createIdentifierCombo.getValue() == null) {
+            createIdentifierCombo.setValue("Scolarite");
+        }
+        if (createFieldOneCombo.getValue() == null) {
+            createFieldOneCombo.setValue("Responsable administratif");
+        }
+        if (createFieldThreeCombo.getValue() == null) {
+            createFieldThreeCombo.setValue("actif");
+        }
     }
 
     private Utilisateur buildUtilisateurFromCreateForm(String role, String hashedPassword) {
         if ("etudiant".equals(role)) {
             Etudiant etudiant = new Etudiant();
             fillBase(etudiant, hashedPassword);
-            etudiant.setMatricule(createIdentifierField.getText().trim());
-            etudiant.setNiveauEtude(createFieldOneField.getText().trim());
-            etudiant.setSpecialisation(createFieldTwoField.getText().trim());
-            etudiant.setTelephone(createFieldThreeField.getText().trim());
-            etudiant.setStatut(defaultIfBlank(createFieldFourField.getText(), "actif"));
+            etudiant.setMatricule(readValue(createIdentifierField, createIdentifierCombo));
+            etudiant.setNiveauEtude(readValue(createFieldOneField, createFieldOneCombo));
+            etudiant.setSpecialisation(readValue(createFieldTwoField, createFieldTwoCombo));
+            etudiant.setTelephone(readValue(createFieldThreeField, createFieldThreeCombo));
+            etudiant.setStatut(defaultIfBlank(readValue(createFieldFourField, createFieldFourCombo), "actif"));
             etudiant.setDateNaissance(createDatePicker.getValue() != null ? createDatePicker.getValue() : LocalDate.of(2000, 1, 1));
             etudiant.setAdresse(defaultIfBlank(createAreaField.getText(), "Desktop created student"));
             etudiant.setDateInscription(LocalDateTime.now());
@@ -447,22 +575,22 @@ public class AdminDashboardController {
         if ("enseignant".equals(role)) {
             Enseignant enseignant = new Enseignant();
             fillBase(enseignant, hashedPassword);
-            enseignant.setMatriculeEnseignant(createIdentifierField.getText().trim());
-            enseignant.setDiplome(createFieldOneField.getText().trim());
-            enseignant.setSpecialite(createFieldTwoField.getText().trim());
-            enseignant.setTypeContrat(createFieldThreeField.getText().trim());
-            enseignant.setAnneesExperience(parseInteger(createFieldFourField.getText(), 0));
+            enseignant.setMatriculeEnseignant(readValue(createIdentifierField, createIdentifierCombo));
+            enseignant.setDiplome(readValue(createFieldOneField, createFieldOneCombo));
+            enseignant.setSpecialite(readValue(createFieldTwoField, createFieldTwoCombo));
+            enseignant.setTypeContrat(readValue(createFieldThreeField, createFieldThreeCombo));
             enseignant.setDisponibilites(defaultIfBlank(createAreaField.getText(), ""));
-            enseignant.setStatut("actif");
+            enseignant.setAnneesExperience(0);
+            enseignant.setStatut(defaultIfBlank(readValue(createFieldFourField, createFieldFourCombo), "actif"));
             return enseignant;
         }
 
         Administrateur administrateur = new Administrateur();
         fillBase(administrateur, hashedPassword);
-        administrateur.setDepartement(createIdentifierField.getText().trim());
-        administrateur.setFonction(createFieldOneField.getText().trim());
-        administrateur.setTelephone(createFieldTwoField.getText().trim());
-        administrateur.setActif(Boolean.parseBoolean(defaultIfBlank(createFieldThreeField.getText(), "true")));
+        administrateur.setDepartement(readValue(createIdentifierField, createIdentifierCombo));
+        administrateur.setFonction(readValue(createFieldOneField, createFieldOneCombo));
+        administrateur.setTelephone(readValue(createFieldTwoField, createFieldTwoCombo));
+        administrateur.setActif("actif".equalsIgnoreCase(defaultIfBlank(readValue(createFieldThreeField, createFieldThreeCombo), "actif")));
         administrateur.setDateNomination(LocalDateTime.now());
         return administrateur;
     }
@@ -479,7 +607,10 @@ public class AdminDashboardController {
     }
 
     private void clearCreateForm() {
-        editingUtilisateur = null;
+        enterCreateMode("administrateur");
+    }
+
+    private void clearCreateFormFields() {
         createNomField.clear();
         createPrenomField.clear();
         createEmailField.clear();
@@ -489,10 +620,27 @@ public class AdminDashboardController {
         createFieldTwoField.clear();
         createFieldThreeField.clear();
         createFieldFourField.clear();
+        createIdentifierCombo.getSelectionModel().clearSelection();
+        createFieldOneCombo.getSelectionModel().clearSelection();
+        createFieldTwoCombo.getSelectionModel().clearSelection();
+        createFieldThreeCombo.getSelectionModel().clearSelection();
+        createFieldFourCombo.getSelectionModel().clearSelection();
         createAreaField.clear();
         createDatePicker.setValue(null);
+    }
+
+    private void enterCreateMode(String role) {
+        editingUtilisateur = null;
+        clearCreateFormFields();
         createRoleCombo.setDisable(false);
+        createRoleCombo.setValue(role);
         createSubmitButton.setText("Create User");
+        createBackButton.setVisible(false);
+        createBackButton.setManaged(false);
+        createBackButton.setDisable(true);
+        createClearButton.setText("Clear Form");
+        createStatusLabel.setText("");
+        updateCreateSectionHeader();
         updateCreateFormForRole(createRoleCombo.getValue());
     }
 
@@ -520,7 +668,6 @@ public class AdminDashboardController {
             masterRows.clear();
             statRows.clear();
             activityItems.clear();
-            statsInsights.clear();
 
             long students = 0;
             long teachers = 0;
@@ -561,10 +708,16 @@ public class AdminDashboardController {
                     new StatRow("Active profiles", String.valueOf(activeCount))
             );
 
-            statsInsights.add("User registry is synchronized with MySQL.");
-            statsInsights.add("Filtering supports role and free-text search.");
-            statsInsights.add("Admin workspace includes create, edit, view, and delete flows.");
-            statsInsights.add("Profile menu is available from the top bar.");
+            double total = Math.max(utilisateurs.size(), 1);
+            ObservableList<PieChart.Data> pieData = FXCollections.observableArrayList(
+                    new PieChart.Data("Administrators " + formatPercent(admins * 100.0 / total), admins),
+                    new PieChart.Data("Teachers " + formatPercent(teachers * 100.0 / total), teachers),
+                    new PieChart.Data("Students " + formatPercent(students * 100.0 / total), students)
+            );
+            usersPieChart.setData(pieData);
+            usersRoleBarChart.setData(FXCollections.observableArrayList(
+                    buildRoleSeries("Users", admins, teachers, students)
+            ));
 
             activityItems.add("Live registry loaded from database");
             activityItems.add("Profile actions are available from the user circle");
@@ -579,7 +732,7 @@ public class AdminDashboardController {
             }
         } catch (SQLException e) {
             activityItems.setAll("Failed to load admin dashboard: " + e.getMessage());
-            statsInsights.setAll("Statistics unavailable: " + e.getMessage());
+            usersRoleBarChart.setData(FXCollections.observableArrayList());
         }
     }
 
@@ -619,6 +772,10 @@ public class AdminDashboardController {
         populateCreateFormForEdit(editingUtilisateur);
         createRoleCombo.setDisable(true);
         createSubmitButton.setText("Save Changes");
+        createBackButton.setVisible(true);
+        createBackButton.setManaged(true);
+        createBackButton.setDisable(false);
+        createClearButton.setText("Reset Changes");
         createStatusLabel.setText("Editing " + editingUtilisateur.getNomComplet() + ". Leave password empty to keep it unchanged.");
         showCreatePage();
     }
@@ -654,7 +811,7 @@ public class AdminDashboardController {
             Etudiant etudiant = (Etudiant) utilisateur;
             builder.append("Matricule: ").append(etudiant.getMatricule()).append('\n');
             builder.append("Level: ").append(etudiant.getNiveauEtude()).append('\n');
-            builder.append("Specialisation: ").append(etudiant.getSpecialisation()).append('\n');
+            builder.append("Specialization: ").append(etudiant.getSpecialisation()).append('\n');
             builder.append("Phone: ").append(etudiant.getTelephone()).append('\n');
             builder.append("Address: ").append(etudiant.getAdresse()).append('\n');
             builder.append("Status: ").append(etudiant.getStatut());
@@ -662,7 +819,7 @@ public class AdminDashboardController {
             Enseignant enseignant = (Enseignant) utilisateur;
             builder.append("Teacher ID: ").append(enseignant.getMatriculeEnseignant()).append('\n');
             builder.append("Diploma: ").append(enseignant.getDiplome()).append('\n');
-            builder.append("Speciality: ").append(enseignant.getSpecialite()).append('\n');
+            builder.append("Specialty: ").append(enseignant.getSpecialite()).append('\n');
             builder.append("Contract: ").append(enseignant.getTypeContrat()).append('\n');
             builder.append("Status: ").append(enseignant.getStatut());
         } else if (utilisateur instanceof Administrateur) {
@@ -670,7 +827,7 @@ public class AdminDashboardController {
             builder.append("Department: ").append(administrateur.getDepartement()).append('\n');
             builder.append("Function: ").append(administrateur.getFonction()).append('\n');
             builder.append("Phone: ").append(administrateur.getTelephone()).append('\n');
-            builder.append("Active: ").append(administrateur.isActif() ? "Yes" : "No");
+            builder.append("Status: ").append(administrateur.isActif() ? "actif" : "inactif");
         }
 
         return builder.toString();
@@ -685,6 +842,17 @@ public class AdminDashboardController {
         createSection.setManaged(createVisible);
     }
 
+    private void updateCreateSectionHeader() {
+        if (editingUtilisateur == null) {
+            sectionTitleLabel.setText("Create User");
+            sectionSubtitleLabel.setText("Add a new admin, student, or teacher using typed database-backed input controls.");
+            return;
+        }
+
+        sectionTitleLabel.setText("Modify User");
+        sectionSubtitleLabel.setText("Update the selected user or go back to a blank create form.");
+    }
+
     private void showError(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle(title);
@@ -695,14 +863,6 @@ public class AdminDashboardController {
 
     private String formatDateTime(LocalDateTime value) {
         return value != null ? value.format(DATE_TIME_FORMATTER) : "-";
-    }
-
-    private int parseInteger(String value, int fallback) {
-        try {
-            return value == null || value.isBlank() ? fallback : Integer.parseInt(value.trim());
-        } catch (NumberFormatException e) {
-            return fallback;
-        }
     }
 
     private String defaultIfBlank(String value, String fallback) {
@@ -727,11 +887,11 @@ public class AdminDashboardController {
 
         if (utilisateur instanceof Etudiant) {
             Etudiant etudiant = (Etudiant) utilisateur;
-            createIdentifierField.setText(etudiant.getMatricule());
-            createFieldOneField.setText(etudiant.getNiveauEtude());
-            createFieldTwoField.setText(etudiant.getSpecialisation());
-            createFieldThreeField.setText(etudiant.getTelephone());
-            createFieldFourField.setText(etudiant.getStatut());
+            writeValue(createIdentifierField, createIdentifierCombo, etudiant.getMatricule());
+            writeValue(createFieldOneField, createFieldOneCombo, etudiant.getNiveauEtude());
+            writeValue(createFieldTwoField, createFieldTwoCombo, etudiant.getSpecialisation());
+            writeValue(createFieldThreeField, createFieldThreeCombo, etudiant.getTelephone());
+            writeValue(createFieldFourField, createFieldFourCombo, etudiant.getStatut());
             createDatePicker.setValue(etudiant.getDateNaissance());
             createAreaField.setText(etudiant.getAdresse());
             return;
@@ -739,20 +899,20 @@ public class AdminDashboardController {
 
         if (utilisateur instanceof Enseignant) {
             Enseignant enseignant = (Enseignant) utilisateur;
-            createIdentifierField.setText(enseignant.getMatriculeEnseignant());
-            createFieldOneField.setText(enseignant.getDiplome());
-            createFieldTwoField.setText(enseignant.getSpecialite());
-            createFieldThreeField.setText(enseignant.getTypeContrat());
-            createFieldFourField.setText(String.valueOf(enseignant.getAnneesExperience() != null ? enseignant.getAnneesExperience() : 0));
+            writeValue(createIdentifierField, createIdentifierCombo, enseignant.getMatriculeEnseignant());
+            writeValue(createFieldOneField, createFieldOneCombo, enseignant.getDiplome());
+            writeValue(createFieldTwoField, createFieldTwoCombo, enseignant.getSpecialite());
+            writeValue(createFieldThreeField, createFieldThreeCombo, enseignant.getTypeContrat());
+            writeValue(createFieldFourField, createFieldFourCombo, enseignant.getStatut());
             createAreaField.setText(enseignant.getDisponibilites());
             return;
         }
 
         Administrateur administrateur = (Administrateur) utilisateur;
-        createIdentifierField.setText(administrateur.getDepartement());
-        createFieldOneField.setText(administrateur.getFonction());
-        createFieldTwoField.setText(administrateur.getTelephone());
-        createFieldThreeField.setText(administrateur.isActif() ? "true" : "false");
+        writeValue(createIdentifierField, createIdentifierCombo, administrateur.getDepartement());
+        writeValue(createFieldOneField, createFieldOneCombo, administrateur.getFonction());
+        writeValue(createFieldTwoField, createFieldTwoCombo, administrateur.getTelephone());
+        writeValue(createFieldThreeField, createFieldThreeCombo, administrateur.isActif() ? "actif" : "inactif");
     }
 
     private void applyCreateFormToExisting(Utilisateur utilisateur) throws IOException {
@@ -765,11 +925,11 @@ public class AdminDashboardController {
 
         if (utilisateur instanceof Etudiant) {
             Etudiant etudiant = (Etudiant) utilisateur;
-            etudiant.setMatricule(createIdentifierField.getText().trim());
-            etudiant.setNiveauEtude(createFieldOneField.getText().trim());
-            etudiant.setSpecialisation(createFieldTwoField.getText().trim());
-            etudiant.setTelephone(createFieldThreeField.getText().trim());
-            etudiant.setStatut(defaultIfBlank(createFieldFourField.getText(), etudiant.getStatut()));
+            etudiant.setMatricule(readValue(createIdentifierField, createIdentifierCombo));
+            etudiant.setNiveauEtude(readValue(createFieldOneField, createFieldOneCombo));
+            etudiant.setSpecialisation(readValue(createFieldTwoField, createFieldTwoCombo));
+            etudiant.setTelephone(readValue(createFieldThreeField, createFieldThreeCombo));
+            etudiant.setStatut(defaultIfBlank(readValue(createFieldFourField, createFieldFourCombo), etudiant.getStatut()));
             if (createDatePicker.getValue() != null) {
                 etudiant.setDateNaissance(createDatePicker.getValue());
             }
@@ -782,25 +942,233 @@ public class AdminDashboardController {
 
         if (utilisateur instanceof Enseignant) {
             Enseignant enseignant = (Enseignant) utilisateur;
-            enseignant.setMatriculeEnseignant(createIdentifierField.getText().trim());
-            enseignant.setDiplome(createFieldOneField.getText().trim());
-            enseignant.setSpecialite(createFieldTwoField.getText().trim());
-            enseignant.setTypeContrat(createFieldThreeField.getText().trim());
-            enseignant.setAnneesExperience(parseInteger(createFieldFourField.getText(), enseignant.getAnneesExperience() != null ? enseignant.getAnneesExperience() : 0));
+            enseignant.setMatriculeEnseignant(readValue(createIdentifierField, createIdentifierCombo));
+            enseignant.setDiplome(readValue(createFieldOneField, createFieldOneCombo));
+            enseignant.setSpecialite(readValue(createFieldTwoField, createFieldTwoCombo));
+            enseignant.setTypeContrat(readValue(createFieldThreeField, createFieldThreeCombo));
+            enseignant.setStatut(defaultIfBlank(readValue(createFieldFourField, createFieldFourCombo), enseignant.getStatut()));
+            enseignant.setAnneesExperience(enseignant.getAnneesExperience() != null ? enseignant.getAnneesExperience() : 0);
             enseignant.setDisponibilites(defaultIfBlank(createAreaField.getText(), enseignant.getDisponibilites()));
-            if (enseignant.getStatut() == null || enseignant.getStatut().isBlank()) {
-                enseignant.setStatut("actif");
-            }
             return;
         }
 
         Administrateur administrateur = (Administrateur) utilisateur;
-        administrateur.setDepartement(createIdentifierField.getText().trim());
-        administrateur.setFonction(createFieldOneField.getText().trim());
-        administrateur.setTelephone(createFieldTwoField.getText().trim());
-        administrateur.setActif(Boolean.parseBoolean(defaultIfBlank(createFieldThreeField.getText(), administrateur.isActif() ? "true" : "false")));
+        administrateur.setDepartement(readValue(createIdentifierField, createIdentifierCombo));
+        administrateur.setFonction(readValue(createFieldOneField, createFieldOneCombo));
+        administrateur.setTelephone(readValue(createFieldTwoField, createFieldTwoCombo));
+        administrateur.setActif("actif".equalsIgnoreCase(defaultIfBlank(readValue(createFieldThreeField, createFieldThreeCombo), administrateur.isActif() ? "actif" : "inactif")));
         if (administrateur.getDateNomination() == null) {
             administrateur.setDateNomination(LocalDateTime.now());
         }
+    }
+
+    private String validateCreateForm(String role) {
+        if (role == null || role.isBlank()) {
+            return "Please select a role.";
+        }
+        if (createNomField.getText() == null || createNomField.getText().trim().isEmpty()) {
+            return "Name is required.";
+        }
+        if (createPrenomField.getText() == null || createPrenomField.getText().trim().isEmpty()) {
+            return "First name is required.";
+        }
+        if (!EMAIL_PATTERN.matcher(defaultIfBlank(createEmailField.getText(), "")).matches()) {
+            return "Email format is invalid.";
+        }
+        String password = defaultIfBlank(createPasswordField.getText(), "");
+        if (editingUtilisateur == null && !isStrongPassword(password)) {
+            return "Password must contain at least 8 characters, one uppercase letter, and one number.";
+        }
+        if (editingUtilisateur != null && !password.isBlank() && !isStrongPassword(password)) {
+            return "Password must contain at least 8 characters, one uppercase letter, and one number.";
+        }
+
+        String identifier = readValue(createIdentifierField, createIdentifierCombo);
+        String fieldOne = readValue(createFieldOneField, createFieldOneCombo);
+        String fieldTwo = readValue(createFieldTwoField, createFieldTwoCombo);
+        String fieldThree = readValue(createFieldThreeField, createFieldThreeCombo);
+        String fieldFour = readValue(createFieldFourField, createFieldFourCombo);
+
+        if ("administrateur".equals(role)) {
+            if (identifier.isBlank() || fieldOne.isBlank()) {
+                return "Department and function are required.";
+            }
+            if (!fieldTwo.isBlank() && !PHONE_PATTERN.matcher(fieldTwo).matches()) {
+                return "Admin phone format is invalid.";
+            }
+            if (!Arrays.asList("actif", "inactif").contains(fieldThree)) {
+                return "Please select a valid admin status.";
+            }
+        } else if ("enseignant".equals(role)) {
+            if (identifier.isBlank() || !identifier.startsWith("ENS-")) {
+                return "Teacher ID must start with ENS-.";
+            }
+            if (fieldOne.isBlank() || fieldTwo.isBlank()) {
+                return "Diploma and speciality are required.";
+            }
+            if (fieldThree.isBlank()) {
+                return "Contract type is required.";
+            }
+            if (!Arrays.asList("actif", "inactif", "conge", "retraite").contains(fieldFour)) {
+                return "Please select a valid teacher status.";
+            }
+        } else if ("etudiant".equals(role)) {
+            if (identifier.isBlank()) {
+                return "Student matricule is required.";
+            }
+            if (fieldOne.isBlank() || fieldTwo.isBlank()) {
+                return "Student level and speciality are required.";
+            }
+            if (!PHONE_PATTERN.matcher(defaultIfBlank(fieldThree, "")).matches()) {
+                return "Student phone format is invalid.";
+            }
+            if (!Arrays.asList("actif", "inactif", "diplome", "suspendu").contains(fieldFour)) {
+                return "Please select a valid student status.";
+            }
+            if (createDatePicker.getValue() == null || !createDatePicker.getValue().isBefore(LocalDate.now())) {
+                return "Birth date must be in the past.";
+            }
+            if (defaultIfBlank(createAreaField.getText(), "").length() < 5) {
+                return "Address is required.";
+            }
+        }
+        return null;
+    }
+
+    private void showCombo(ComboBox<String> comboBox, TextField textField, boolean visible) {
+        comboBox.setVisible(visible);
+        comboBox.setManaged(visible);
+        textField.setVisible(!visible);
+        textField.setManaged(!visible);
+    }
+
+    private String readValue(TextField textField, ComboBox<String> comboBox) {
+        if (comboBox.isVisible()) {
+            return defaultIfBlank(comboBox.getValue(), "");
+        }
+        return defaultIfBlank(textField.getText(), "");
+    }
+
+    private void writeValue(TextField textField, ComboBox<String> comboBox, String value) {
+        if (comboBox.isVisible()) {
+            if (value != null && !comboBox.getItems().contains(value)) {
+                comboBox.getItems().add(value);
+            }
+            comboBox.setValue(value);
+            return;
+        }
+        textField.setText(defaultIfBlank(value, ""));
+    }
+
+    private void showValidationAlert(String message) {
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setTitle("Invalid Input");
+        alert.setHeaderText("Please correct the form.");
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    private void showInfo(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(title);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    private String formatPercent(double value) {
+        return String.format("%.1f%%", value);
+    }
+
+    private boolean isStrongPassword(String password) {
+        return STRONG_PASSWORD_PATTERN.matcher(password).matches();
+    }
+
+    private XYChart.Series<String, Number> buildRoleSeries(String seriesName, long admins, long teachers, long students) {
+        XYChart.Series<String, Number> series = new XYChart.Series<>();
+        series.setName(seriesName);
+        series.getData().add(new XYChart.Data<>("Administrators", admins));
+        series.getData().add(new XYChart.Data<>("Teachers", teachers));
+        series.getData().add(new XYChart.Data<>("Students", students));
+        return series;
+    }
+
+    private void configureComboDisplay(ComboBox<String> comboBox) {
+        StringConverter<String> converter = new StringConverter<>() {
+            @Override
+            public String toString(String value) {
+                return toEnglishLabel(value);
+            }
+
+            @Override
+            public String fromString(String value) {
+                return value;
+            }
+        };
+
+        Callback<javafx.scene.control.ListView<String>, ListCell<String>> factory = listView -> new ListCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty ? null : toEnglishLabel(item));
+            }
+        };
+
+        comboBox.setConverter(converter);
+        comboBox.setCellFactory(factory);
+        comboBox.setButtonCell(factory.call(null));
+    }
+
+    private String toEnglishLabel(String value) {
+        if (value == null) {
+            return "";
+        }
+        return UI_LABELS.getOrDefault(value, value);
+    }
+
+    private static Map<String, String> createUiLabels() {
+        Map<String, String> labels = new HashMap<>();
+        labels.put("administrateur", "Administrator");
+        labels.put("enseignant", "Teacher");
+        labels.put("etudiant", "Student");
+        labels.put("actif", "Active");
+        labels.put("inactif", "Inactive");
+        labels.put("conge", "On Leave");
+        labels.put("retraite", "Retired");
+        labels.put("diplome", "Graduated");
+        labels.put("suspendu", "Suspended");
+        labels.put("Direction Generale", "General Management");
+        labels.put("Scolarite", "Registrar");
+        labels.put("Ressources Humaines", "Human Resources");
+        labels.put("Finances", "Finance");
+        labels.put("Informatique", "Computer Science");
+        labels.put("Communication", "Communications");
+        labels.put("Recherche", "Research");
+        labels.put("Responsable administratif", "Administrative Manager");
+        labels.put("Chef de service", "Department Head");
+        labels.put("Coordinateur", "Coordinator");
+        labels.put("Assistant administratif", "Administrative Assistant");
+        labels.put("Directeur", "Director");
+        labels.put("Licence 1", "Bachelor Year 1");
+        labels.put("Licence 2", "Bachelor Year 2");
+        labels.put("Licence 3", "Bachelor Year 3");
+        labels.put("Master 1", "Master Year 1");
+        labels.put("Master 2", "Master Year 2");
+        labels.put("Doctorat", "PhD");
+        labels.put("Licence", "Bachelor");
+        labels.put("Ingenieur", "Engineering Degree");
+        labels.put("Mathematiques", "Mathematics");
+        labels.put("Physique", "Physics");
+        labels.put("Chimie", "Chemistry");
+        labels.put("Biologie", "Biology");
+        labels.put("Economie", "Economics");
+        labels.put("Langues", "Languages");
+        labels.put("Droit", "Law");
+        labels.put("Gestion", "Management");
+        labels.put("Vacataire", "Part-Time");
+        labels.put("Contractuel", "Contract");
+        labels.put("Cybersecurite", "Cybersecurity");
+        labels.put("Reseaux", "Networks");
+        return labels;
     }
 }

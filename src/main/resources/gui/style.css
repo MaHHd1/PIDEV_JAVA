@@ -78,6 +78,29 @@
     -fx-font-size: 14px;
 }
 
+.input-combo,
+.input-date-picker,
+.input-area {
+    -fx-background-color: #f4f7fb;
+    -fx-background-radius: 14;
+    -fx-border-color: #dbe3ee;
+    -fx-border-radius: 14;
+    -fx-font-size: 14px;
+}
+
+.input-combo,
+.input-date-picker {
+    -fx-padding: 6 10 6 10;
+}
+
+.input-area {
+    -fx-padding: 10 12 10 12;
+}
+
+.form-control-wrapper {
+    -fx-max-width: infinity;
+}
+
 .inline-field {
     -fx-pref-width: 290;
 }
@@ -92,6 +115,58 @@
 .input-field:focused {
     -fx-border-color: #1d4ed8;
     -fx-background-color: white;
+}
+
+.input-combo:focused,
+.input-date-picker:focused,
+.input-area:focused {
+    -fx-border-color: #1d4ed8;
+    -fx-background-color: white;
+}
+
+.input-combo .list-cell,
+.input-date-picker .text-field {
+    -fx-background-color: transparent;
+    -fx-font-size: 14px;
+    -fx-text-fill: #0f172a;
+    -fx-opacity: 1;
+}
+
+.input-combo .arrow-button,
+.input-date-picker .arrow-button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 10;
+}
+
+.input-combo .arrow,
+.input-date-picker .arrow {
+    -fx-background-color: #475569;
+}
+
+.input-combo > .list-cell,
+.input-combo > .text-field,
+.input-date-picker > .text-field {
+    -fx-background-color: transparent;
+    -fx-text-fill: #0f172a;
+}
+
+.combo-box-popup .list-view {
+    -fx-background-color: white;
+    -fx-background-insets: 0;
+    -fx-border-color: #dbe3ee;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+}
+
+.combo-box-popup .list-cell {
+    -fx-background-color: white;
+    -fx-text-fill: #0f172a;
+}
+
+.combo-box-popup .list-cell:hover,
+.combo-box-popup .list-cell:filled:selected {
+    -fx-background-color: #e2e8f0;
+    -fx-text-fill: #0f172a;
 }
 
 .primary-button {
@@ -227,13 +302,20 @@
 
 .profile-name {
     -fx-text-fill: white;
-    -fx-font-size: 13px;
+    -fx-font-size: 14px;
     -fx-font-weight: 800;
 }
 
 .profile-role {
     -fx-text-fill: rgba(255, 255, 255, 0.68);
     -fx-font-size: 12px;
+}
+
+.profile-caption {
+    -fx-text-fill: rgba(255, 255, 255, 0.58);
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+    -fx-letter-spacing: 0.6px;
 }
 
 .profile-menu-button {
