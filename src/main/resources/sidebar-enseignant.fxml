@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.Circle?>
+
+<VBox fx:id="sidebarRoot" xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="org.example.gui.SidebarEnseignantController"
+      prefWidth="250.0"
+      styleClass="sidebar">
+    
+    <padding>
+        <Insets top="20.0" right="16.0" bottom="20.0" left="16.0" />
+    </padding>
+    
+    <!-- Profil utilisateur -->
+    <VBox styleClass="user-profile">
+        <Circle fx:id="avatarCircle" radius="40.0" styleClass="avatar" />
+        <Label fx:id="userNameLabel" text="Enseignant" styleClass="user-name" />
+        <Label fx:id="userRoleLabel" text="PROF001" styleClass="user-role" />
+    </VBox>
+    
+    <Separator styleClass="separator" />
+    
+    <!-- Navigation -->
+    <Label text="MENU" styleClass="menu-label" />
+    
+    <!-- Boutons de navigation -->
+    <Button fx:id="mesEvaluationsBtn" text="📋 Mes Évaluations" styleClass="nav-button" onAction="#handleMesEvaluations" />
+    
+    <Button fx:id="mesCorrectionsBtn" text="✅ Mes Corrections" styleClass="nav-button" onAction="#handleMesCorrections" />
+    
+    <VBox VBox.vgrow="ALWAYS" />
+</VBox>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Pagination?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="org.example.gui.EvaluationListController"
+            prefHeight="720.0"
+            prefWidth="1280.0">
+    <top>
+        <VBox spacing="16.0" BorderPane.alignment="CENTER">
+            <padding>
+                <Insets bottom="16.0" left="20.0" right="20.0" top="20.0" />
+            </padding>
+            <HBox alignment="CENTER_LEFT" spacing="12.0">
+                <Label style="-fx-font-size: 22px; -fx-font-weight: bold;" text="Liste des évaluations" />
+                <HBox HBox.hgrow="ALWAYS" />
+                <Button fx:id="newEvaluationButton" mnemonicParsing="false" onAction="#handleNewEvaluation" text="+ Nouvelle évaluation" />
+            </HBox>
+            <HBox alignment="CENTER_LEFT" spacing="12.0">
+                <Label text="Recherche" />
+                <TextField fx:id="searchField" promptText="Titre, type, cours, statut..." HBox.hgrow="ALWAYS" />
+                <Label text="Trier par" />
+                <ComboBox fx:id="sortByComboBox" prefWidth="160.0" />
+                <Label text="Ordre" />
+                <ComboBox fx:id="sortOrderComboBox" prefWidth="140.0" />
+                <Label text="Par page" />
+                <ComboBox fx:id="pageSizeComboBox" prefWidth="100.0" />
+            </HBox>
+        </VBox>
+    </top>
+    <center>
+        <TableView fx:id="evaluationTableView" BorderPane.alignment="CENTER">
+            <columns>
+                <TableColumn fx:id="titleColumn" text="Titre" />
+                <TableColumn fx:id="typeColumn" text="Type d'évaluation" />
+                <TableColumn fx:id="courseColumn" text="Cours" />
+                <TableColumn fx:id="creationDateColumn" text="Date de création" />
+                <TableColumn fx:id="deadlineColumn" text="Date limite" />
+                <TableColumn fx:id="maxScoreColumn" text="Note maximale" />
+                <TableColumn fx:id="statusColumn" text="Statut" />
+                <TableColumn fx:id="actionsColumn" text="Actions" />
+            </columns>
+        </TableView>
+    </center>
+    <bottom>
+        <HBox alignment="CENTER_RIGHT" spacing="12.0">
+            <padding>
+                <Insets bottom="20.0" left="20.0" right="20.0" top="16.0" />
+            </padding>
+            <Label fx:id="paginationSummaryLabel" text="0 évaluation" />
+            <Pagination fx:id="pagination" maxPageIndicatorCount="5" pageCount="1" />
+        </HBox>
+    </bottom>
+</BorderPane>
