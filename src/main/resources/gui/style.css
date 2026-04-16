@@ -450,3 +450,70 @@
 .list-cell:filled:selected:hover {
     -fx-background-color: #dbeafe;
 }
+
+.dashboard-content {
+    -fx-background-color: transparent;
+}
+
+.content-shell {
+    -fx-background-color: transparent;
+}
+
+.content-header {
+    -fx-background-color: linear-gradient(to right, rgba(14, 165, 233, 0.92), rgba(13, 148, 136, 0.94));
+    -fx-background-radius: 24;
+    -fx-padding: 22;
+    -fx-spacing: 8;
+}
+
+.teacher-content-header {
+    -fx-background-color: linear-gradient(to right, rgba(249, 115, 22, 0.92), rgba(234, 88, 12, 0.96));
+}
+
+.content-title {
+    -fx-text-fill: white;
+    -fx-font-size: 26px;
+    -fx-font-weight: 800;
+}
+
+.content-copy {
+    -fx-text-fill: rgba(255, 255, 255, 0.8);
+    -fx-font-size: 14px;
+}
+
+.filter-bar {
+    -fx-background-color: white;
+    -fx-background-radius: 20;
+    -fx-padding: 18;
+    -fx-spacing: 12;
+    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.08), 18, 0.14, 0, 8);
+}
+
+.section-card {
+    -fx-background-color: white;
+    -fx-background-radius: 24;
+    -fx-padding: 22;
+    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.08), 18, 0.14, 0, 8);
+    -fx-spacing: 14;
+}
+
+.section-subtitle {
+    -fx-text-fill: #64748b;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+}
+
+.form-grid {
+    -fx-hgap: 16;
+    -fx-vgap: 14;
+}
+
+.sidebar-button-active {
+    -fx-background-color: rgba(255, 255, 255, 0.18);
+}
+
+.muted-label {
+    -fx-text-fill: #64748b;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+}

@@ -63,11 +63,11 @@ public class LoginController {
             return;
         }
         if ("etudiant".equalsIgnoreCase(type)) {
-            SceneManager.switchScene("/gui/student-dashboard.fxml", "Student Dashboard");
+            SceneManager.switchScene("/main-layout-etudiant.fxml", "Student Dashboard");
             return;
         }
         if ("enseignant".equalsIgnoreCase(type)) {
-            SceneManager.switchScene("/gui/teacher-dashboard.fxml", "Teacher Dashboard");
+            SceneManager.switchScene("/main-layout-enseignant.fxml", "Teacher Dashboard");
             return;
         }
         statusLabel.setText("Unknown user role: " + type);
