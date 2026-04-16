@@ -66,7 +66,7 @@ public class ForgotPasswordController {
     @FXML
     private void goBack() {
         try {
-            SceneManager.switchScene("/gui/login.fxml", "Campus Access");
+        SceneManager.switchScene("/login.fxml", "Campus Access");
         } catch (IOException e) {
             feedbackLabel.setText("Unable to return to login.");
         }

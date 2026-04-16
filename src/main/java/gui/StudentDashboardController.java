@@ -102,7 +102,7 @@ public class StudentDashboardController {
     @FXML
     private void handleProfileLogout() throws IOException {
         UserSession.clear();
-        SceneManager.switchScene("/gui/login.fxml", "Campus Access");
+        SceneManager.switchScene("/login.fxml", "Campus Access");
     }
 
     @FXML

@@ -50,7 +50,7 @@ public class LoginController {
     @FXML
     private void openForgotPassword() {
         try {
-            SceneManager.switchScene("/gui/forgot-password.fxml", "Reset Password");
+            SceneManager.switchScene("/forgot-password.fxml", "Reset Password");
         } catch (IOException e) {
             statusLabel.setText("Unable to open reset page.");
         }
@@ -59,7 +59,7 @@ public class LoginController {
     private void navigateByRole(Utilisateur utilisateur) throws IOException {
         String type = utilisateur.getType();
         if ("administrateur".equalsIgnoreCase(type)) {
-            SceneManager.switchScene("/gui/admin-dashboard.fxml", "Admin Dashboard");
+            SceneManager.switchScene("/main-layout-admin.fxml", "Admin Dashboard");
             return;
         }
         if ("etudiant".equalsIgnoreCase(type)) {

@@ -68,7 +68,7 @@ public class SidebarEtudiantController {
     private void handleDeconnexion() {
         try {
             UserSession.clear();
-            SceneManager.switchScene("/gui/login.fxml", "Campus Access");
+        SceneManager.switchScene("/login.fxml", "Campus Access");
         } catch (IOException e) {
             e.printStackTrace();
         }
