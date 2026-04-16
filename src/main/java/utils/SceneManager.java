@@ -24,7 +24,7 @@ public final class SceneManager {
         FXMLLoader loader = new FXMLLoader(SceneManager.class.getResource(resourcePath));
         Parent root = loader.load();
         Scene scene = new Scene(root);
-        scene.getStylesheets().add(SceneManager.class.getResource("/gui/style.css").toExternalForm());
+        scene.getStylesheets().add(SceneManager.class.getResource("/style.css").toExternalForm());
         primaryStage.setTitle(title);
         primaryStage.setScene(scene);
         primaryStage.show();

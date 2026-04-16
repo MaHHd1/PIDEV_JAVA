@@ -46,13 +46,6 @@
             <version>21</version>
             <scope>compile</scope>
         </dependency>
-
-        <dependency>
-            <groupId>org.openjfx</groupId>
-            <artifactId>javafx-media</artifactId>
-            <version>21</version>
-            <scope>compile</scope>
-        </dependency>
     </dependencies>
 
     <build>

@@ -194,7 +194,13 @@ public class StudentQuizController implements Initializable {
     private void handleLogout() throws IOException {
         stopTimer();
         UserSession.clear();
-        SceneManager.switchScene("/gui/login.fxml", "Campus Access");
+        SceneManager.switchScene("/login.fxml", "Campus Access");
+    }
+
+    @FXML
+    private void openDashboard() throws IOException {
+        stopTimer();
+        SceneManager.switchScene("/main-layout-etudiant.fxml", "Student Dashboard");
     }
 
     // ═════════════════════════════════════════════════════════════

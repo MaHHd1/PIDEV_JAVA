@@ -400,7 +400,12 @@ public class QuizController implements Initializable {
     @FXML
     private void handleLogout() throws IOException {
         UserSession.clear();
-        SceneManager.switchScene("/gui/login.fxml", "Campus Access");
+        SceneManager.switchScene("/login.fxml", "Campus Access");
+    }
+
+    @FXML
+    private void openDashboard() throws IOException {
+        SceneManager.switchScene("/main-layout-enseignant.fxml", "Teacher Dashboard");
     }
 
     // ═════════════════════════════════════════════════════════════

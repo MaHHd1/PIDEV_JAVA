@@ -10,7 +10,7 @@ public class Main extends Application {
     @Override
     public void start(Stage stage) throws Exception {
         SceneManager.init(stage);
-        SceneManager.switchScene("/gui/login.fxml", "Campus Access");
+        SceneManager.switchScene("/login.fxml", "Campus Access");
     }
 
     @Override

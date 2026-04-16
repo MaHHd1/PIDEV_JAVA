@@ -7,6 +7,7 @@ import utils.UserSession;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
@@ -63,6 +64,37 @@ public class AuthService {
         }
     }
 
+    public boolean changePassword(Utilisateur utilisateur, String currentPassword, String newPassword) throws SQLException, IOException {
+        if (utilisateur == null || utilisateur.getId() == null) {
+            return false;
+        }
+        if (currentPassword == null || newPassword == null) {
+            return false;
+        }
+
+        String storedHash = fetchPasswordHashById(utilisateur.getId());
+        if (storedHash == null || !verifyPassword(currentPassword, storedHash)) {
+            return false;
+        }
+
+        String hashedPassword = hashPassword(newPassword);
+        String sql = "UPDATE utilisateur SET mot_de_passe = ? WHERE id = ?";
+        try (Connection connection = DBConnection.getInstance().getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, hashedPassword);
+            ps.setLong(2, utilisateur.getId());
+            boolean updated = ps.executeUpdate() > 0;
+            if (updated) {
+                utilisateur.setMotDePasse(hashedPassword);
+                Utilisateur sessionUser = UserSession.getCurrentUser();
+                if (sessionUser != null && sessionUser.getId() != null && sessionUser.getId().equals(utilisateur.getId())) {
+                    sessionUser.setMotDePasse(hashedPassword);
+                }
+            }
+            return updated;
+        }
+    }
+
     private void updateLastLogin(Utilisateur utilisateur) throws SQLException {
         String sql = "UPDATE utilisateur SET last_login = ? WHERE id = ?";
         try (Connection connection = DBConnection.getInstance().getConnection();
@@ -71,6 +103,20 @@ public class AuthService {
             ps.setLong(2, utilisateur.getId());
             ps.executeUpdate();
         }
+    }
+
+    private String fetchPasswordHashById(Long id) throws SQLException {
+        String sql = "SELECT mot_de_passe FROM utilisateur WHERE id = ?";
+        try (Connection connection = DBConnection.getInstance().getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setLong(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString(1);
+                }
+            }
+        }
+        return null;
     }
 
     private boolean verifyPassword(String rawPassword, String storedHash) {
