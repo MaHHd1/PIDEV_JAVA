@@ -58,7 +58,7 @@ public class ForgotPasswordController {
             } else {
                 feedbackLabel.setText("No account found for this email.");
             }
-        } catch (SQLException | IOException e) {
+        } catch (SQLException e) {
             feedbackLabel.setText("Password reset failed: " + e.getMessage());
         }
     }

@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.sql.SQLException;
 
 public class ScoreDetailController implements MainControllerAware {
 
@@ -92,9 +93,13 @@ public class ScoreDetailController implements MainControllerAware {
         if (score == null) {
             return;
         }
-        soumission = soumissionService.getById(score.getSoumissionId());
-        if (soumission != null) {
-            evaluation = evaluationService.getById(soumission.getEvaluationId());
+        try {
+            soumission = soumissionService.getById(score.getSoumissionId());
+            if (soumission != null) {
+                evaluation = evaluationService.getById(soumission.getEvaluationId());
+            }
+        } catch (SQLException e) {
+            showAlert("Erreur", "Erreur lors du chargement des données: " + e.getMessage());
         }
     }
 
@@ -152,8 +157,12 @@ public class ScoreDetailController implements MainControllerAware {
         alert.setContentText("Voulez-vous supprimer cette correction ?");
         alert.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
-                scoreService.delete(score);
-                handleBack();
+                try {
+                    scoreService.delete(score);
+                    handleBack();
+                } catch (SQLException e) {
+                    showAlert("Erreur", "Erreur lors de la suppression: " + e.getMessage());
+                }
             }
         });
     }
@@ -206,6 +215,14 @@ public class ScoreDetailController implements MainControllerAware {
             }
         } catch (IOException ignored) {
         }
+    }
+
+    private void showAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 }
 

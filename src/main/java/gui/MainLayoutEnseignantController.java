@@ -51,6 +51,9 @@ public class MainLayoutEnseignantController {
 
         // Charger la vue par défaut (Mes Évaluations)
         loadContent("/evaluation-list.fxml");
+        if (sidebarController != null) {
+            sidebarController.setActiveButton("evaluations");
+        }
     }
 
     /**
@@ -143,6 +146,13 @@ public class MainLayoutEnseignantController {
         loadContent("/score-list.fxml");
         if (sidebarController != null) {
             sidebarController.setActiveButton("corrections");
+        }
+    }
+
+    public void showCourseManagement() {
+        loadContent("/course-management.fxml");
+        if (sidebarController != null) {
+            sidebarController.setActiveButton("courses");
         }
     }
 

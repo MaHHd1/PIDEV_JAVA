@@ -17,6 +17,7 @@ import services.EvaluationService;
 import utils.UserSession;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -168,11 +169,15 @@ public class EvaluationListController implements MainControllerAware {
     }
 
     private void loadEvaluations() {
-        List<Evaluation> list = evaluationService.getAll().stream()
-                .filter(evaluation -> currentTeacherId.equals(evaluation.getIdEnseignant()))
-                .toList();
-        evaluations.setAll(list);
-        applyFilters();
+        try {
+            List<Evaluation> list = evaluationService.getAll().stream()
+                    .filter(evaluation -> currentTeacherId.equals(evaluation.getIdEnseignant()))
+                    .toList();
+            evaluations.setAll(list);
+            applyFilters();
+        } catch (SQLException e) {
+            showAlert("Erreur", "Erreur lors du chargement des évaluations: " + e.getMessage());
+        }
     }
 
     private void applyFilters() {
@@ -252,8 +257,12 @@ public class EvaluationListController implements MainControllerAware {
 
         alert.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
-                evaluationService.delete(eval);
-                loadEvaluations();
+                try {
+                    evaluationService.delete(eval);
+                    loadEvaluations();
+                } catch (SQLException e) {
+                    showAlert("Erreur", "Erreur lors de la suppression: " + e.getMessage());
+                }
             }
         });
     }

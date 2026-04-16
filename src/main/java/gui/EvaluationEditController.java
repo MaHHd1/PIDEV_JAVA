@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -162,6 +163,8 @@ public class EvaluationEditController implements MainControllerAware {
 
         } catch (NumberFormatException e) {
             showAlert(Alert.AlertType.ERROR, "Erreur", "La note maximale doit être un nombre valide.");
+        } catch (SQLException e) {
+            showAlert(Alert.AlertType.ERROR, "Erreur", "Erreur lors de la mise à jour: " + e.getMessage());
         } catch (Exception e) {
             showAlert(Alert.AlertType.ERROR, "Erreur", "Erreur lors de la mise à jour: " + e.getMessage());
         }

@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 
 public class ScoreCreateController implements MainControllerAware {
@@ -69,27 +70,18 @@ public class ScoreCreateController implements MainControllerAware {
             if (newVal != null) {
                 selectedSoumission = newVal;
                 showSoumissionDetails(newVal);
-                Evaluation evaluation = evaluationService.getById(newVal.getEvaluationId());
-                if (evaluation != null) {
-                    noteSurField.setText(String.valueOf(evaluation.getNoteMax()));
+                try {
+                    Evaluation evaluation = evaluationService.getById(newVal.getEvaluationId());
+                    if (evaluation != null) {
+                        noteSurField.setText(String.valueOf(evaluation.getNoteMax()));
+                    }
+                } catch (SQLException e) {
+                    showAlert(Alert.AlertType.ERROR, "Erreur", "Erreur lors du chargement de l'évaluation: " + e.getMessage());
                 }
             }
         });
 
-        soumissionComboBox.setCellFactory(param -> new ListCell<>() {
-            @Override
-            protected void updateItem(Soumission item, boolean empty) {
-                super.updateItem(item, empty);
-                setText(empty || item == null ? null : buildLabel(item));
-            }
-        });
-        soumissionComboBox.setButtonCell(new ListCell<>() {
-            @Override
-            protected void updateItem(Soumission item, boolean empty) {
-                super.updateItem(item, empty);
-                setText(empty || item == null ? "Selectionner une soumission" : buildLabel(item));
-            }
-        });
+        // ...existing code...
     }
 
     @Override
@@ -110,29 +102,41 @@ public class ScoreCreateController implements MainControllerAware {
     }
 
     private void loadSoumissions() {
-        var soumissions = soumissionService.getAll();
-        var evaluations = evaluationService.getAll();
+        try {
+            var soumissions = soumissionService.getAll();
+            var evaluations = evaluationService.getAll();
 
-        var pendingSoumissions = soumissions.stream()
-                .filter(soumission -> {
-                    if (scoreService.getBySoumissionId(soumission.getId()) != null) {
-                        return false;
-                    }
-                    Evaluation evaluation = evaluations.stream()
-                            .filter(item -> item.getId() == soumission.getEvaluationId())
-                            .findFirst()
-                            .orElse(null);
-                    return evaluation != null && teacherId.equals(evaluation.getIdEnseignant());
-                })
-                .toList();
+            var pendingSoumissions = soumissions.stream()
+                    .filter(soumission -> {
+                        try {
+                            if (scoreService.getBySoumissionId(soumission.getId()) != null) {
+                                return false;
+                            }
+                        } catch (SQLException e) {
+                            return false;
+                        }
+                        Evaluation evaluation = evaluations.stream()
+                                .filter(item -> item.getId() == soumission.getEvaluationId())
+                                .findFirst()
+                                .orElse(null);
+                        return evaluation != null && teacherId.equals(evaluation.getIdEnseignant());
+                    })
+                    .toList();
 
-        soumissionComboBox.setItems(javafx.collections.FXCollections.observableArrayList(pendingSoumissions));
+            soumissionComboBox.setItems(javafx.collections.FXCollections.observableArrayList(pendingSoumissions));
+        } catch (SQLException e) {
+            showAlert(Alert.AlertType.ERROR, "Erreur", "Erreur lors du chargement des soumissions: " + e.getMessage());
+        }
     }
 
     private String buildLabel(Soumission soumission) {
-        Evaluation evaluation = evaluationService.getById(soumission.getEvaluationId());
-        String title = evaluation != null ? evaluation.getTitre() : "Evaluation #" + soumission.getEvaluationId();
-        return soumission.getIdEtudiant() + " - " + title;
+        try {
+            Evaluation evaluation = evaluationService.getById(soumission.getEvaluationId());
+            String title = evaluation != null ? evaluation.getTitre() : "Evaluation #" + soumission.getEvaluationId();
+            return soumission.getIdEtudiant() + " - " + title;
+        } catch (SQLException e) {
+            return soumission.getIdEtudiant() + " - Evaluation #" + soumission.getEvaluationId();
+        }
     }
 
     private void showSoumissionDetails(Soumission soumission) {
@@ -167,12 +171,12 @@ public class ScoreCreateController implements MainControllerAware {
             return;
         }
 
-        Evaluation evaluation = evaluationService.getById(selectedSoumission.getEvaluationId());
-        if (evaluation == null || !ValidationUtils.validateDoubleRange(noteField.getText(), 0, evaluation.getNoteMax(), "La note")) {
-            return;
-        }
-
         try {
+            Evaluation evaluation = evaluationService.getById(selectedSoumission.getEvaluationId());
+            if (evaluation == null || !ValidationUtils.validateDoubleRange(noteField.getText(), 0, evaluation.getNoteMax(), "La note")) {
+                return;
+            }
+
             Score score = new Score();
             score.setSoumissionId(selectedSoumission.getId());
             score.setNote(Double.parseDouble(noteField.getText().trim()));
@@ -185,6 +189,8 @@ public class ScoreCreateController implements MainControllerAware {
             handleCancel();
         } catch (NumberFormatException e) {
             showAlert(Alert.AlertType.ERROR, "Erreur", "La note doit etre un nombre valide.");
+        } catch (SQLException e) {
+            showAlert(Alert.AlertType.ERROR, "Erreur", "Erreur lors de l'enregistrement: " + e.getMessage());
         }
     }
 

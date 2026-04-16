@@ -25,9 +25,12 @@
         <Label fx:id="userNameLabel" styleClass="profile-name" text="Etudiant" />
         <Label fx:id="userRoleLabel" styleClass="sidebar-copy" text="ETU001" />
     </VBox>
+    <Button fx:id="profileBtn" maxWidth="1.7976931348623157E308" onAction="#handleProfileHub" styleClass="sidebar-button" text="Mon profil" />
+    <Button fx:id="changePasswordBtn" maxWidth="1.7976931348623157E308" onAction="#handleChangePassword" styleClass="sidebar-button" text="Changer mot de passe" />
     <Button fx:id="mesSoumissionsBtn" maxWidth="1.7976931348623157E308" onAction="#handleMesSoumissions" styleClass="sidebar-button" text="Mes soumissions" />
     <Button fx:id="mesNotesBtn" maxWidth="1.7976931348623157E308" onAction="#handleMesNotes" styleClass="sidebar-button" text="Mes notes" />
     <Button fx:id="quizBtn" maxWidth="1.7976931348623157E308" onAction="#handleQuizHub" styleClass="sidebar-button" text="Mes quiz" />
+    <Button fx:id="quizResultsBtn" maxWidth="1.7976931348623157E308" onAction="#handleQuizResultsHub" styleClass="sidebar-button" text="Mes resultats quiz" />
     <VBox VBox.vgrow="ALWAYS" />
     <Label styleClass="sidebar-foot" text="Espace etudiant" />
     <Button fx:id="deconnexionBtn" maxWidth="1.7976931348623157E308" onAction="#handleDeconnexion" styleClass="secondary-button" text="Deconnexion" />

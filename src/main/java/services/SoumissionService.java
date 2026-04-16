@@ -7,26 +7,29 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 public class SoumissionService {
-    private final Connection conn;
 
-    public SoumissionService() {
-        this.conn = DBConnection.getInstance().getConnection();
+    private Connection getConnection() throws SQLException {
+        Connection conn = DBConnection.getInstance().getConnection();
+        if (conn == null) {
+            throw new SQLException("Database connection is not available");
+        }
+        return conn;
     }
 
-    public void add(Soumission soumission) {
+    public void add(Soumission soumission) throws SQLException {
         if (soumission.getDateSoumission() == null) {
             soumission.setDateSoumission(LocalDateTime.now());
         }
 
         String sql = "INSERT INTO soumission (evaluation_id, id_etudiant, fichier_soumission_url, commentaire_etudiant, date_soumission, statut, pdf_filename) VALUES (?, ?, ?, ?, ?, ?, ?)";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, soumission.getEvaluationId());
             stmt.setString(2, soumission.getIdEtudiant());
             stmt.setString(3, soumission.getFichierSoumissionUrl());
@@ -35,14 +38,13 @@ public class SoumissionService {
             stmt.setString(6, soumission.getStatut());
             stmt.setString(7, soumission.getPdfFilename());
             stmt.executeUpdate();
-        } catch (SQLException e) {
-            System.out.println(e.getMessage());
         }
     }
 
-    public void update(Soumission soumission) {
+    public void update(Soumission soumission) throws SQLException {
         String sql = "UPDATE soumission SET evaluation_id = ?, id_etudiant = ?, fichier_soumission_url = ?, commentaire_etudiant = ?, date_soumission = ?, statut = ?, pdf_filename = ? WHERE id = ?";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, soumission.getEvaluationId());
             stmt.setString(2, soumission.getIdEtudiant());
             stmt.setString(3, soumission.getFichierSoumissionUrl());
@@ -52,47 +54,52 @@ public class SoumissionService {
             stmt.setString(7, soumission.getPdfFilename());
             stmt.setInt(8, soumission.getId());
             stmt.executeUpdate();
-        } catch (SQLException e) {
-            System.out.println(e.getMessage());
         }
     }
 
-    public void delete(Soumission soumission) {
-        String sql = "DELETE FROM soumission WHERE id = " + soumission.getId();
-        try (Statement stmt = conn.createStatement()) {
-            stmt.executeUpdate(sql);
-        } catch (SQLException e) {
-            System.out.println(e.getMessage());
+    public void delete(Soumission soumission) throws SQLException {
+        delete(soumission.getId());
+    }
+
+    public void delete(int id) throws SQLException {
+        String sql = "DELETE FROM soumission WHERE id = ?";
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            stmt.executeUpdate();
         }
     }
 
-    public Soumission getById(int id) {
-        String sql = "SELECT * FROM soumission WHERE id = " + id;
-        try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
-            if (!rs.next()) {
-                return null;
+    public Soumission getById(int id) throws SQLException {
+        String sql = "SELECT * FROM soumission WHERE id = ?";
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (!rs.next()) {
+                    return null;
+                }
+
+                Soumission soumission = new Soumission();
+                soumission.setId(rs.getInt("id"));
+                soumission.setEvaluationId(rs.getInt("evaluation_id"));
+                soumission.setIdEtudiant(rs.getString("id_etudiant"));
+                soumission.setFichierSoumissionUrl(rs.getString("fichier_soumission_url"));
+                soumission.setCommentaireEtudiant(rs.getString("commentaire_etudiant"));
+                soumission.setDateSoumission(rs.getTimestamp("date_soumission").toLocalDateTime());
+                soumission.setStatut(rs.getString("statut"));
+                soumission.setPdfFilename(rs.getString("pdf_filename"));
+                return soumission;
             }
-
-            Soumission soumission = new Soumission();
-            soumission.setId(rs.getInt("id"));
-            soumission.setEvaluationId(rs.getInt("evaluation_id"));
-            soumission.setIdEtudiant(rs.getString("id_etudiant"));
-            soumission.setFichierSoumissionUrl(rs.getString("fichier_soumission_url"));
-            soumission.setCommentaireEtudiant(rs.getString("commentaire_etudiant"));
-            soumission.setDateSoumission(rs.getTimestamp("date_soumission").toLocalDateTime());
-            soumission.setStatut(rs.getString("statut"));
-            soumission.setPdfFilename(rs.getString("pdf_filename"));
-            return soumission;
-        } catch (SQLException e) {
-            System.out.println(e.getMessage());
-            return null;
         }
     }
 
-    public List<Soumission> getAll() {
+    public List<Soumission> getAll() throws SQLException {
         String sql = "SELECT * FROM soumission";
         List<Soumission> soumissions = new ArrayList<>();
-        try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
                 Soumission soumission = new Soumission();
                 soumission.setId(rs.getInt("id"));
@@ -105,8 +112,6 @@ public class SoumissionService {
                 soumission.setPdfFilename(rs.getString("pdf_filename"));
                 soumissions.add(soumission);
             }
-        } catch (SQLException e) {
-            System.out.println(e.getMessage());
         }
         return soumissions;
     }

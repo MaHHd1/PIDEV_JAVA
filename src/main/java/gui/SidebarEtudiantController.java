@@ -4,6 +4,8 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.shape.Circle;
+import utils.DashboardNavigation;
+import utils.QuizNavigation;
 import utils.SceneManager;
 import utils.UserSession;
 
@@ -21,13 +23,22 @@ public class SidebarEtudiantController {
     private Label userRoleLabel;
 
     @FXML
+    private Button profileBtn;
+
+    @FXML
     private Button mesSoumissionsBtn;
 
     @FXML
     private Button mesNotesBtn;
 
     @FXML
+    private Button changePasswordBtn;
+
+    @FXML
     private Button quizBtn;
+
+    @FXML
+    private Button quizResultsBtn;
 
     @FXML
     private Button deconnexionBtn;
@@ -54,6 +65,26 @@ public class SidebarEtudiantController {
     }
 
     @FXML
+    private void handleProfileHub() {
+        try {
+            DashboardNavigation.openStudentSection(DashboardNavigation.StudentSection.PROFILE);
+            SceneManager.switchScene("/student-dashboard.fxml", "Student Profile");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @FXML
+    private void handleChangePassword() {
+        try {
+            DashboardNavigation.openStudentSection(DashboardNavigation.StudentSection.CHANGE_PASSWORD);
+            SceneManager.switchScene("/student-dashboard.fxml", "Student Security");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @FXML
     private void handleMesSoumissions() {
         if (mainController != null) {
             mainController.showMesSoumissions();
@@ -70,7 +101,18 @@ public class SidebarEtudiantController {
     @FXML
     private void handleQuizHub() {
         try {
+            QuizNavigation.openStudentSection(QuizNavigation.StudentSection.LIST);
             SceneManager.switchScene("/student-quiz.fxml", "Student Quiz");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @FXML
+    private void handleQuizResultsHub() {
+        try {
+            QuizNavigation.openStudentSection(QuizNavigation.StudentSection.RESULTS);
+            SceneManager.switchScene("/student-quiz.fxml", "Student Quiz Results");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -97,8 +139,17 @@ public class SidebarEtudiantController {
             case "notes":
                 activeBtn = mesNotesBtn;
                 break;
+            case "profile":
+                activeBtn = profileBtn;
+                break;
+            case "security":
+                activeBtn = changePasswordBtn;
+                break;
             case "quiz":
                 activeBtn = quizBtn;
+                break;
+            case "quiz_results":
+                activeBtn = quizResultsBtn;
                 break;
             default:
                 break;
@@ -110,10 +161,19 @@ public class SidebarEtudiantController {
     }
 
     private void resetButtonStyles() {
+        if (profileBtn != null) {
+            profileBtn.getStyleClass().remove("sidebar-button-active");
+        }
+        if (changePasswordBtn != null) {
+            changePasswordBtn.getStyleClass().remove("sidebar-button-active");
+        }
         mesSoumissionsBtn.getStyleClass().remove("sidebar-button-active");
         mesNotesBtn.getStyleClass().remove("sidebar-button-active");
         if (quizBtn != null) {
             quizBtn.getStyleClass().remove("sidebar-button-active");
+        }
+        if (quizResultsBtn != null) {
+            quizResultsBtn.getStyleClass().remove("sidebar-button-active");
         }
     }
 }

@@ -15,6 +15,7 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.util.Duration;
 import services.*;
+import utils.QuizNavigation;
 import utils.SceneManager;
 import utils.UserSession;
 
@@ -176,6 +177,9 @@ public class StudentQuizController implements Initializable {
         setText(sectionTitleLabel,    "Mes Quiz");
         setText(sectionSubtitleLabel, "Consultez et passez les quiz disponibles.");
         loadAvailableQuizzes();
+        if (QuizNavigation.consumeStudentSection() == QuizNavigation.StudentSection.RESULTS) {
+            showMesResultats();
+        }
     }
 
     // ═════════════════════════════════════════════════════════════

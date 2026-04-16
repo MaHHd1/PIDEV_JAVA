@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.sql.SQLException;
 
 /**
  * Contrôleur pour la page détail de la note (vue étudiant)
@@ -121,17 +122,26 @@ public class StudentScoreDetailController implements MainControllerAwareEtudiant
     private boolean verifyAccess() {
         if (score == null) return false;
 
-        Soumission soum = soumissionService.getById(score.getSoumissionId());
-        if (soum == null) return false;
+        try {
+            Soumission soum = soumissionService.getById(score.getSoumissionId());
+            if (soum == null) return false;
 
-        return currentStudentId.equals(soum.getIdEtudiant());
+            return currentStudentId.equals(soum.getIdEtudiant());
+        } catch (SQLException e) {
+            showAlert(Alert.AlertType.ERROR, "Erreur", "Erreur lors de la verification de la note: " + e.getMessage());
+            return false;
+        }
     }
 
     private void loadData() {
         if (score == null) return;
-        soumission = soumissionService.getById(score.getSoumissionId());
-        if (soumission != null) {
-            evaluation = evaluationService.getById(soumission.getEvaluationId());
+        try {
+            soumission = soumissionService.getById(score.getSoumissionId());
+            if (soumission != null) {
+                evaluation = evaluationService.getById(soumission.getEvaluationId());
+            }
+        } catch (SQLException e) {
+            showAlert(Alert.AlertType.ERROR, "Erreur", "Erreur lors du chargement des donnees: " + e.getMessage());
         }
     }
 

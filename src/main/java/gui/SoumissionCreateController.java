@@ -1,6 +1,8 @@
 package gui;
 
 import entities.Etudiant;
+import entities.Evaluation;
+import entities.Soumission;
 import entities.Utilisateur;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -14,8 +16,6 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import entities.Evaluation;
-import entities.Soumission;
 import services.EvaluationService;
 import services.SoumissionService;
 import utils.UserSession;
@@ -26,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -82,7 +83,6 @@ public class SoumissionCreateController implements MainControllerAwareEtudiant {
 
         studentIdField.setText(studentId);
 
-        // Listener pour afficher les infos de l'évaluation sélectionnée
         evaluationComboBox.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal != null) {
                 showEvaluationInfo(newVal);
@@ -103,33 +103,36 @@ public class SoumissionCreateController implements MainControllerAwareEtudiant {
     }
 
     private void loadOpenEvaluations() {
-        List<Evaluation> allEvals = evaluationService.getAll();
-        List<Evaluation> openEvals = allEvals.stream()
-            .filter(e -> "ouverte".equals(e.getStatut()))
-            .collect(Collectors.toList());
-        evaluationComboBox.setItems(javafx.collections.FXCollections.observableArrayList(openEvals));
+        try {
+            List<Evaluation> allEvals = evaluationService.getAll();
+            List<Evaluation> openEvals = allEvals.stream()
+                    .filter(e -> "ouverte".equals(e.getStatut()))
+                    .collect(Collectors.toList());
+            evaluationComboBox.setItems(javafx.collections.FXCollections.observableArrayList(openEvals));
 
-        // Afficher le titre dans le ComboBox
-        evaluationComboBox.setCellFactory(param -> new ListCell<>() {
-            @Override
-            protected void updateItem(Evaluation item, boolean empty) {
-                super.updateItem(item, empty);
-                setText(empty || item == null ? null : item.getTitre());
-            }
-        });
-        evaluationComboBox.setButtonCell(new ListCell<>() {
-            @Override
-            protected void updateItem(Evaluation item, boolean empty) {
-                super.updateItem(item, empty);
-                setText(empty || item == null ? "Sélectionner une évaluation" : item.getTitre());
-            }
-        });
+            evaluationComboBox.setCellFactory(param -> new ListCell<>() {
+                @Override
+                protected void updateItem(Evaluation item, boolean empty) {
+                    super.updateItem(item, empty);
+                    setText(empty || item == null ? null : item.getTitre());
+                }
+            });
+            evaluationComboBox.setButtonCell(new ListCell<>() {
+                @Override
+                protected void updateItem(Evaluation item, boolean empty) {
+                    super.updateItem(item, empty);
+                    setText(empty || item == null ? "Selectionner une evaluation" : item.getTitre());
+                }
+            });
+        } catch (SQLException e) {
+            showAlert(Alert.AlertType.ERROR, "Erreur", "Erreur lors du chargement des evaluations: " + e.getMessage());
+        }
     }
 
     private void showEvaluationInfo(Evaluation eval) {
         evaluationInfoBox.setVisible(true);
         evalDescriptionLabel.setText(eval.getDescription() != null ? eval.getDescription() : "Aucune description");
-        evalDeadlineLabel.setText("Date limite: " + eval.getDateLimite().toLocalDate().toString());
+        evalDeadlineLabel.setText("Date limite: " + eval.getDateLimite().toLocalDate());
         evalPdfLink.setVisible(eval.getPdfFilename() != null && !eval.getPdfFilename().isEmpty());
     }
 
@@ -137,9 +140,7 @@ public class SoumissionCreateController implements MainControllerAwareEtudiant {
     private void handleBrowsePdf() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Choisir un fichier PDF");
-        fileChooser.getExtensionFilters().add(
-            new FileChooser.ExtensionFilter("Fichiers PDF", "*.pdf")
-        );
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Fichiers PDF", "*.pdf"));
 
         Stage stage = (Stage) browsePdfButton.getScene().getWindow();
         selectedPdfFile = fileChooser.showOpenDialog(stage);
@@ -177,7 +178,6 @@ public class SoumissionCreateController implements MainControllerAwareEtudiant {
             soum.setCommentaireEtudiant(commentArea.getText().trim());
             soum.setDateSoumission(LocalDateTime.now());
 
-            // Déterminer le statut en fonction de la date limite
             if (LocalDateTime.now().isAfter(eval.getDateLimite())) {
                 soum.setStatut("en_retard");
             } else {
@@ -191,7 +191,7 @@ public class SoumissionCreateController implements MainControllerAwareEtudiant {
 
             soumissionService.add(soum);
 
-            showAlert(Alert.AlertType.INFORMATION, "Succès", "Soumission enregistrée avec succès!");
+            showAlert(Alert.AlertType.INFORMATION, "Succes", "Soumission enregistree avec succes.");
             navigateToList();
 
         } catch (Exception e) {
@@ -200,38 +200,32 @@ public class SoumissionCreateController implements MainControllerAwareEtudiant {
     }
 
     private boolean validateInput() {
-        // Validation évaluation: obligatoire
-        if (!ValidationUtils.validateNotNull(evaluationComboBox.getValue(), "L'évaluation")) {
+        if (!ValidationUtils.validateNotNull(evaluationComboBox.getValue(), "L'evaluation")) {
             return false;
         }
 
         Evaluation eval = evaluationComboBox.getValue();
 
-        // Vérifier si l'évaluation est fermée
         if ("fermee".equals(eval.getStatut())) {
-            ValidationUtils.showError("Cette évaluation est fermée. Soumission refusée.");
+            ValidationUtils.showError("Cette evaluation est fermee. Soumission refusee.");
             return false;
         }
 
-        // Vérifier si la date limite est dépassée
         if (LocalDateTime.now().isAfter(eval.getDateLimite())) {
-            ValidationUtils.showError("La date limite de cette évaluation est dépassée. Soumission refusée.");
+            ValidationUtils.showError("La date limite de cette evaluation est depassee. Soumission refusee.");
             return false;
         }
 
-        // Validation PDF: obligatoire
         if (selectedPdfFile == null) {
             ValidationUtils.showError("Le fichier PDF est obligatoire.");
             return false;
         }
 
-        // Validation taille PDF: max 10Mo
         if (selectedPdfFile.length() > 10 * 1024 * 1024) {
-            ValidationUtils.showError("Le fichier PDF ne doit pas dépasser 10 Mo.");
+            ValidationUtils.showError("Le fichier PDF ne doit pas depasser 10 Mo.");
             return false;
         }
 
-        // Validation commentaire: max 500 caractères (optionnel)
         String commentaire = commentArea.getText();
         if (commentaire != null && !commentaire.isEmpty()) {
             if (!ValidationUtils.validateMaxLength(commentaire, 500, "Le commentaire")) {
@@ -264,10 +258,10 @@ public class SoumissionCreateController implements MainControllerAwareEtudiant {
             File pdfFile = Paths.get("uploads", filename).toFile();
             if (pdfFile.exists()) {
                 FileChooser fileChooser = new FileChooser();
-                fileChooser.setTitle("Télécharger le PDF");
+                fileChooser.setTitle("Telecharger le PDF");
                 fileChooser.setInitialFileName(filename);
                 fileChooser.getExtensionFilters().add(
-                    new FileChooser.ExtensionFilter("Fichiers PDF", "*.pdf")
+                        new FileChooser.ExtensionFilter("Fichiers PDF", "*.pdf")
                 );
 
                 Stage stage = (Stage) evalPdfLink.getScene().getWindow();
@@ -275,13 +269,13 @@ public class SoumissionCreateController implements MainControllerAwareEtudiant {
 
                 if (targetFile != null) {
                     Files.copy(pdfFile.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                    showAlert(Alert.AlertType.INFORMATION, "Succès", "PDF téléchargé avec succès!");
+                    showAlert(Alert.AlertType.INFORMATION, "Succes", "PDF telecharge avec succes.");
                 }
             } else {
                 showAlert(Alert.AlertType.ERROR, "Erreur", "Le fichier PDF n'existe pas.");
             }
         } catch (IOException e) {
-            showAlert(Alert.AlertType.ERROR, "Erreur", "Impossible de télécharger le PDF: " + e.getMessage());
+            showAlert(Alert.AlertType.ERROR, "Erreur", "Impossible de telecharger le PDF: " + e.getMessage());
         }
     }
 
@@ -299,4 +293,3 @@ public class SoumissionCreateController implements MainControllerAwareEtudiant {
         alert.showAndWait();
     }
 }
-

@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 
 public class ScoreEditController implements MainControllerAware {
@@ -82,9 +83,13 @@ public class ScoreEditController implements MainControllerAware {
         if (score == null) {
             return;
         }
-        soumission = soumissionService.getById(score.getSoumissionId());
-        if (soumission != null) {
-            evaluation = evaluationService.getById(soumission.getEvaluationId());
+        try {
+            soumission = soumissionService.getById(score.getSoumissionId());
+            if (soumission != null) {
+                evaluation = evaluationService.getById(soumission.getEvaluationId());
+            }
+        } catch (SQLException e) {
+            showAlert("Erreur", "Erreur lors du chargement des donnees: " + e.getMessage());
         }
     }
 
@@ -155,11 +160,9 @@ public class ScoreEditController implements MainControllerAware {
             scoreService.update(score);
             handleCancel();
         } catch (NumberFormatException e) {
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Erreur");
-            alert.setHeaderText(null);
-            alert.setContentText("La note doit etre un nombre valide.");
-            alert.showAndWait();
+            showAlert("Erreur", "La note doit etre un nombre valide.");
+        } catch (SQLException e) {
+            showAlert("Erreur", "Erreur lors de l'enregistrement: " + e.getMessage());
         }
     }
 
@@ -180,6 +183,14 @@ public class ScoreEditController implements MainControllerAware {
             }
         } catch (IOException ignored) {
         }
+    }
+
+    private void showAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 }
 

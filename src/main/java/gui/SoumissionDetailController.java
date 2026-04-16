@@ -1,9 +1,8 @@
 package gui;
 
+import entities.Evaluation;
+import entities.Soumission;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
@@ -12,8 +11,6 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import entities.Evaluation;
-import entities.Soumission;
 import services.EvaluationService;
 import services.SoumissionService;
 
@@ -22,6 +19,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.sql.SQLException;
 
 public class SoumissionDetailController implements MainControllerAwareEtudiant {
 
@@ -93,13 +91,14 @@ public class SoumissionDetailController implements MainControllerAwareEtudiant {
     }
 
     private void displaySoumissionDetails() {
-        if (soumission == null) return;
+        if (soumission == null) {
+            return;
+        }
 
         idLabel.setText(String.valueOf(soumission.getId()));
         studentIdLabel.setText(soumission.getIdEtudiant());
         dateLabel.setText(soumission.getDateSoumission().toLocalDate().toString());
 
-        // Statut avec style
         String statut = soumission.getStatut();
         statusLabel.setText(statut);
         switch (statut.toLowerCase()) {
@@ -116,19 +115,24 @@ public class SoumissionDetailController implements MainControllerAwareEtudiant {
                 statusLabel.setStyle("");
         }
 
-        // Informations de l'évaluation
-        Evaluation eval = evaluationService.getById(soumission.getEvaluationId());
-        if (eval != null) {
-            evaluationLabel.setText(eval.getTitre());
-            evalDescriptionLabel.setText(eval.getDescription() != null ? eval.getDescription() : "Aucune description");
-            evalPdfLink.setVisible(eval.getPdfFilename() != null && !eval.getPdfFilename().isEmpty());
-        } else {
-            evaluationLabel.setText("Évaluation #" + soumission.getEvaluationId());
+        try {
+            Evaluation eval = evaluationService.getById(soumission.getEvaluationId());
+            if (eval != null) {
+                evaluationLabel.setText(eval.getTitre());
+                evalDescriptionLabel.setText(eval.getDescription() != null ? eval.getDescription() : "Aucune description");
+                evalPdfLink.setVisible(eval.getPdfFilename() != null && !eval.getPdfFilename().isEmpty());
+            } else {
+                evaluationLabel.setText("Evaluation #" + soumission.getEvaluationId());
+                evalDescriptionLabel.setText("-");
+                evalPdfLink.setVisible(false);
+            }
+        } catch (SQLException e) {
+            evaluationLabel.setText("Evaluation #" + soumission.getEvaluationId());
             evalDescriptionLabel.setText("-");
             evalPdfLink.setVisible(false);
+            showAlert(Alert.AlertType.ERROR, "Erreur", "Erreur lors du chargement de l'evaluation: " + e.getMessage());
         }
 
-        // PDF soumis
         if (soumission.getPdfFilename() != null && !soumission.getPdfFilename().isEmpty()) {
             pdfFileLabel.setText(soumission.getPdfFilename());
             downloadPdfLink.setVisible(true);
@@ -137,7 +141,6 @@ public class SoumissionDetailController implements MainControllerAwareEtudiant {
             downloadPdfLink.setVisible(false);
         }
 
-        // Commentaire
         if (soumission.getCommentaireEtudiant() != null && !soumission.getCommentaireEtudiant().isEmpty()) {
             commentBox.setVisible(true);
             commentLabel.setText(soumission.getCommentaireEtudiant());
@@ -148,12 +151,18 @@ public class SoumissionDetailController implements MainControllerAwareEtudiant {
 
     @FXML
     private void handleEdit() {
-        if (soumission == null || mainController == null) return;
+        if (soumission == null || mainController == null) {
+            return;
+        }
 
-        // Vérifier si l'évaluation est fermée
-        Evaluation eval = evaluationService.getById(soumission.getEvaluationId());
-        if (eval != null && "fermee".equals(eval.getStatut())) {
-            showAlert(Alert.AlertType.INFORMATION, "Information", "Cette évaluation est fermée. La modification est interdite.");
+        try {
+            Evaluation eval = evaluationService.getById(soumission.getEvaluationId());
+            if (eval != null && "fermee".equals(eval.getStatut())) {
+                showAlert(Alert.AlertType.INFORMATION, "Information", "Cette evaluation est fermee. La modification est interdite.");
+                return;
+            }
+        } catch (SQLException e) {
+            showAlert(Alert.AlertType.ERROR, "Erreur", "Erreur lors du chargement de l'evaluation: " + e.getMessage());
             return;
         }
 
@@ -162,17 +171,23 @@ public class SoumissionDetailController implements MainControllerAwareEtudiant {
 
     @FXML
     private void handleDelete() {
-        if (soumission == null) return;
+        if (soumission == null) {
+            return;
+        }
 
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Confirmation");
         alert.setHeaderText("Supprimer la soumission");
-        alert.setContentText("Êtes-vous sûr de vouloir supprimer cette soumission ?");
+        alert.setContentText("Etes-vous sur de vouloir supprimer cette soumission ?");
 
         alert.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
-                soumissionService.delete(soumission);
-                navigateToList();
+                try {
+                    soumissionService.delete(soumission);
+                    navigateToList();
+                } catch (SQLException e) {
+                    showAlert(Alert.AlertType.ERROR, "Erreur", "Erreur lors de la suppression: " + e.getMessage());
+                }
             }
         });
     }
@@ -184,15 +199,21 @@ public class SoumissionDetailController implements MainControllerAwareEtudiant {
 
     @FXML
     private void handleDownloadPdf() {
-        if (soumission == null || soumission.getPdfFilename() == null) return;
+        if (soumission == null || soumission.getPdfFilename() == null) {
+            return;
+        }
         downloadPdf(soumission.getPdfFilename());
     }
 
     @FXML
     private void handleDownloadEvalPdf() {
-        Evaluation eval = evaluationService.getById(soumission.getEvaluationId());
-        if (eval != null && eval.getPdfFilename() != null) {
-            downloadPdf(eval.getPdfFilename());
+        try {
+            Evaluation eval = evaluationService.getById(soumission.getEvaluationId());
+            if (eval != null && eval.getPdfFilename() != null) {
+                downloadPdf(eval.getPdfFilename());
+            }
+        } catch (SQLException e) {
+            showAlert(Alert.AlertType.ERROR, "Erreur", "Erreur lors du chargement de l'evaluation: " + e.getMessage());
         }
     }
 
@@ -201,10 +222,10 @@ public class SoumissionDetailController implements MainControllerAwareEtudiant {
             File pdfFile = Paths.get("uploads", filename).toFile();
             if (pdfFile.exists()) {
                 FileChooser fileChooser = new FileChooser();
-                fileChooser.setTitle("Télécharger le PDF");
+                fileChooser.setTitle("Telecharger le PDF");
                 fileChooser.setInitialFileName(filename);
                 fileChooser.getExtensionFilters().add(
-                    new FileChooser.ExtensionFilter("Fichiers PDF", "*.pdf")
+                        new FileChooser.ExtensionFilter("Fichiers PDF", "*.pdf")
                 );
 
                 Stage stage = (Stage) downloadPdfLink.getScene().getWindow();
@@ -212,13 +233,13 @@ public class SoumissionDetailController implements MainControllerAwareEtudiant {
 
                 if (targetFile != null) {
                     Files.copy(pdfFile.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                    showAlert(Alert.AlertType.INFORMATION, "Succès", "PDF téléchargé avec succès!");
+                    showAlert(Alert.AlertType.INFORMATION, "Succes", "PDF telecharge avec succes.");
                 }
             } else {
                 showAlert(Alert.AlertType.ERROR, "Erreur", "Le fichier PDF n'existe pas.");
             }
         } catch (IOException e) {
-            showAlert(Alert.AlertType.ERROR, "Erreur", "Impossible de télécharger le PDF: " + e.getMessage());
+            showAlert(Alert.AlertType.ERROR, "Erreur", "Impossible de telecharger le PDF: " + e.getMessage());
         }
     }
 
@@ -236,4 +257,3 @@ public class SoumissionDetailController implements MainControllerAwareEtudiant {
         alert.showAndWait();
     }
 }
-

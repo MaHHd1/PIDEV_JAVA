@@ -3,8 +3,8 @@ package services;
 import entities.Utilisateur;
 import utils.DBConnection;
 import utils.UserSession;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -15,8 +15,8 @@ import java.util.UUID;
 
 public class AuthService {
 
-    private static final String PHP_EXECUTABLE = "C:\\xampp\\php\\php.exe";
     private final UtilisateurService utilisateurService = new UtilisateurService();
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     public Utilisateur authenticate(String email, String password) throws SQLException {
         Utilisateur utilisateur = utilisateurService.findByEmail(email);
@@ -41,6 +41,9 @@ public class AuthService {
 
         try (Connection connection = DBConnection.getInstance().getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {
+            if (connection == null) {
+                throw new SQLException("Database connection is not available");
+            }
             ps.setString(1, token);
             ps.setTimestamp(2, Timestamp.valueOf(expiresAt));
             ps.setString(3, email);
@@ -48,7 +51,7 @@ public class AuthService {
         }
     }
 
-    public boolean resetPassword(String email, String newPassword) throws SQLException, IOException {
+    public boolean resetPassword(String email, String newPassword) throws SQLException {
         String token = UUID.randomUUID().toString();
         LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(30);
         String hashedPassword = hashPassword(newPassword);
@@ -56,6 +59,9 @@ public class AuthService {
 
         try (Connection connection = DBConnection.getInstance().getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {
+            if (connection == null) {
+                throw new SQLException("Database connection is not available");
+            }
             ps.setString(1, hashedPassword);
             ps.setString(2, token);
             ps.setTimestamp(3, Timestamp.valueOf(expiresAt));
@@ -64,7 +70,7 @@ public class AuthService {
         }
     }
 
-    public boolean changePassword(Utilisateur utilisateur, String currentPassword, String newPassword) throws SQLException, IOException {
+    public boolean changePassword(Utilisateur utilisateur, String currentPassword, String newPassword) throws SQLException {
         if (utilisateur == null || utilisateur.getId() == null) {
             return false;
         }
@@ -81,6 +87,9 @@ public class AuthService {
         String sql = "UPDATE utilisateur SET mot_de_passe = ? WHERE id = ?";
         try (Connection connection = DBConnection.getInstance().getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {
+            if (connection == null) {
+                throw new SQLException("Database connection is not available");
+            }
             ps.setString(1, hashedPassword);
             ps.setLong(2, utilisateur.getId());
             boolean updated = ps.executeUpdate() > 0;
@@ -99,6 +108,9 @@ public class AuthService {
         String sql = "UPDATE utilisateur SET last_login = ? WHERE id = ?";
         try (Connection connection = DBConnection.getInstance().getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {
+            if (connection == null) {
+                throw new SQLException("Database connection is not available");
+            }
             ps.setTimestamp(1, Timestamp.valueOf(utilisateur.getLastLogin()));
             ps.setLong(2, utilisateur.getId());
             ps.executeUpdate();
@@ -109,6 +121,9 @@ public class AuthService {
         String sql = "SELECT mot_de_passe FROM utilisateur WHERE id = ?";
         try (Connection connection = DBConnection.getInstance().getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {
+            if (connection == null) {
+                throw new SQLException("Database connection is not available");
+            }
             ps.setLong(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -124,48 +139,16 @@ public class AuthService {
             return false;
         }
 
-        if (!storedHash.startsWith("$2")) {
-            return rawPassword.equals(storedHash);
+        // Check if password is BCrypt hashed (starts with $2a$, $2b$, or $2y$)
+        if (storedHash.startsWith("$2a$") || storedHash.startsWith("$2b$") || storedHash.startsWith("$2y$")) {
+            return passwordEncoder.matches(rawPassword, storedHash);
         }
 
-        ProcessBuilder processBuilder = new ProcessBuilder(
-                PHP_EXECUTABLE,
-                "-r",
-                "exit(password_verify($argv[1], $argv[2]) ? 0 : 1);",
-                rawPassword,
-                storedHash
-        );
-
-        try {
-            Process process = processBuilder.start();
-            int exitCode = process.waitFor();
-            return exitCode == 0;
-        } catch (IOException e) {
-            return false;
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return false;
-        }
+        // Fallback to plain text comparison for backwards compatibility
+        return rawPassword.equals(storedHash);
     }
 
-    public String hashPassword(String rawPassword) throws IOException {
-        ProcessBuilder processBuilder = new ProcessBuilder(
-                PHP_EXECUTABLE,
-                "-r",
-                "echo password_hash($argv[1], PASSWORD_BCRYPT);",
-                rawPassword
-        );
-
-        Process process = processBuilder.start();
-        try {
-            int exitCode = process.waitFor();
-            if (exitCode != 0) {
-                throw new IOException("PHP password hashing failed with exit code " + exitCode);
-            }
-            return new String(process.getInputStream().readAllBytes()).trim();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IOException("Password hashing interrupted.", e);
-        }
+    public String hashPassword(String rawPassword) {
+        return passwordEncoder.encode(rawPassword);
     }
 }

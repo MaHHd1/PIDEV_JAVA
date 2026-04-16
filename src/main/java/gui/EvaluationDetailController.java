@@ -18,6 +18,7 @@ import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -205,13 +206,17 @@ public class EvaluationDetailController implements MainControllerAware {
     private void loadSubmissions() {
         if (evaluation == null) return;
 
-        List<Soumission> allSubmissions = soumissionService.getAll();
-        List<Soumission> evalSubmissions = allSubmissions.stream()
-            .filter(s -> s.getEvaluationId() == evaluation.getId())
-            .collect(Collectors.toList());
+        try {
+            List<Soumission> allSubmissions = soumissionService.getAll();
+            List<Soumission> evalSubmissions = allSubmissions.stream()
+                .filter(s -> s.getEvaluationId() == evaluation.getId())
+                .collect(Collectors.toList());
 
-        ObservableList<Soumission> submissions = FXCollections.observableArrayList(evalSubmissions);
-        submissionTableView.setItems(submissions);
+            ObservableList<Soumission> submissions = FXCollections.observableArrayList(evalSubmissions);
+            submissionTableView.setItems(submissions);
+        } catch (SQLException e) {
+            showAlert("Erreur", "Erreur lors du chargement des soumissions: " + e.getMessage());
+        }
     }
 
     @FXML
@@ -231,8 +236,12 @@ public class EvaluationDetailController implements MainControllerAware {
 
         alert.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
-                evaluationService.delete(evaluation);
-                navigateToList();
+                try {
+                    evaluationService.delete(evaluation);
+                    navigateToList();
+                } catch (SQLException e) {
+                    showAlert("Erreur", "Erreur lors de la suppression: " + e.getMessage());
+                }
             }
         });
     }

@@ -11,6 +11,7 @@ import javafx.scene.control.MenuButton;
 import javafx.scene.control.PasswordField;
 import javafx.scene.layout.VBox;
 import services.AuthService;
+import utils.DashboardNavigation;
 import utils.SceneManager;
 import utils.UserSession;
 
@@ -96,7 +97,12 @@ public class StudentDashboardController {
                 "Prepare for upcoming platform modules"
         );
 
-        showProfilePage();
+        DashboardNavigation.StudentSection initialSection = DashboardNavigation.consumeStudentSection();
+        if (initialSection == DashboardNavigation.StudentSection.CHANGE_PASSWORD) {
+            showChangePasswordPage();
+        } else {
+            showProfilePage();
+        }
     }
 
     @FXML
@@ -157,7 +163,7 @@ public class StudentDashboardController {
             } else {
                 setChangePasswordFeedback("Current password is incorrect.", false);
             }
-        } catch (SQLException | IOException e) {
+        } catch (SQLException e) {
             setChangePasswordFeedback("Password update failed: " + e.getMessage(), false);
         }
     }

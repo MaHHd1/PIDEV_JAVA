@@ -49,6 +49,9 @@ public class MainLayoutEtudiantController {
 
         // Charger la vue par défaut (Mes Soumissions)
         loadContent("/soumission-list.fxml");
+        if (sidebarController != null) {
+            sidebarController.setActiveButton("soumissions");
+        }
     }
 
     /**

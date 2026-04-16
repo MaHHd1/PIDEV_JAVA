@@ -13,6 +13,7 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.layout.VBox;
 import services.AuthService;
 import services.EtudiantService;
+import utils.DashboardNavigation;
 import utils.SceneManager;
 import utils.UserSession;
 
@@ -115,7 +116,15 @@ public class TeacherDashboardController {
         );
 
         loadStudentProfiles();
-        showProfilePage();
+
+        DashboardNavigation.TeacherSection initialSection = DashboardNavigation.consumeTeacherSection();
+        if (initialSection == DashboardNavigation.TeacherSection.STUDENTS) {
+            showStudentsPage();
+        } else if (initialSection == DashboardNavigation.TeacherSection.CHANGE_PASSWORD) {
+            showChangePasswordPage();
+        } else {
+            showProfilePage();
+        }
     }
 
     @FXML
@@ -187,7 +196,7 @@ public class TeacherDashboardController {
             } else {
                 setChangePasswordFeedback("Current password is incorrect.", false);
             }
-        } catch (SQLException | IOException e) {
+        } catch (SQLException e) {
             setChangePasswordFeedback("Password update failed: " + e.getMessage(), false);
         }
     }

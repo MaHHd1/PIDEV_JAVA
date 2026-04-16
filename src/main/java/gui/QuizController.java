@@ -20,6 +20,7 @@ import services.QuestionService;
 import services.QuizService;
 import services.ReponseService;
 import services.ResultatQuizService;
+import utils.QuizNavigation;
 import utils.SceneManager;
 import utils.UserSession;
 
@@ -357,12 +358,16 @@ public class QuizController implements Initializable {
         // Profil
         Utilisateur u = UserSession.getCurrentUser();
         if (u != null) setCurrentUser(u.getNomComplet(), u.getType());
+        QuizNavigation.TeacherSection initialSection = QuizNavigation.consumeTeacherSection();
 
         // Page initiale
         showOnly(quizListSection);
         setText(sectionTitleLabel,    "Gestion des Quiz");
         setText(sectionSubtitleLabel, "Créez, modifiez et organisez vos quiz et leurs questions.");
         loadQuizList();
+        if (initialSection == QuizNavigation.TeacherSection.CREATE) {
+            showQuizCreateForm();
+        }
     }
 
     // ═════════════════════════════════════════════════════════════

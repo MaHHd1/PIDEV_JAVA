@@ -25,6 +25,7 @@ import services.ScoreService;
 import services.SoumissionService;
 import utils.UserSession;
 
+import java.sql.SQLException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -199,23 +200,40 @@ public class ScoreListController implements MainControllerAware {
     }
 
     private void loadSoumissions() {
-        List<Soumission> allSoumissions = soumissionService.getAll();
-        List<Evaluation> allEvaluations = evaluationService.getAll();
+        try {
+            List<Soumission> allSoumissions = soumissionService.getAll();
+            List<Evaluation> allEvaluations = evaluationService.getAll();
 
-        List<SoumissionWrapper> wrappers = allSoumissions.stream()
-                .map(soumission -> {
-                    Score score = scoreService.getBySoumissionId(soumission.getId());
-                    Evaluation evaluation = allEvaluations.stream()
-                            .filter(item -> item.getId() == soumission.getEvaluationId())
-                            .findFirst()
-                            .orElse(null);
-                    return new SoumissionWrapper(soumission, score, evaluation);
-                })
-                .filter(wrapper -> wrapper.getEvaluation() != null && currentTeacherId.equals(wrapper.getEvaluation().getIdEnseignant()))
-                .collect(Collectors.toList());
+            List<SoumissionWrapper> wrappers = allSoumissions.stream()
+                    .map(soumission -> {
+                        try {
+                            Score score = scoreService.getBySoumissionId(soumission.getId());
+                            Evaluation evaluation = allEvaluations.stream()
+                                    .filter(item -> item.getId() == soumission.getEvaluationId())
+                                    .findFirst()
+                                    .orElse(null);
+                            return new SoumissionWrapper(soumission, score, evaluation);
+                        } catch (SQLException e) {
+                            System.err.println("Error loading score: " + e.getMessage());
+                            return null;
+                        }
+                    })
+                    .filter(wrapper -> wrapper != null && wrapper.getEvaluation() != null && currentTeacherId.equals(wrapper.getEvaluation().getIdEnseignant()))
+                    .collect(Collectors.toList());
 
-        soumissionWrappers.setAll(wrappers);
-        applyFilters();
+            soumissionWrappers.setAll(wrappers);
+            applyFilters();
+        } catch (SQLException e) {
+            showAlert("Erreur", "Erreur lors du chargement des soumissions: " + e.getMessage());
+        }
+    }
+
+    private void showAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 
     private void applyFilters() {
@@ -293,8 +311,12 @@ public class ScoreListController implements MainControllerAware {
         alert.setContentText("Voulez-vous supprimer cette correction ?");
         alert.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
-                scoreService.delete(wrapper.getScore());
-                loadSoumissions();
+                try {
+                    scoreService.delete(wrapper.getScore());
+                    loadSoumissions();
+                } catch (SQLException e) {
+                    showAlert("Erreur", "Erreur lors de la suppression: " + e.getMessage());
+                }
             }
         });
     }

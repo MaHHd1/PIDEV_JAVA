@@ -42,8 +42,10 @@ public class LoginController {
             }
 
             navigateByRole(utilisateur);
-        } catch (SQLException | IOException e) {
+        } catch (SQLException e) {
             statusLabel.setText("Login failed: " + e.getMessage());
+        } catch (IOException e) {
+            statusLabel.setText("Navigation error: " + e.getMessage());
         }
     }
 

@@ -1,24 +1,29 @@
 package gui;
 
 import entities.Etudiant;
+import entities.Evaluation;
+import entities.Soumission;
 import entities.Utilisateur;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.Pagination;
+import javafx.scene.control.TableCell;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
-import javafx.stage.Stage;
-import entities.Evaluation;
-import entities.Soumission;
 import services.EvaluationService;
 import services.SoumissionService;
 import utils.UserSession;
 
-import java.io.IOException;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -68,10 +73,9 @@ public class SoumissionListController implements MainControllerAwareEtudiant {
 
     private final SoumissionService soumissionService = new SoumissionService();
     private final EvaluationService evaluationService = new EvaluationService();
-    private ObservableList<Soumission> soumissions = FXCollections.observableArrayList();
-    private ObservableList<Soumission> filteredSoumissions = FXCollections.observableArrayList();
+    private final ObservableList<Soumission> soumissions = FXCollections.observableArrayList();
+    private final ObservableList<Soumission> filteredSoumissions = FXCollections.observableArrayList();
 
-    // ID de l'étudiant connecté (à remplacer par la session utilisateur)
     private String currentStudentId = "ETU001";
 
     private MainLayoutEtudiantController mainController;
@@ -92,21 +96,24 @@ public class SoumissionListController implements MainControllerAwareEtudiant {
     private void setupTableColumns() {
         idColumn.setCellValueFactory(new PropertyValueFactory<>("id"));
         studentIdColumn.setCellValueFactory(new PropertyValueFactory<>("idEtudiant"));
-        dateColumn.setCellValueFactory(cellData -> {
-            return new javafx.beans.property.SimpleStringProperty(
-                cellData.getValue().getDateSoumission().toLocalDate().toString()
-            );
-        });
+        dateColumn.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(
+                        cellData.getValue().getDateSoumission().toLocalDate().toString()
+                )
+        );
         statusColumn.setCellValueFactory(new PropertyValueFactory<>("statut"));
 
-        // Afficher le titre de l'évaluation
         evaluationColumn.setCellValueFactory(cellData -> {
-            Evaluation eval = evaluationService.getById(cellData.getValue().getEvaluationId());
-            String titre = eval != null ? eval.getTitre() : "Évaluation #" + cellData.getValue().getEvaluationId();
+            String titre;
+            try {
+                Evaluation eval = evaluationService.getById(cellData.getValue().getEvaluationId());
+                titre = eval != null ? eval.getTitre() : "Evaluation #" + cellData.getValue().getEvaluationId();
+            } catch (SQLException e) {
+                titre = "Evaluation #" + cellData.getValue().getEvaluationId();
+            }
             return new javafx.beans.property.SimpleStringProperty(titre);
         });
 
-        // Style pour le statut
         statusColumn.setCellFactory(column -> new TableCell<>() {
             @Override
             protected void updateItem(String item, boolean empty) {
@@ -163,10 +170,10 @@ public class SoumissionListController implements MainControllerAwareEtudiant {
     }
 
     private void setupComboBoxes() {
-        sortByComboBox.setItems(FXCollections.observableArrayList("Date", "Évaluation", "Statut"));
+        sortByComboBox.setItems(FXCollections.observableArrayList("Date", "Evaluation", "Statut"));
         sortByComboBox.getSelectionModel().selectFirst();
 
-        sortOrderComboBox.setItems(FXCollections.observableArrayList("Croissant", "Décroissant"));
+        sortOrderComboBox.setItems(FXCollections.observableArrayList("Croissant", "Decroissant"));
         sortOrderComboBox.getSelectionModel().selectFirst();
 
         pageSizeComboBox.setItems(FXCollections.observableArrayList(10, 20, 50));
@@ -188,35 +195,39 @@ public class SoumissionListController implements MainControllerAwareEtudiant {
     }
 
     private void setupPagination() {
-        pagination.currentPageIndexProperty().addListener((obs, oldVal, newVal) -> {
-            applyFilters();
-        });
+        pagination.currentPageIndexProperty().addListener((obs, oldVal, newVal) -> applyFilters());
     }
 
     private void loadSoumissions() {
-        List<Soumission> list = soumissionService.getAll();
-        // Filtrer par étudiant connecté
-        List<Soumission> studentSoumissions = list.stream()
-            .filter(s -> s.getIdEtudiant().equals(currentStudentId))
-            .collect(Collectors.toList());
-        soumissions.setAll(studentSoumissions);
-        applyFilters();
+        try {
+            List<Soumission> list = soumissionService.getAll();
+            List<Soumission> studentSoumissions = list.stream()
+                    .filter(s -> s.getIdEtudiant().equals(currentStudentId))
+                    .collect(Collectors.toList());
+            soumissions.setAll(studentSoumissions);
+            applyFilters();
+        } catch (SQLException e) {
+            showAlert("Erreur", "Erreur lors du chargement des soumissions: " + e.getMessage());
+        }
     }
 
     private void applyFilters() {
-        String search = searchField.getText().toLowerCase();
+        String search = searchField.getText() == null ? "" : searchField.getText().toLowerCase();
         List<Soumission> filtered = soumissions.stream()
-            .filter(s -> {
-                String evalName = "";
-                Evaluation eval = evaluationService.getById(s.getEvaluationId());
-                if (eval != null) {
-                    evalName = eval.getTitre().toLowerCase();
-                }
-                return evalName.contains(search) ||
-                       s.getStatut().toLowerCase().contains(search) ||
-                       s.getIdEtudiant().toLowerCase().contains(search);
-            })
-            .collect(Collectors.toList());
+                .filter(s -> {
+                    String evalName = "";
+                    try {
+                        Evaluation eval = evaluationService.getById(s.getEvaluationId());
+                        if (eval != null) {
+                            evalName = eval.getTitre().toLowerCase();
+                        }
+                    } catch (SQLException ignored) {
+                    }
+                    return evalName.contains(search)
+                            || s.getStatut().toLowerCase().contains(search)
+                            || s.getIdEtudiant().toLowerCase().contains(search);
+                })
+                .collect(Collectors.toList());
 
         String sortBy = sortByComboBox.getValue();
         boolean ascending = sortOrderComboBox.getValue() == null || sortOrderComboBox.getValue().equals("Croissant");
@@ -225,11 +236,16 @@ public class SoumissionListController implements MainControllerAwareEtudiant {
             int cmp = 0;
             if ("Date".equals(sortBy)) {
                 cmp = s1.getDateSoumission().compareTo(s2.getDateSoumission());
-            } else if ("Évaluation".equals(sortBy)) {
-                Evaluation e1 = evaluationService.getById(s1.getEvaluationId());
-                Evaluation e2 = evaluationService.getById(s2.getEvaluationId());
-                String n1 = e1 != null ? e1.getTitre() : "";
-                String n2 = e2 != null ? e2.getTitre() : "";
+            } else if ("Evaluation".equals(sortBy)) {
+                String n1 = "";
+                String n2 = "";
+                try {
+                    Evaluation e1 = evaluationService.getById(s1.getEvaluationId());
+                    Evaluation e2 = evaluationService.getById(s2.getEvaluationId());
+                    n1 = e1 != null ? e1.getTitre() : "";
+                    n2 = e2 != null ? e2.getTitre() : "";
+                } catch (SQLException ignored) {
+                }
                 cmp = n1.compareToIgnoreCase(n2);
             } else if ("Statut".equals(sortBy)) {
                 cmp = s1.getStatut().compareToIgnoreCase(s2.getStatut());
@@ -239,11 +255,10 @@ public class SoumissionListController implements MainControllerAwareEtudiant {
 
         int pageSize = pageSizeComboBox.getValue() != null ? pageSizeComboBox.getValue() : 10;
         int totalItems = filtered.size();
-        int pageCount = (int) Math.ceil((double) totalItems / pageSize);
-        pageCount = Math.max(pageCount, 1);
+        int pageCount = Math.max((int) Math.ceil((double) totalItems / pageSize), 1);
         pagination.setPageCount(pageCount);
 
-        int currentPage = pagination.getCurrentPageIndex();
+        int currentPage = Math.min(pagination.getCurrentPageIndex(), pageCount - 1);
         int fromIndex = currentPage * pageSize;
         int toIndex = Math.min(fromIndex + pageSize, totalItems);
 
@@ -273,10 +288,14 @@ public class SoumissionListController implements MainControllerAwareEtudiant {
     }
 
     private void handleEditSoumission(Soumission soum) {
-        // Vérifier si l'évaluation est fermée
-        Evaluation eval = evaluationService.getById(soum.getEvaluationId());
-        if (eval != null && "fermee".equals(eval.getStatut())) {
-            showAlert("Information", "Cette évaluation est fermée. La modification est interdite.");
+        try {
+            Evaluation eval = evaluationService.getById(soum.getEvaluationId());
+            if (eval != null && "fermee".equals(eval.getStatut())) {
+                showAlert("Information", "Cette evaluation est fermee. La modification est interdite.");
+                return;
+            }
+        } catch (SQLException e) {
+            showAlert("Erreur", "Erreur lors du chargement de l'evaluation: " + e.getMessage());
             return;
         }
 
@@ -289,12 +308,16 @@ public class SoumissionListController implements MainControllerAwareEtudiant {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Confirmation");
         alert.setHeaderText("Supprimer la soumission");
-        alert.setContentText("Êtes-vous sûr de vouloir supprimer cette soumission ?");
+        alert.setContentText("Etes-vous sur de vouloir supprimer cette soumission ?");
 
         alert.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
-                soumissionService.delete(soum);
-                loadSoumissions();
+                try {
+                    soumissionService.delete(soum);
+                    loadSoumissions();
+                } catch (SQLException e) {
+                    showAlert("Erreur", "Erreur lors de la suppression: " + e.getMessage());
+                }
             }
         });
     }
@@ -307,4 +330,3 @@ public class SoumissionListController implements MainControllerAwareEtudiant {
         alert.showAndWait();
     }
 }
-
