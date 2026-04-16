@@ -1,4 +1,4 @@
-package org.example.gui;
+package gui;
 
 import entities.Enseignant;
 import entities.Utilisateur;
@@ -12,8 +12,8 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
-import org.example.entity.Evaluation;
-import org.example.service.EvaluationService;
+import entities.Evaluation;
+import services.EvaluationService;
 import utils.UserSession;
 
 import java.io.IOException;
@@ -266,3 +266,4 @@ public class EvaluationListController implements MainControllerAware {
         alert.showAndWait();
     }
 }
+

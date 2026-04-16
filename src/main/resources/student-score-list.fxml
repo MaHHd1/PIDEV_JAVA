@@ -14,7 +14,7 @@
 
 <BorderPane xmlns="http://javafx.com/javafx/21"
             xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="org.example.gui.StudentScoreListController"
+            fx:controller="gui.StudentScoreListController"
             prefHeight="720.0"
             prefWidth="1100.0">
     <top>
@@ -62,3 +62,4 @@
         </HBox>
     </bottom>
 </BorderPane>
+

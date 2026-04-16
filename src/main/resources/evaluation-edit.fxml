@@ -16,7 +16,7 @@
 
 <BorderPane xmlns="http://javafx.com/javafx/21"
             xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="org.example.gui.EvaluationEditController"
+            fx:controller="gui.EvaluationEditController"
             prefHeight="760.0"
             prefWidth="980.0">
     <center>
@@ -74,3 +74,4 @@
         </VBox>
     </center>
 </BorderPane>
+

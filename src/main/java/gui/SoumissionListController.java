@@ -1,4 +1,4 @@
-package org.example.gui;
+package gui;
 
 import entities.Etudiant;
 import entities.Utilisateur;
@@ -12,10 +12,10 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
-import org.example.entity.Evaluation;
-import org.example.entity.Soumission;
-import org.example.service.EvaluationService;
-import org.example.service.SoumissionService;
+import entities.Evaluation;
+import entities.Soumission;
+import services.EvaluationService;
+import services.SoumissionService;
 import utils.UserSession;
 
 import java.io.IOException;
@@ -307,3 +307,4 @@ public class SoumissionListController implements MainControllerAwareEtudiant {
         alert.showAndWait();
     }
 }
+

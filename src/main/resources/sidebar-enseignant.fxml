@@ -10,7 +10,7 @@
 <VBox fx:id="sidebarRoot"
       xmlns="http://javafx.com/javafx/21"
       xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="org.example.gui.SidebarEnseignantController"
+      fx:controller="gui.SidebarEnseignantController"
       spacing="14.0">
     <styleClass>
         <String fx:value="sidebar" />
@@ -31,3 +31,4 @@
     <Label styleClass="sidebar-foot" text="Espace enseignant" />
     <Button fx:id="deconnexionBtn" maxWidth="1.7976931348623157E308" onAction="#handleDeconnexion" styleClass="secondary-button" text="Deconnexion" />
 </VBox>
+

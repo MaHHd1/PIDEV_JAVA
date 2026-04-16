@@ -1,4 +1,4 @@
-package org.example.gui;
+package gui;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -9,10 +9,10 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
-import org.example.entity.Evaluation;
-import org.example.entity.Soumission;
-import org.example.service.EvaluationService;
-import org.example.service.SoumissionService;
+import entities.Evaluation;
+import entities.Soumission;
+import services.EvaluationService;
+import services.SoumissionService;
 
 import java.awt.Desktop;
 import java.io.File;
@@ -331,3 +331,4 @@ public class EvaluationDetailController implements MainControllerAware {
         alert.showAndWait();
     }
 }
+

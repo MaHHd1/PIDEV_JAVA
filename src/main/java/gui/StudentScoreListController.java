@@ -1,4 +1,4 @@
-package org.example.gui;
+package gui;
 
 import entities.Etudiant;
 import entities.Utilisateur;
@@ -12,12 +12,12 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
-import org.example.entity.Evaluation;
-import org.example.entity.Score;
-import org.example.entity.Soumission;
-import org.example.service.EvaluationService;
-import org.example.service.ScoreService;
-import org.example.service.SoumissionService;
+import entities.Evaluation;
+import entities.Score;
+import entities.Soumission;
+import services.EvaluationService;
+import services.ScoreService;
+import services.SoumissionService;
 import utils.UserSession;
 
 import java.io.IOException;
@@ -342,3 +342,4 @@ public class StudentScoreListController implements MainControllerAwareEtudiant {
         alert.showAndWait();
     }
 }
+

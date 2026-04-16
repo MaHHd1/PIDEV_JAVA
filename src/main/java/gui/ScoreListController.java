@@ -1,4 +1,4 @@
-package org.example.gui;
+package gui;
 
 import entities.Enseignant;
 import entities.Utilisateur;
@@ -17,12 +17,12 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
-import org.example.entity.Evaluation;
-import org.example.entity.Score;
-import org.example.entity.Soumission;
-import org.example.service.EvaluationService;
-import org.example.service.ScoreService;
-import org.example.service.SoumissionService;
+import entities.Evaluation;
+import entities.Score;
+import entities.Soumission;
+import services.EvaluationService;
+import services.ScoreService;
+import services.SoumissionService;
 import utils.UserSession;
 
 import java.util.List;
@@ -299,3 +299,4 @@ public class ScoreListController implements MainControllerAware {
         });
     }
 }
+

@@ -1,4 +1,4 @@
-package org.example.gui;
+package gui;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -99,3 +99,4 @@ public class SidebarEnseignantController {
         mesCorrectionsBtn.getStyleClass().remove("sidebar-button-active");
     }
 }
+

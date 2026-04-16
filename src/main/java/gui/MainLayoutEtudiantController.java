@@ -1,4 +1,4 @@
-package org.example.gui;
+package gui;
 
 import entities.Etudiant;
 import entities.Utilisateur;
@@ -6,8 +6,8 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.layout.StackPane;
-import org.example.entity.Score;
-import org.example.entity.Soumission;
+import entities.Score;
+import entities.Soumission;
 import utils.UserSession;
 
 import java.io.IOException;
@@ -176,3 +176,4 @@ public class MainLayoutEtudiantController {
         }
     }
 }
+

@@ -1,4 +1,4 @@
-package org.example.gui;
+package gui;
 
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -7,10 +7,10 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import org.example.entity.Evaluation;
-import org.example.entity.Soumission;
-import org.example.service.EvaluationService;
-import org.example.service.SoumissionService;
+import entities.Evaluation;
+import entities.Soumission;
+import services.EvaluationService;
+import services.SoumissionService;
 
 import java.io.File;
 import java.io.IOException;
@@ -286,3 +286,4 @@ public class SoumissionEditController implements MainControllerAwareEtudiant {
         alert.showAndWait();
     }
 }
+

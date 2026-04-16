@@ -1,14 +1,14 @@
-package org.example.gui;
+package gui;
 
-import entities.Enseignant;
-import entities.Utilisateur;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import org.example.entity.Evaluation;
-import org.example.service.EvaluationService;
-import utils.UserSession;
+import entities.Evaluation;
+import services.EvaluationService;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,7 +20,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
-public class EvaluationCreateController implements MainControllerAware {
+public class EvaluationEditController implements MainControllerAware {
 
     @FXML
     private TextField titleField;
@@ -59,35 +59,51 @@ public class EvaluationCreateController implements MainControllerAware {
     private Button cancelButton;
 
     @FXML
-    private Button createButton;
+    private Button saveButton;
 
+    private Evaluation evaluation;
     private final EvaluationService evaluationService = new EvaluationService();
     private File selectedPdfFile;
 
     private MainLayoutEnseignantController mainController;
+
+    @FXML
+    public void initialize() {
+        typeComboBox.setItems(javafx.collections.FXCollections.observableArrayList("projet", "examen"));
+        courseComboBox.setItems(javafx.collections.FXCollections.observableArrayList(2, 3));
+        submissionModeComboBox.setItems(javafx.collections.FXCollections.observableArrayList("en_ligne", "presentiel"));
+        statusComboBox.setItems(javafx.collections.FXCollections.observableArrayList("ouverte", "fermee"));
+    }
 
     @Override
     public void setMainController(MainLayoutEnseignantController controller) {
         this.mainController = controller;
     }
 
-    @FXML
-    public void initialize() {
-        typeComboBox.setItems(javafx.collections.FXCollections.observableArrayList("projet", "examen"));
-        typeComboBox.getSelectionModel().selectFirst();
+    public void setEvaluation(Evaluation eval) {
+        this.evaluation = eval;
+        populateFields();
+    }
 
-        courseComboBox.setItems(javafx.collections.FXCollections.observableArrayList(2, 3));
-        courseComboBox.getSelectionModel().selectFirst(); // Sélectionne 2 par défaut
+    private void populateFields() {
+        if (evaluation == null) return;
 
-        submissionModeComboBox.setItems(javafx.collections.FXCollections.observableArrayList("en_ligne", "presentiel"));
-        submissionModeComboBox.getSelectionModel().selectFirst();
+        titleField.setText(evaluation.getTitre());
+        typeComboBox.setValue(evaluation.getTypeEvaluation());
+        descriptionArea.setText(evaluation.getDescription());
+        courseComboBox.setValue(evaluation.getCoursId());
+        teacherIdField.setText(evaluation.getIdEnseignant());
 
-        statusComboBox.setItems(javafx.collections.FXCollections.observableArrayList("ouverte", "fermee"));
-        statusComboBox.getSelectionModel().selectFirst();
+        if (evaluation.getDateLimite() != null) {
+            deadlinePicker.setValue(evaluation.getDateLimite().toLocalDate());
+        }
 
-        Utilisateur currentUser = UserSession.getCurrentUser();
-        if (currentUser instanceof Enseignant enseignant) {
-            teacherIdField.setText(enseignant.getMatriculeEnseignant());
+        maxScoreField.setText(String.valueOf(evaluation.getNoteMax()));
+        submissionModeComboBox.setValue(evaluation.getModeRemise());
+        statusComboBox.setValue(evaluation.getStatut());
+
+        if (evaluation.getPdfFilename() != null && !evaluation.getPdfFilename().isEmpty()) {
+            pdfPathField.setText(evaluation.getPdfFilename());
         }
     }
 
@@ -109,46 +125,45 @@ public class EvaluationCreateController implements MainControllerAware {
 
     @FXML
     private void handleCancel() {
-        navigateToList();
+        navigateBack();
     }
 
     @FXML
-    private void handleCreate() {
+    private void handleSave() {
         if (!validateInput()) {
             return;
         }
 
         try {
-            Evaluation eval = new Evaluation();
-            eval.setTitre(titleField.getText().trim());
-            eval.setTypeEvaluation(typeComboBox.getValue());
-            eval.setDescription(descriptionArea.getText().trim());
-            eval.setCoursId(courseComboBox.getValue());
-            eval.setIdEnseignant(teacherIdField.getText().trim());
+            evaluation.setTitre(titleField.getText().trim());
+            evaluation.setTypeEvaluation(typeComboBox.getValue());
+            evaluation.setDescription(descriptionArea.getText().trim());
+            evaluation.setCoursId(courseComboBox.getValue());
+            evaluation.setIdEnseignant(teacherIdField.getText().trim());
 
             LocalDate deadlineDate = deadlinePicker.getValue();
             if (deadlineDate != null) {
-                eval.setDateLimite(LocalDateTime.of(deadlineDate, LocalTime.of(23, 59)));
+                evaluation.setDateLimite(LocalDateTime.of(deadlineDate, LocalTime.of(23, 59)));
             }
 
-            eval.setNoteMax(Double.parseDouble(maxScoreField.getText().trim()));
-            eval.setModeRemise(submissionModeComboBox.getValue());
-            eval.setStatut(statusComboBox.getValue());
+            evaluation.setNoteMax(Double.parseDouble(maxScoreField.getText().trim()));
+            evaluation.setModeRemise(submissionModeComboBox.getValue());
+            evaluation.setStatut(statusComboBox.getValue());
 
             if (selectedPdfFile != null) {
                 String pdfFilename = savePdfFile(selectedPdfFile);
-                eval.setPdfFilename(pdfFilename);
+                evaluation.setPdfFilename(pdfFilename);
             }
 
-            evaluationService.add(eval);
+            evaluationService.update(evaluation);
 
-            showAlert(Alert.AlertType.INFORMATION, "Succès", "Évaluation créée avec succès!");
-            navigateToList();
+            showAlert(Alert.AlertType.INFORMATION, "Succès", "Évaluation mise à jour avec succès!");
+            navigateBack();
 
         } catch (NumberFormatException e) {
             showAlert(Alert.AlertType.ERROR, "Erreur", "La note maximale doit être un nombre valide.");
         } catch (Exception e) {
-            showAlert(Alert.AlertType.ERROR, "Erreur", "Erreur lors de la création: " + e.getMessage());
+            showAlert(Alert.AlertType.ERROR, "Erreur", "Erreur lors de la mise à jour: " + e.getMessage());
         }
     }
 
@@ -196,12 +211,6 @@ public class EvaluationCreateController implements MainControllerAware {
             return false;
         }
 
-        // Validation PDF: obligatoire pour création
-        if (selectedPdfFile == null) {
-            ValidationUtils.showError("Le fichier PDF est obligatoire.");
-            return false;
-        }
-
         // Validation description: max 1000 caractères (optionnel)
         String description = descriptionArea.getText();
         if (description != null && !description.isEmpty()) {
@@ -230,9 +239,9 @@ public class EvaluationCreateController implements MainControllerAware {
         }
     }
 
-    private void navigateToList() {
-        if (mainController != null) {
-            mainController.showMesEvaluations();
+    private void navigateBack() {
+        if (mainController != null && evaluation != null) {
+            mainController.showEvaluationDetail(evaluation);
         }
     }
 
@@ -244,3 +253,4 @@ public class EvaluationCreateController implements MainControllerAware {
         alert.showAndWait();
     }
 }
+

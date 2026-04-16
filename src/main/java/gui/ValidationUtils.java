@@ -1,4 +1,4 @@
-package org.example.gui;
+package gui;
 
 import javafx.scene.control.Alert;
 
@@ -100,3 +100,4 @@ public class ValidationUtils {
         return true;
     }
 }
+

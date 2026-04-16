@@ -14,7 +14,7 @@
 
 <BorderPane xmlns="http://javafx.com/javafx/21"
             xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="org.example.gui.SoumissionListController"
+            fx:controller="gui.SoumissionListController"
             styleClass="content-shell">
     <top>
         <VBox spacing="18.0">
@@ -58,3 +58,4 @@
         </HBox>
     </bottom>
 </BorderPane>
+

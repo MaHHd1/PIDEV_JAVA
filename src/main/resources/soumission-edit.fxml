@@ -16,7 +16,7 @@
 
 <BorderPane xmlns="http://javafx.com/javafx/21"
             xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="org.example.gui.SoumissionEditController"
+            fx:controller="gui.SoumissionEditController"
             prefHeight="760.0"
             prefWidth="980.0">
     <center>
@@ -66,3 +66,4 @@
         </VBox>
     </center>
 </BorderPane>
+

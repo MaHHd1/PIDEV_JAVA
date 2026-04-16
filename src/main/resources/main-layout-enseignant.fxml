@@ -7,7 +7,7 @@
 
 <BorderPane xmlns="http://javafx.com/javafx/21"
             xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="org.example.gui.MainLayoutEnseignantController">
+            fx:controller="gui.MainLayoutEnseignantController">
     <styleClass>
         <String fx:value="dashboard-shell" />
         <String fx:value="academic-shell" />
@@ -24,3 +24,4 @@
         </StackPane>
     </center>
 </BorderPane>
+

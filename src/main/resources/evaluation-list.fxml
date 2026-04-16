@@ -14,7 +14,7 @@
 
 <BorderPane xmlns="http://javafx.com/javafx/21"
             xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="org.example.gui.EvaluationListController"
+            fx:controller="gui.EvaluationListController"
             styleClass="content-shell">
     <top>
         <VBox spacing="18.0" BorderPane.alignment="CENTER">
@@ -60,3 +60,4 @@
         </HBox>
     </bottom>
 </BorderPane>
+

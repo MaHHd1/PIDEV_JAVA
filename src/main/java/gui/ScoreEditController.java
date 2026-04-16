@@ -1,4 +1,4 @@
-package org.example.gui;
+package gui;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -10,12 +10,12 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import org.example.entity.Evaluation;
-import org.example.entity.Score;
-import org.example.entity.Soumission;
-import org.example.service.EvaluationService;
-import org.example.service.ScoreService;
-import org.example.service.SoumissionService;
+import entities.Evaluation;
+import entities.Score;
+import entities.Soumission;
+import services.EvaluationService;
+import services.ScoreService;
+import services.SoumissionService;
 
 import java.io.File;
 import java.io.IOException;
@@ -182,3 +182,4 @@ public class ScoreEditController implements MainControllerAware {
         }
     }
 }
+

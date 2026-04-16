@@ -13,7 +13,7 @@
 
 <BorderPane xmlns="http://javafx.com/javafx/21"
             xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="org.example.gui.ScoreDetailController"
+            fx:controller="gui.ScoreDetailController"
             prefHeight="820.0"
             prefWidth="900.0">
     <center>
@@ -111,3 +111,4 @@
         </VBox>
     </center>
 </BorderPane>
+
