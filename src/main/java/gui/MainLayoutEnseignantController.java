@@ -1,29 +1,27 @@
 package gui;
 
+import entities.Cours;
 import entities.Enseignant;
+import entities.Evaluation;
+import entities.Score;
+import entities.Soumission;
 import entities.Utilisateur;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
-import entities.Evaluation;
-import entities.Score;
-import entities.Soumission;
+import utils.DashboardNavigation;
+import utils.QuizNavigation;
 import utils.UserSession;
 
 import java.io.IOException;
 
-/**
- * Interface pour les contrôleurs qui ont besoin d'accéder au MainLayoutEnseignantController
- */
 interface MainControllerAware {
     void setMainController(MainLayoutEnseignantController controller);
 }
 
-/**
- * Contrôleur pour le layout principal avec sidebar (enseignant)
- * Gère le chargement des vues dans la zone de contenu
- */
 public class MainLayoutEnseignantController {
 
     @FXML
@@ -34,6 +32,7 @@ public class MainLayoutEnseignantController {
 
     private String teacherId = "PROF001";
     private String teacherName = "Enseignant";
+    private Cours editingCourse;
 
     @FXML
     public void initialize() {
@@ -43,53 +42,136 @@ public class MainLayoutEnseignantController {
             teacherName = enseignant.getNomComplet();
         }
 
-        // Configurer la sidebar avec les infos de l'enseignant
         if (sidebarController != null) {
             sidebarController.setTeacherInfo(teacherId, teacherName);
             sidebarController.setMainController(this);
         }
 
-        // Charger la vue par défaut (Mes Évaluations)
-        loadContent("/evaluation-list.fxml");
-        if (sidebarController != null) {
-            sidebarController.setActiveButton("evaluations");
-        }
+        loadTeacherOverview();
     }
 
-    /**
-     * Charge une vue FXML dans la zone de contenu
-     */
     public void loadContent(String fxmlPath) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
             Node content = loader.load();
+            contentPane.getChildren().setAll(content);
 
-            // Vider et ajouter le nouveau contenu
-            contentPane.getChildren().clear();
-            contentPane.getChildren().add(content);
-
-            // Injecter le mainController si le contrôleur l'accepte
             Object controller = loader.getController();
-            if (controller instanceof MainControllerAware) {
-                ((MainControllerAware) controller).setMainController(this);
+            if (controller instanceof MainControllerAware aware) {
+                aware.setMainController(this);
             }
-
         } catch (IOException e) {
             System.err.println("Erreur lors du chargement de la vue: " + fxmlPath);
             e.printStackTrace();
         }
     }
 
-    /**
-     * Charge la vue de création d'évaluation
-     */
+    private void loadEmbeddedCenterContent(String fxmlPath) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
+            Parent root = loader.load();
+            Node content = root;
+            if (root instanceof BorderPane borderPane && borderPane.getCenter() != null) {
+                content = borderPane.getCenter();
+            }
+            contentPane.getChildren().setAll(content);
+        } catch (IOException e) {
+            System.err.println("Erreur lors du chargement embarque de la vue: " + fxmlPath);
+            e.printStackTrace();
+        }
+    }
+
+    public void loadTeacherOverview() {
+        loadContent("/teacher-overview.fxml");
+        if (sidebarController != null) {
+            sidebarController.setActiveButton("overview");
+        }
+    }
+
+    public void showTeacherCourses() {
+        loadContent("/teacher-courses.fxml");
+        if (sidebarController != null) {
+            sidebarController.setActiveButton("courses");
+        }
+    }
+
+    public void showTeacherStudents() {
+        loadContent("/teacher-students.fxml");
+        if (sidebarController != null) {
+            sidebarController.setActiveButton("students");
+        }
+    }
+
+    public void showTeacherCourseForm(Cours cours) {
+        editingCourse = cours;
+        loadContent("/teacher-course-form.fxml");
+        if (sidebarController != null) {
+            sidebarController.setActiveButton("new_course");
+        }
+    }
+
+    public void showMesEvaluations() {
+        loadContent("/evaluation-list.fxml");
+    }
+
+    public void showMesCorrections() {
+        loadContent("/score-list.fxml");
+    }
+
+    public void showCourseManagement() {
+        loadContent("/course-management.fxml");
+    }
+
+    public void showTeacherProfilePage() {
+        DashboardNavigation.openTeacherSection(DashboardNavigation.TeacherSection.PROFILE);
+        loadEmbeddedCenterContent("/teacher-dashboard.fxml");
+        if (sidebarController != null) {
+            sidebarController.setActiveButton("profile");
+        }
+    }
+
+    public void showTeacherDashboardStudentsPage() {
+        DashboardNavigation.openTeacherSection(DashboardNavigation.TeacherSection.STUDENTS);
+        loadEmbeddedCenterContent("/teacher-dashboard.fxml");
+        if (sidebarController != null) {
+            sidebarController.setActiveButton("students_profile");
+        }
+    }
+
+    public void showTeacherChangePasswordPage() {
+        DashboardNavigation.openTeacherSection(DashboardNavigation.TeacherSection.CHANGE_PASSWORD);
+        loadEmbeddedCenterContent("/teacher-dashboard.fxml");
+        if (sidebarController != null) {
+            sidebarController.setActiveButton("security");
+        }
+    }
+
+    public void showTeacherQuizPage() {
+        QuizNavigation.openTeacherSection(QuizNavigation.TeacherSection.LIST);
+        loadEmbeddedCenterContent("/teacher-quiz.fxml");
+        if (sidebarController != null) {
+            sidebarController.setActiveButton("quiz");
+        }
+    }
+
+    public void showTeacherNewQuizPage() {
+        QuizNavigation.openTeacherSection(QuizNavigation.TeacherSection.CREATE);
+        loadEmbeddedCenterContent("/teacher-quiz.fxml");
+        if (sidebarController != null) {
+            sidebarController.setActiveButton("new_quiz");
+        }
+    }
+
+    public Cours consumeEditingCourse() {
+        Cours cours = editingCourse;
+        editingCourse = null;
+        return cours;
+    }
+
     public void showEvaluationCreate() {
         loadContent("/evaluation-create.fxml");
     }
 
-    /**
-     * Charge la vue de détail d'une évaluation
-     */
     public void showEvaluationDetail(Evaluation evaluation) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/evaluation-detail.fxml"));
@@ -99,18 +181,13 @@ public class MainLayoutEnseignantController {
             controller.setEvaluation(evaluation);
             controller.setMainController(this);
 
-            contentPane.getChildren().clear();
-            contentPane.getChildren().add(content);
-
+            contentPane.getChildren().setAll(content);
         } catch (IOException e) {
-            System.err.println("Erreur lors du chargement de la vue détail: " + e.getMessage());
+            System.err.println("Erreur lors du chargement de la vue detail: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
-    /**
-     * Charge la vue d'édition d'une évaluation
-     */
     public void showEvaluationEdit(Evaluation evaluation) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/evaluation-edit.fxml"));
@@ -120,39 +197,10 @@ public class MainLayoutEnseignantController {
             controller.setEvaluation(evaluation);
             controller.setMainController(this);
 
-            contentPane.getChildren().clear();
-            contentPane.getChildren().add(content);
-
+            contentPane.getChildren().setAll(content);
         } catch (IOException e) {
-            System.err.println("Erreur lors du chargement de la vue édition: " + e.getMessage());
+            System.err.println("Erreur lors du chargement de la vue edition: " + e.getMessage());
             e.printStackTrace();
-        }
-    }
-
-    /**
-     * Charge la vue des évaluations
-     */
-    public void showMesEvaluations() {
-        loadContent("/evaluation-list.fxml");
-        if (sidebarController != null) {
-            sidebarController.setActiveButton("evaluations");
-        }
-    }
-
-    /**
-     * Charge la vue des corrections
-     */
-    public void showMesCorrections() {
-        loadContent("/score-list.fxml");
-        if (sidebarController != null) {
-            sidebarController.setActiveButton("corrections");
-        }
-    }
-
-    public void showCourseManagement() {
-        loadContent("/course-management.fxml");
-        if (sidebarController != null) {
-            sidebarController.setActiveButton("courses");
         }
     }
 
@@ -213,4 +261,3 @@ public class MainLayoutEnseignantController {
         }
     }
 }
-

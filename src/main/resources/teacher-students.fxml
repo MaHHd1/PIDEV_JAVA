@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="gui.TeacherStudentsController" spacing="18.0">
+    <HBox alignment="CENTER_LEFT" spacing="12.0">
+        <VBox spacing="6.0" HBox.hgrow="ALWAYS">
+            <Label styleClass="dashboard-title" text="Mes etudiants" />
+            <Label styleClass="dashboard-subtitle" text="Filtrez les etudiants par cours enseigne." wrapText="true" />
+        </VBox>
+        <ComboBox fx:id="courseFilterCombo" prefWidth="260.0" />
+    </HBox>
+    <VBox spacing="10.0" styleClass="panel-card" VBox.vgrow="ALWAYS">
+        <TableView fx:id="studentsTable" VBox.vgrow="ALWAYS">
+            <columns>
+                <TableColumn fx:id="matriculeColumn" prefWidth="130.0" text="Matricule" />
+                <TableColumn fx:id="nameColumn" prefWidth="220.0" text="Nom complet" />
+                <TableColumn fx:id="emailColumn" prefWidth="220.0" text="Email" />
+                <TableColumn fx:id="levelColumn" prefWidth="130.0" text="Niveau" />
+                <TableColumn fx:id="specialiteColumn" prefWidth="180.0" text="Specialisation" />
+            </columns>
+        </TableView>
+    </VBox>
+</VBox>

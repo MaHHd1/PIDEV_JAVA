@@ -9,9 +9,11 @@ import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.scene.chart.PieChart;
 import javafx.scene.chart.BarChart;
 import javafx.scene.chart.XYChart;
+import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
@@ -90,6 +92,12 @@ public class AdminDashboardController {
 
     @FXML
     private VBox createSection;
+
+    @FXML
+    private VBox modulesSection;
+
+    @FXML
+    private javafx.scene.layout.StackPane modulesContentPane;
 
     @FXML
     private TextField searchField;
@@ -264,22 +272,30 @@ public class AdminDashboardController {
 
     @FXML
     private void showUsersPage() {
-        setSectionVisibility(true, false, false);
+        setSectionVisibility(true, false, false, false);
         sectionTitleLabel.setText("User Registry");
         sectionSubtitleLabel.setText("Filter, inspect, edit, and remove platform users.");
     }
 
     @FXML
     private void showStatsPage() {
-        setSectionVisibility(false, true, false);
+        setSectionVisibility(false, true, false, false);
         sectionTitleLabel.setText("Statistics");
         sectionSubtitleLabel.setText("Track role distribution and system-level user activity.");
     }
 
     @FXML
     private void showCreatePage() {
-        setSectionVisibility(false, false, true);
+        setSectionVisibility(false, false, true, false);
         updateCreateSectionHeader();
+    }
+
+    @FXML
+    private void showModulesPage() {
+        setSectionVisibility(false, false, false, true);
+        sectionTitleLabel.setText("Modules");
+        sectionSubtitleLabel.setText("Manage modules, courses, and content without leaving the admin dashboard.");
+        loadModulesContent();
     }
 
     @FXML
@@ -833,13 +849,30 @@ public class AdminDashboardController {
         return builder.toString();
     }
 
-    private void setSectionVisibility(boolean usersVisible, boolean statsVisible, boolean createVisible) {
+    private void setSectionVisibility(boolean usersVisible, boolean statsVisible, boolean createVisible, boolean modulesVisible) {
         usersSection.setVisible(usersVisible);
         usersSection.setManaged(usersVisible);
         statsSection.setVisible(statsVisible);
         statsSection.setManaged(statsVisible);
         createSection.setVisible(createVisible);
         createSection.setManaged(createVisible);
+        if (modulesSection != null) {
+            modulesSection.setVisible(modulesVisible);
+            modulesSection.setManaged(modulesVisible);
+        }
+    }
+
+    private void loadModulesContent() {
+        if (modulesContentPane == null || !modulesContentPane.getChildren().isEmpty()) {
+            return;
+        }
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/course-management.fxml"));
+            Node content = loader.load();
+            modulesContentPane.getChildren().setAll(content);
+        } catch (IOException e) {
+            showError("Modules load failed", e.getMessage());
+        }
     }
 
     private void updateCreateSectionHeader() {

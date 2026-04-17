@@ -4,12 +4,6 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.shape.Circle;
-import utils.DashboardNavigation;
-import utils.QuizNavigation;
-import utils.SceneManager;
-import utils.UserSession;
-
-import java.io.IOException;
 
 public class SidebarEtudiantController {
 
@@ -23,16 +17,25 @@ public class SidebarEtudiantController {
     private Label userRoleLabel;
 
     @FXML
+    private Button overviewBtn;
+
+    @FXML
+    private Button myCoursesBtn;
+
+    @FXML
+    private Button allCoursesBtn;
+
+    @FXML
     private Button profileBtn;
+
+    @FXML
+    private Button changePasswordBtn;
 
     @FXML
     private Button mesSoumissionsBtn;
 
     @FXML
     private Button mesNotesBtn;
-
-    @FXML
-    private Button changePasswordBtn;
 
     @FXML
     private Button quizBtn;
@@ -65,22 +68,37 @@ public class SidebarEtudiantController {
     }
 
     @FXML
+    private void handleOverview() {
+        if (mainController != null) {
+            mainController.loadStudentOverview();
+        }
+    }
+
+    @FXML
     private void handleProfileHub() {
-        try {
-            DashboardNavigation.openStudentSection(DashboardNavigation.StudentSection.PROFILE);
-            SceneManager.switchScene("/student-dashboard.fxml", "Student Profile");
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (mainController != null) {
+            mainController.showStudentProfilePage();
         }
     }
 
     @FXML
     private void handleChangePassword() {
-        try {
-            DashboardNavigation.openStudentSection(DashboardNavigation.StudentSection.CHANGE_PASSWORD);
-            SceneManager.switchScene("/student-dashboard.fxml", "Student Security");
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (mainController != null) {
+            mainController.showStudentChangePasswordPage();
+        }
+    }
+
+    @FXML
+    private void handleMyCourses() {
+        if (mainController != null) {
+            mainController.showMyCourses();
+        }
+    }
+
+    @FXML
+    private void handleAllCourses() {
+        if (mainController != null) {
+            mainController.showAllCourses();
         }
     }
 
@@ -100,60 +118,38 @@ public class SidebarEtudiantController {
 
     @FXML
     private void handleQuizHub() {
-        try {
-            QuizNavigation.openStudentSection(QuizNavigation.StudentSection.LIST);
-            SceneManager.switchScene("/student-quiz.fxml", "Student Quiz");
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (mainController != null) {
+            mainController.showStudentQuizPage();
         }
     }
 
     @FXML
     private void handleQuizResultsHub() {
-        try {
-            QuizNavigation.openStudentSection(QuizNavigation.StudentSection.RESULTS);
-            SceneManager.switchScene("/student-quiz.fxml", "Student Quiz Results");
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (mainController != null) {
+            mainController.showStudentQuizResultsPage();
         }
     }
 
     @FXML
     private void handleDeconnexion() {
-        try {
-            UserSession.clear();
-        SceneManager.switchScene("/login.fxml", "Campus Access");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        StudentDashboardController.logoutToLogin();
     }
 
     public void setActiveButton(String buttonId) {
         resetButtonStyles();
 
-        Button activeBtn = null;
-        switch (buttonId) {
-            case "soumissions":
-                activeBtn = mesSoumissionsBtn;
-                break;
-            case "notes":
-                activeBtn = mesNotesBtn;
-                break;
-            case "profile":
-                activeBtn = profileBtn;
-                break;
-            case "security":
-                activeBtn = changePasswordBtn;
-                break;
-            case "quiz":
-                activeBtn = quizBtn;
-                break;
-            case "quiz_results":
-                activeBtn = quizResultsBtn;
-                break;
-            default:
-                break;
-        }
+        Button activeBtn = switch (buttonId) {
+            case "overview" -> overviewBtn;
+            case "my_courses" -> myCoursesBtn;
+            case "all_courses" -> allCoursesBtn;
+            case "profile" -> profileBtn;
+            case "security" -> changePasswordBtn;
+            case "soumissions" -> mesSoumissionsBtn;
+            case "notes" -> mesNotesBtn;
+            case "quiz" -> quizBtn;
+            case "quiz_results" -> quizResultsBtn;
+            default -> null;
+        };
 
         if (activeBtn != null) {
             activeBtn.getStyleClass().add("sidebar-button-active");
@@ -161,14 +157,27 @@ public class SidebarEtudiantController {
     }
 
     private void resetButtonStyles() {
+        if (overviewBtn != null) {
+            overviewBtn.getStyleClass().remove("sidebar-button-active");
+        }
+        if (myCoursesBtn != null) {
+            myCoursesBtn.getStyleClass().remove("sidebar-button-active");
+        }
+        if (allCoursesBtn != null) {
+            allCoursesBtn.getStyleClass().remove("sidebar-button-active");
+        }
         if (profileBtn != null) {
             profileBtn.getStyleClass().remove("sidebar-button-active");
         }
         if (changePasswordBtn != null) {
             changePasswordBtn.getStyleClass().remove("sidebar-button-active");
         }
-        mesSoumissionsBtn.getStyleClass().remove("sidebar-button-active");
-        mesNotesBtn.getStyleClass().remove("sidebar-button-active");
+        if (mesSoumissionsBtn != null) {
+            mesSoumissionsBtn.getStyleClass().remove("sidebar-button-active");
+        }
+        if (mesNotesBtn != null) {
+            mesNotesBtn.getStyleClass().remove("sidebar-button-active");
+        }
         if (quizBtn != null) {
             quizBtn.getStyleClass().remove("sidebar-button-active");
         }
@@ -177,4 +186,3 @@ public class SidebarEtudiantController {
         }
     }
 }
-

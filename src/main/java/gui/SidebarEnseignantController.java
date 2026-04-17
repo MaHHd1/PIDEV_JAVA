@@ -4,12 +4,6 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.shape.Circle;
-import utils.DashboardNavigation;
-import utils.QuizNavigation;
-import utils.SceneManager;
-import utils.UserSession;
-
-import java.io.IOException;
 
 public class SidebarEnseignantController {
 
@@ -23,16 +17,28 @@ public class SidebarEnseignantController {
     private Label userRoleLabel;
 
     @FXML
+    private Button overviewBtn;
+
+    @FXML
+    private Button mesCoursesBtn;
+
+    @FXML
+    private Button teacherStudentsBtn;
+
+    @FXML
+    private Button newCourseBtn;
+
+    @FXML
     private Button profileBtn;
+
+    @FXML
+    private Button studentProfilesBtn;
 
     @FXML
     private Button mesEvaluationsBtn;
 
     @FXML
     private Button mesCorrectionsBtn;
-
-    @FXML
-    private Button studentProfilesBtn;
 
     @FXML
     private Button changePasswordBtn;
@@ -71,32 +77,51 @@ public class SidebarEnseignantController {
     }
 
     @FXML
+    private void handleOverview() {
+        if (mainController != null) {
+            mainController.loadTeacherOverview();
+        }
+    }
+
+    @FXML
     private void handleProfileHub() {
-        try {
-            DashboardNavigation.openTeacherSection(DashboardNavigation.TeacherSection.PROFILE);
-            SceneManager.switchScene("/teacher-dashboard.fxml", "Teacher Profile");
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (mainController != null) {
+            mainController.showTeacherProfilePage();
+        }
+    }
+
+    @FXML
+    private void handleTeacherCourses() {
+        if (mainController != null) {
+            mainController.showTeacherCourses();
         }
     }
 
     @FXML
     private void handleStudentProfiles() {
-        try {
-            DashboardNavigation.openTeacherSection(DashboardNavigation.TeacherSection.STUDENTS);
-            SceneManager.switchScene("/teacher-dashboard.fxml", "Teacher Students");
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (mainController != null) {
+            mainController.showTeacherStudents();
+        }
+    }
+
+    @FXML
+    private void handleStudentProfilesHub() {
+        if (mainController != null) {
+            mainController.showTeacherDashboardStudentsPage();
+        }
+    }
+
+    @FXML
+    private void handleNewCourse() {
+        if (mainController != null) {
+            mainController.showTeacherCourseForm(null);
         }
     }
 
     @FXML
     private void handleChangePassword() {
-        try {
-            DashboardNavigation.openTeacherSection(DashboardNavigation.TeacherSection.CHANGE_PASSWORD);
-            SceneManager.switchScene("/teacher-dashboard.fxml", "Teacher Security");
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (mainController != null) {
+            mainController.showTeacherChangePasswordPage();
         }
     }
 
@@ -123,66 +148,41 @@ public class SidebarEnseignantController {
 
     @FXML
     private void handleQuizHub() {
-        try {
-            QuizNavigation.openTeacherSection(QuizNavigation.TeacherSection.LIST);
-            SceneManager.switchScene("/teacher-quiz.fxml", "Teacher Quiz");
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (mainController != null) {
+            mainController.showTeacherQuizPage();
         }
     }
 
     @FXML
     private void handleNewQuizHub() {
-        try {
-            QuizNavigation.openTeacherSection(QuizNavigation.TeacherSection.CREATE);
-            SceneManager.switchScene("/teacher-quiz.fxml", "Teacher Quiz");
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (mainController != null) {
+            mainController.showTeacherNewQuizPage();
         }
     }
 
     @FXML
     private void handleDeconnexion() {
-        try {
-            UserSession.clear();
-        SceneManager.switchScene("/login.fxml", "Campus Access");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        StudentDashboardController.logoutToLogin();
     }
 
     public void setActiveButton(String buttonId) {
         resetButtonStyles();
 
-        Button activeBtn = null;
-        switch (buttonId) {
-            case "evaluations":
-                activeBtn = mesEvaluationsBtn;
-                break;
-            case "corrections":
-                activeBtn = mesCorrectionsBtn;
-                break;
-            case "profile":
-                activeBtn = profileBtn;
-                break;
-            case "students":
-                activeBtn = studentProfilesBtn;
-                break;
-            case "security":
-                activeBtn = changePasswordBtn;
-                break;
-            case "courses":
-                activeBtn = coursesBtn;
-                break;
-            case "quiz":
-                activeBtn = quizBtn;
-                break;
-            case "new_quiz":
-                activeBtn = newQuizBtn;
-                break;
-            default:
-                break;
-        }
+        Button activeBtn = switch (buttonId) {
+            case "overview" -> overviewBtn;
+            case "courses" -> mesCoursesBtn;
+            case "students" -> teacherStudentsBtn;
+            case "new_course" -> newCourseBtn;
+            case "profile" -> profileBtn;
+            case "evaluations" -> mesEvaluationsBtn;
+            case "corrections" -> mesCorrectionsBtn;
+            case "security" -> changePasswordBtn;
+            case "course_management" -> coursesBtn;
+            case "students_profile" -> studentProfilesBtn;
+            case "quiz" -> quizBtn;
+            case "new_quiz" -> newQuizBtn;
+            default -> null;
+        };
 
         if (activeBtn != null) {
             activeBtn.getStyleClass().add("sidebar-button-active");
@@ -190,11 +190,29 @@ public class SidebarEnseignantController {
     }
 
     private void resetButtonStyles() {
+        if (overviewBtn != null) {
+            overviewBtn.getStyleClass().remove("sidebar-button-active");
+        }
+        if (mesCoursesBtn != null) {
+            mesCoursesBtn.getStyleClass().remove("sidebar-button-active");
+        }
+        if (teacherStudentsBtn != null) {
+            teacherStudentsBtn.getStyleClass().remove("sidebar-button-active");
+        }
+        if (newCourseBtn != null) {
+            newCourseBtn.getStyleClass().remove("sidebar-button-active");
+        }
         if (profileBtn != null) {
             profileBtn.getStyleClass().remove("sidebar-button-active");
         }
         if (studentProfilesBtn != null) {
             studentProfilesBtn.getStyleClass().remove("sidebar-button-active");
+        }
+        if (mesEvaluationsBtn != null) {
+            mesEvaluationsBtn.getStyleClass().remove("sidebar-button-active");
+        }
+        if (mesCorrectionsBtn != null) {
+            mesCorrectionsBtn.getStyleClass().remove("sidebar-button-active");
         }
         if (changePasswordBtn != null) {
             changePasswordBtn.getStyleClass().remove("sidebar-button-active");
@@ -202,8 +220,6 @@ public class SidebarEnseignantController {
         if (coursesBtn != null) {
             coursesBtn.getStyleClass().remove("sidebar-button-active");
         }
-        mesEvaluationsBtn.getStyleClass().remove("sidebar-button-active");
-        mesCorrectionsBtn.getStyleClass().remove("sidebar-button-active");
         if (quizBtn != null) {
             quizBtn.getStyleClass().remove("sidebar-button-active");
         }
@@ -212,4 +228,3 @@ public class SidebarEnseignantController {
         }
     }
 }
-

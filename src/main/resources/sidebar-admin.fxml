@@ -21,6 +21,7 @@
     <Button maxWidth="1.7976931348623157E308" onAction="#showUsersPage" styleClass="sidebar-button" text="User Info" />
     <Button maxWidth="1.7976931348623157E308" onAction="#showStatsPage" styleClass="sidebar-button" text="Statistics" />
     <Button maxWidth="1.7976931348623157E308" onAction="#showCreatePage" styleClass="sidebar-button" text="Add User" />
+    <Button maxWidth="1.7976931348623157E308" onAction="#showModulesPage" styleClass="sidebar-button" text="Modules" />
     <VBox VBox.vgrow="ALWAYS" />
     <Label styleClass="sidebar-foot" text="Espace administrateur" wrapText="true" />
     <Button maxWidth="1.7976931348623157E308" onAction="#handleProfileLogout" styleClass="secondary-button" text="Deconnexion" />

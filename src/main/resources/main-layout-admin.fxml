@@ -44,6 +44,7 @@
             <Button maxWidth="1.7976931348623157E308" onAction="#showUsersPage" styleClass="sidebar-button" text="User Info" />
             <Button maxWidth="1.7976931348623157E308" onAction="#showStatsPage" styleClass="sidebar-button" text="Statistics" />
             <Button maxWidth="1.7976931348623157E308" onAction="#showCreatePage" styleClass="sidebar-button" text="Add User" />
+            <Button maxWidth="1.7976931348623157E308" onAction="#showModulesPage" styleClass="sidebar-button" text="Modules" />
             <VBox VBox.vgrow="ALWAYS" />
             <Label styleClass="sidebar-foot" text="Espace administrateur" wrapText="true" />
             <Button maxWidth="1.7976931348623157E308" onAction="#handleProfileLogout" styleClass="secondary-button" text="Deconnexion" />
@@ -310,6 +311,23 @@
                         </Button>
                     </HBox>
                 </VBox>
+            </VBox>
+
+            <VBox fx:id="modulesSection" managed="false" spacing="18.0" visible="false">
+                <VBox spacing="10.0">
+                    <styleClass>
+                        <String fx:value="hero-banner" />
+                        <String fx:value="admin-stats-banner" />
+                    </styleClass>
+                    <Label styleClass="eyebrow" text="Modules" />
+                    <Label text="Centralized access to modules, courses, and pedagogical content." wrapText="true">
+                        <styleClass>
+                            <String fx:value="hero-title" />
+                            <String fx:value="small-hero" />
+                        </styleClass>
+                    </Label>
+                </VBox>
+                <StackPane fx:id="modulesContentPane" VBox.vgrow="ALWAYS" />
             </VBox>
         </StackPane>
     </center>

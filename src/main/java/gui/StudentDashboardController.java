@@ -107,8 +107,7 @@ public class StudentDashboardController {
 
     @FXML
     private void handleProfileLogout() throws IOException {
-        UserSession.clear();
-        SceneManager.switchScene("/login.fxml", "Campus Access");
+        logoutToLogin();
     }
 
     @FXML
@@ -200,5 +199,14 @@ public class StudentDashboardController {
 
     private boolean isStrongPassword(String password) {
         return STRONG_PASSWORD_PATTERN.matcher(password).matches();
+    }
+
+    public static void logoutToLogin() {
+        try {
+            UserSession.clear();
+            SceneManager.switchScene("/login.fxml", "Campus Access");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
