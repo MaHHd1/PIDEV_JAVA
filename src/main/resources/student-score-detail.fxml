@@ -15,103 +15,92 @@
             xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="gui.StudentScoreDetailController"
             prefHeight="780.0"
-            prefWidth="900.0">
+            prefWidth="900.0"
+            styleClass="content-shell">
     <center>
         <VBox spacing="18.0">
             <padding>
                 <Insets bottom="24.0" left="24.0" right="24.0" top="24.0" />
             </padding>
-            <HBox alignment="CENTER_LEFT" spacing="12.0">
-                <Label style="-fx-font-size: 22px; -fx-font-weight: bold;" text="Détail de ma note" />
+            <HBox alignment="CENTER_LEFT" spacing="12.0" styleClass="content-header student-banner">
+                <VBox spacing="6.0">
+                    <Label styleClass="content-title" text="DÃ©tail de ma note" />
+                    <Label styleClass="content-copy" text="Retrouvez l'Ã©valuation, la soumission et le rÃ©sultat final dans une seule fiche." wrapText="true" />
+                </VBox>
                 <HBox HBox.hgrow="ALWAYS" />
-                <Button fx:id="backButton" mnemonicParsing="false" onAction="#handleBack" text="← Retour à mes notes" />
+                <Button fx:id="backButton" mnemonicParsing="false" onAction="#handleBack" styleClass="secondary-button compact-button" text="â† Retour Ã  mes notes" />
             </HBox>
-            
-            <!-- Informations sur l'évaluation -->
-            <VBox spacing="10.0" style="-fx-background-color: #f8f9fa; -fx-padding: 15px; -fx-background-radius: 5px;">
-                <Label style="-fx-font-size: 16px; -fx-font-weight: bold;" text="Informations sur l'évaluation" />
+
+            <VBox spacing="10.0" styleClass="info-card">
+                <Label styleClass="panel-title" text="Informations sur l'Ã©valuation" />
                 <GridPane hgap="16.0" vgap="8.0">
                     <columnConstraints>
                         <ColumnConstraints minWidth="150.0" percentWidth="35.0" />
                         <ColumnConstraints percentWidth="65.0" />
                     </columnConstraints>
-                    <Label text="Titre:" style="-fx-font-weight: bold;" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                    <Label text="Titre:" styleClass="detail-key" GridPane.columnIndex="0" GridPane.rowIndex="0" />
                     <Label fx:id="evaluationTitleLabel" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="0" />
-                    
-                    <Label text="Type:" style="-fx-font-weight: bold;" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                    <Label text="Type:" styleClass="detail-key" GridPane.columnIndex="0" GridPane.rowIndex="1" />
                     <Label fx:id="evaluationTypeLabel" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                    
-                    <Label text="Cours:" style="-fx-font-weight: bold;" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                    <Label text="Cours:" styleClass="detail-key" GridPane.columnIndex="0" GridPane.rowIndex="2" />
                     <Label fx:id="courseLabel" GridPane.columnIndex="1" GridPane.rowIndex="2" />
                 </GridPane>
             </VBox>
-            
+
             <Separator />
-            
-            <!-- Informations de soumission -->
-            <VBox spacing="10.0" style="-fx-background-color: #e9ecef; -fx-padding: 15px; -fx-background-radius: 5px;">
-                <Label style="-fx-font-size: 16px; -fx-font-weight: bold;" text="Ma soumission" />
+
+            <VBox spacing="10.0" styleClass="section-card">
+                <Label styleClass="panel-title" text="Ma soumission" />
                 <GridPane hgap="16.0" vgap="8.0">
                     <columnConstraints>
                         <ColumnConstraints minWidth="150.0" percentWidth="35.0" />
                         <ColumnConstraints percentWidth="65.0" />
                     </columnConstraints>
-                    <Label text="Date de soumission:" style="-fx-font-weight: bold;" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                    <Label text="Date de soumission:" styleClass="detail-key" GridPane.columnIndex="0" GridPane.rowIndex="0" />
                     <Label fx:id="submissionDateLabel" GridPane.columnIndex="1" GridPane.rowIndex="0" />
-                    
-                    <Label text="Statut:" style="-fx-font-weight: bold;" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                    <Label text="Statut:" styleClass="detail-key" GridPane.columnIndex="0" GridPane.rowIndex="1" />
                     <Label fx:id="submissionStatusLabel" GridPane.columnIndex="1" GridPane.rowIndex="1" />
                 </GridPane>
             </VBox>
-            
+
             <Separator />
-            
-            <!-- Résultat de la correction -->
-            <VBox spacing="10.0" style="-fx-background-color: #d4edda; -fx-padding: 15px; -fx-background-radius: 5px;">
-                <Label style="-fx-font-size: 16px; -fx-font-weight: bold;" text="Résultat de la correction" />
+
+            <VBox spacing="10.0" styleClass="success-card">
+                <Label styleClass="panel-title" text="RÃ©sultat de la correction" />
                 <GridPane hgap="16.0" vgap="12.0">
                     <columnConstraints>
                         <ColumnConstraints minWidth="150.0" percentWidth="35.0" />
                         <ColumnConstraints percentWidth="65.0" />
                     </columnConstraints>
-                    <Label text="Note obtenue:" style="-fx-font-weight: bold;" GridPane.columnIndex="0" GridPane.rowIndex="0" />
-                    <Label fx:id="noteLabel" style="-fx-font-size: 20px; -fx-font-weight: bold;" GridPane.columnIndex="1" GridPane.rowIndex="0" />
-                    
-                    <Label text="Pourcentage:" style="-fx-font-weight: bold;" GridPane.columnIndex="0" GridPane.rowIndex="1" />
-                    <Label fx:id="pourcentageLabel" style="-fx-font-size: 16px;" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                    
-                    <Label text="Mention:" style="-fx-font-weight: bold;" GridPane.columnIndex="0" GridPane.rowIndex="2" />
-                    <Label fx:id="mentionLabel" style="-fx-font-size: 16px;" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-                    
-                    <Label text="Résultat:" style="-fx-font-weight: bold;" GridPane.columnIndex="0" GridPane.rowIndex="3" />
-                    <Label fx:id="resultatLabel" style="-fx-font-size: 16px;" GridPane.columnIndex="1" GridPane.rowIndex="3" />
-                    
-                    <Label text="Statut:" style="-fx-font-weight: bold;" GridPane.columnIndex="0" GridPane.rowIndex="4" />
+                    <Label text="Note obtenue:" styleClass="detail-key" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                    <Label fx:id="noteLabel" styleClass="detail-hero-title" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                    <Label text="Pourcentage:" styleClass="detail-key" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                    <Label fx:id="pourcentageLabel" styleClass="detail-value" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                    <Label text="Mention:" styleClass="detail-key" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                    <Label fx:id="mentionLabel" styleClass="detail-value" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                    <Label text="RÃ©sultat:" styleClass="detail-key" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+                    <Label fx:id="resultatLabel" styleClass="detail-value" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                    <Label text="Statut:" styleClass="detail-key" GridPane.columnIndex="0" GridPane.rowIndex="4" />
                     <Label fx:id="correctionStatusLabel" GridPane.columnIndex="1" GridPane.rowIndex="4" />
-                    
-                    <Label text="Date de correction:" style="-fx-font-weight: bold;" GridPane.columnIndex="0" GridPane.rowIndex="5" />
+                    <Label text="Date de correction:" styleClass="detail-key" GridPane.columnIndex="0" GridPane.rowIndex="5" />
                     <Label fx:id="correctionDateLabel" GridPane.columnIndex="1" GridPane.rowIndex="5" />
                 </GridPane>
             </VBox>
-            
-            <!-- Commentaire de l'enseignant -->
+
             <VBox fx:id="teacherCommentBox" spacing="5.0">
-                <Label text="Commentaire de l'enseignant:" style="-fx-font-weight: bold;" />
-                <Label fx:id="teacherCommentLabel" wrapText="true" style="-fx-background-color: #fff3cd; -fx-padding: 10px; -fx-background-radius: 5px;" />
+                <Label text="Commentaire de l'enseignant:" styleClass="detail-key" />
+                <Label fx:id="teacherCommentLabel" wrapText="true" styleClass="warning-card" />
             </VBox>
-            
-            <!-- Accès aux fichiers -->
+
             <HBox alignment="CENTER_LEFT" spacing="15.0">
-                <Label text="Accès aux fichiers:" style="-fx-font-weight: bold;" />
-                <Hyperlink fx:id="evalPdfLink" onAction="#handleDownloadEvalPdf" text="📄 Énoncé PDF" />
-                <Hyperlink fx:id="submissionPdfLink" onAction="#handleDownloadSubmissionPdf" text="📄 Ma soumission PDF" />
+                <Label text="AccÃ¨s aux fichiers:" styleClass="detail-key" />
+                <Hyperlink fx:id="evalPdfLink" onAction="#handleDownloadEvalPdf" text="ðŸ“„ Ã‰noncÃ© PDF" />
+                <Hyperlink fx:id="submissionPdfLink" onAction="#handleDownloadSubmissionPdf" text="ðŸ“„ Ma soumission PDF" />
             </HBox>
-            
+
             <Separator />
-            
-            <!-- Bouton voir la soumission -->
-            <Button fx:id="viewSubmissionButton" mnemonicParsing="false" onAction="#handleViewSubmission" text="Voir le détail de ma soumission" />
+
+            <Button fx:id="viewSubmissionButton" mnemonicParsing="false" onAction="#handleViewSubmission" styleClass="primary-button compact-button" text="Voir le dÃ©tail de ma soumission" />
         </VBox>
     </center>
 </BorderPane>
-
