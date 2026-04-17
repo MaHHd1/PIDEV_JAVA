@@ -34,6 +34,8 @@
     <Button fx:id="mesNotesBtn" maxWidth="1.7976931348623157E308" onAction="#handleMesNotes" styleClass="sidebar-button" text="Mes notes" />
     <Button fx:id="quizBtn" maxWidth="1.7976931348623157E308" onAction="#handleQuizHub" styleClass="sidebar-button" text="Mes quiz" />
     <Button fx:id="quizResultsBtn" maxWidth="1.7976931348623157E308" onAction="#handleQuizResultsHub" styleClass="sidebar-button" text="Mes resultats quiz" />
+    <Button fx:id="forumBtn" maxWidth="1.7976931348623157E308" onAction="#handleForumHub" styleClass="sidebar-button" text="Forum" />
+    <Button fx:id="messagesBtn" maxWidth="1.7976931348623157E308" onAction="#handleMessagesHub" styleClass="sidebar-button" text="Messagerie" />
     <VBox VBox.vgrow="ALWAYS" />
     <Label styleClass="sidebar-foot" text="Espace etudiant" />
     <Button fx:id="deconnexionBtn" maxWidth="1.7976931348623157E308" onAction="#handleDeconnexion" styleClass="secondary-button" text="Deconnexion" />

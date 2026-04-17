@@ -111,6 +111,12 @@
     -fx-border-color: rgba(45, 212, 191, 0.34);
 }
 
+.sidebar-button-active {
+    -fx-background-color: linear-gradient(to right, #2dd4bf, #0f766e);
+    -fx-text-fill: #081018;
+    -fx-border-color: transparent;
+}
+
 .sidebar-button:pressed,
 .sidebar .nav-button:pressed {
     -fx-background-color: rgba(45, 212, 191, 0.24);

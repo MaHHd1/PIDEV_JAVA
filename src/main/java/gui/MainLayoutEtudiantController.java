@@ -192,6 +192,20 @@ public class MainLayoutEtudiantController {
         }
     }
 
+    public void showStudentForumPage() {
+        loadContent("/forum-dashboard.fxml");
+        if (sidebarController != null) {
+            sidebarController.setActiveButton("forum");
+        }
+    }
+
+    public void showStudentMessagesPage() {
+        loadContent("/message-dashboard.fxml");
+        if (sidebarController != null) {
+            sidebarController.setActiveButton("messages");
+        }
+    }
+
     public void setStudentInfo(String id, String name) {
         this.studentId = id;
         this.studentName = name;

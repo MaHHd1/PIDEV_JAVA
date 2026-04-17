@@ -45,6 +45,9 @@
             <Button maxWidth="1.7976931348623157E308" onAction="#showStatsPage" styleClass="sidebar-button" text="Statistics" />
             <Button maxWidth="1.7976931348623157E308" onAction="#showCreatePage" styleClass="sidebar-button" text="Add User" />
             <Button maxWidth="1.7976931348623157E308" onAction="#showModulesPage" styleClass="sidebar-button" text="Modules" />
+            <Button maxWidth="1.7976931348623157E308" onAction="#showEvenementsPage" styleClass="sidebar-button" text="Evenements" />
+            <Button maxWidth="1.7976931348623157E308" onAction="#showForumPage" styleClass="sidebar-button" text="Forums" />
+            <Button maxWidth="1.7976931348623157E308" onAction="#showMessagePage" styleClass="sidebar-button" text="Messages" />
             <VBox VBox.vgrow="ALWAYS" />
             <Label styleClass="sidebar-foot" text="Espace administrateur" wrapText="true" />
             <Button maxWidth="1.7976931348623157E308" onAction="#handleProfileLogout" styleClass="secondary-button" text="Deconnexion" />
@@ -328,6 +331,57 @@
                     </Label>
                 </VBox>
                 <StackPane fx:id="modulesContentPane" VBox.vgrow="ALWAYS" />
+            </VBox>
+
+            <VBox fx:id="evenementsSection" managed="false" spacing="18.0" visible="false">
+                <VBox spacing="10.0">
+                    <styleClass>
+                        <String fx:value="hero-banner" />
+                        <String fx:value="admin-stats-banner" />
+                    </styleClass>
+                    <Label styleClass="eyebrow" text="Evenements" />
+                    <Label text="Access the evenement branch functionality inside the current admin template." wrapText="true">
+                        <styleClass>
+                            <String fx:value="hero-title" />
+                            <String fx:value="small-hero" />
+                        </styleClass>
+                    </Label>
+                </VBox>
+                <StackPane fx:id="evenementsContentPane" VBox.vgrow="ALWAYS" />
+            </VBox>
+
+            <VBox fx:id="forumSection" managed="false" spacing="18.0" visible="false">
+                <VBox spacing="10.0">
+                    <styleClass>
+                        <String fx:value="hero-banner" />
+                        <String fx:value="admin-stats-banner" />
+                    </styleClass>
+                    <Label styleClass="eyebrow" text="Forums" />
+                    <Label text="Forum work imported from dev-ahmed and aligned with the current admin template." wrapText="true">
+                        <styleClass>
+                            <String fx:value="hero-title" />
+                            <String fx:value="small-hero" />
+                        </styleClass>
+                    </Label>
+                </VBox>
+                <StackPane fx:id="forumContentPane" VBox.vgrow="ALWAYS" />
+            </VBox>
+
+            <VBox fx:id="messageSection" managed="false" spacing="18.0" visible="false">
+                <VBox spacing="10.0">
+                    <styleClass>
+                        <String fx:value="hero-banner" />
+                        <String fx:value="admin-stats-banner" />
+                    </styleClass>
+                    <Label styleClass="eyebrow" text="Messages" />
+                    <Label text="Messaging work imported from dev-ahmed and embedded into the current admin dashboard." wrapText="true">
+                        <styleClass>
+                            <String fx:value="hero-title" />
+                            <String fx:value="small-hero" />
+                        </styleClass>
+                    </Label>
+                </VBox>
+                <StackPane fx:id="messageContentPane" VBox.vgrow="ALWAYS" />
             </VBox>
         </StackPane>
     </center>

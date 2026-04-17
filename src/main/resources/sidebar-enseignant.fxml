@@ -37,6 +37,8 @@
     <Button fx:id="mesCorrectionsBtn" maxWidth="1.7976931348623157E308" onAction="#handleMesCorrections" styleClass="sidebar-button" text="Mes corrections" />
     <Button fx:id="quizBtn" maxWidth="1.7976931348623157E308" onAction="#handleQuizHub" styleClass="sidebar-button" text="Mes quiz" />
     <Button fx:id="newQuizBtn" maxWidth="1.7976931348623157E308" onAction="#handleNewQuizHub" styleClass="sidebar-button" text="Nouveau quiz" />
+    <Button fx:id="forumBtn" maxWidth="1.7976931348623157E308" onAction="#handleForumHub" styleClass="sidebar-button" text="Forum" />
+    <Button fx:id="messagesBtn" maxWidth="1.7976931348623157E308" onAction="#handleMessagesHub" styleClass="sidebar-button" text="Messagerie" />
     <VBox VBox.vgrow="ALWAYS" />
     <Label styleClass="sidebar-foot" text="Espace enseignant" />
     <Button fx:id="deconnexionBtn" maxWidth="1.7976931348623157E308" onAction="#handleDeconnexion" styleClass="secondary-button" text="Deconnexion" />

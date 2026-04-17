@@ -162,6 +162,20 @@ public class MainLayoutEnseignantController {
         }
     }
 
+    public void showTeacherForumPage() {
+        loadContent("/forum-dashboard.fxml");
+        if (sidebarController != null) {
+            sidebarController.setActiveButton("forum");
+        }
+    }
+
+    public void showTeacherMessagesPage() {
+        loadContent("/message-dashboard.fxml");
+        if (sidebarController != null) {
+            sidebarController.setActiveButton("messages");
+        }
+    }
+
     public Cours consumeEditingCourse() {
         Cours cours = editingCourse;
         editingCourse = null;

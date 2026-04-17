@@ -100,6 +100,24 @@ public class AdminDashboardController {
     private javafx.scene.layout.StackPane modulesContentPane;
 
     @FXML
+    private VBox evenementsSection;
+
+    @FXML
+    private javafx.scene.layout.StackPane evenementsContentPane;
+
+    @FXML
+    private VBox forumSection;
+
+    @FXML
+    private javafx.scene.layout.StackPane forumContentPane;
+
+    @FXML
+    private VBox messageSection;
+
+    @FXML
+    private javafx.scene.layout.StackPane messageContentPane;
+
+    @FXML
     private TextField searchField;
 
     @FXML
@@ -272,30 +290,54 @@ public class AdminDashboardController {
 
     @FXML
     private void showUsersPage() {
-        setSectionVisibility(true, false, false, false);
+        setSectionVisibility(true, false, false, false, false, false, false);
         sectionTitleLabel.setText("User Registry");
         sectionSubtitleLabel.setText("Filter, inspect, edit, and remove platform users.");
     }
 
     @FXML
     private void showStatsPage() {
-        setSectionVisibility(false, true, false, false);
+        setSectionVisibility(false, true, false, false, false, false, false);
         sectionTitleLabel.setText("Statistics");
         sectionSubtitleLabel.setText("Track role distribution and system-level user activity.");
     }
 
     @FXML
     private void showCreatePage() {
-        setSectionVisibility(false, false, true, false);
+        setSectionVisibility(false, false, true, false, false, false, false);
         updateCreateSectionHeader();
     }
 
     @FXML
     private void showModulesPage() {
-        setSectionVisibility(false, false, false, true);
+        setSectionVisibility(false, false, false, true, false, false, false);
         sectionTitleLabel.setText("Modules");
         sectionSubtitleLabel.setText("Manage modules, courses, and content without leaving the admin dashboard.");
         loadModulesContent();
+    }
+
+    @FXML
+    private void showEvenementsPage() {
+        setSectionVisibility(false, false, false, false, true, false, false);
+        sectionTitleLabel.setText("Evenements");
+        sectionSubtitleLabel.setText("Manage the event module inside the current admin dashboard template.");
+        loadEvenementsContent();
+    }
+
+    @FXML
+    private void showForumPage() {
+        setSectionVisibility(false, false, false, false, false, true, false);
+        sectionTitleLabel.setText("Forums");
+        sectionSubtitleLabel.setText("Integrated forum work from dev-ahmed adapted to the current admin dashboard.");
+        loadForumContent();
+    }
+
+    @FXML
+    private void showMessagePage() {
+        setSectionVisibility(false, false, false, false, false, false, true);
+        sectionTitleLabel.setText("Messages");
+        sectionSubtitleLabel.setText("Integrated messaging work from dev-ahmed inside the current admin workspace.");
+        loadMessageContent();
     }
 
     @FXML
@@ -849,7 +891,15 @@ public class AdminDashboardController {
         return builder.toString();
     }
 
-    private void setSectionVisibility(boolean usersVisible, boolean statsVisible, boolean createVisible, boolean modulesVisible) {
+    private void setSectionVisibility(
+            boolean usersVisible,
+            boolean statsVisible,
+            boolean createVisible,
+            boolean modulesVisible,
+            boolean evenementsVisible,
+            boolean forumVisible,
+            boolean messageVisible
+    ) {
         usersSection.setVisible(usersVisible);
         usersSection.setManaged(usersVisible);
         statsSection.setVisible(statsVisible);
@@ -859,6 +909,18 @@ public class AdminDashboardController {
         if (modulesSection != null) {
             modulesSection.setVisible(modulesVisible);
             modulesSection.setManaged(modulesVisible);
+        }
+        if (evenementsSection != null) {
+            evenementsSection.setVisible(evenementsVisible);
+            evenementsSection.setManaged(evenementsVisible);
+        }
+        if (forumSection != null) {
+            forumSection.setVisible(forumVisible);
+            forumSection.setManaged(forumVisible);
+        }
+        if (messageSection != null) {
+            messageSection.setVisible(messageVisible);
+            messageSection.setManaged(messageVisible);
         }
     }
 
@@ -872,6 +934,45 @@ public class AdminDashboardController {
             modulesContentPane.getChildren().setAll(content);
         } catch (IOException e) {
             showError("Modules load failed", e.getMessage());
+        }
+    }
+
+    private void loadEvenementsContent() {
+        if (evenementsContentPane == null || !evenementsContentPane.getChildren().isEmpty()) {
+            return;
+        }
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/event-management.fxml"));
+            Node content = loader.load();
+            evenementsContentPane.getChildren().setAll(content);
+        } catch (IOException e) {
+            showError("Events load failed", e.getMessage());
+        }
+    }
+
+    private void loadForumContent() {
+        if (forumContentPane == null || !forumContentPane.getChildren().isEmpty()) {
+            return;
+        }
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/forum-dashboard.fxml"));
+            Node content = loader.load();
+            forumContentPane.getChildren().setAll(content);
+        } catch (IOException e) {
+            showError("Forum load failed", e.getMessage());
+        }
+    }
+
+    private void loadMessageContent() {
+        if (messageContentPane == null || !messageContentPane.getChildren().isEmpty()) {
+            return;
+        }
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/message-dashboard.fxml"));
+            Node content = loader.load();
+            messageContentPane.getChildren().setAll(content);
+        } catch (IOException e) {
+            showError("Messages load failed", e.getMessage());
         }
     }
 

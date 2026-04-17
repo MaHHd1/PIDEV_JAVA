@@ -53,6 +53,12 @@ public class SidebarEnseignantController {
     private Button newQuizBtn;
 
     @FXML
+    private Button forumBtn;
+
+    @FXML
+    private Button messagesBtn;
+
+    @FXML
     private Button deconnexionBtn;
 
     private String teacherId = "PROF001";
@@ -161,6 +167,20 @@ public class SidebarEnseignantController {
     }
 
     @FXML
+    private void handleForumHub() {
+        if (mainController != null) {
+            mainController.showTeacherForumPage();
+        }
+    }
+
+    @FXML
+    private void handleMessagesHub() {
+        if (mainController != null) {
+            mainController.showTeacherMessagesPage();
+        }
+    }
+
+    @FXML
     private void handleDeconnexion() {
         StudentDashboardController.logoutToLogin();
     }
@@ -181,6 +201,8 @@ public class SidebarEnseignantController {
             case "students_profile" -> studentProfilesBtn;
             case "quiz" -> quizBtn;
             case "new_quiz" -> newQuizBtn;
+            case "forum" -> forumBtn;
+            case "messages" -> messagesBtn;
             default -> null;
         };
 
@@ -225,6 +247,12 @@ public class SidebarEnseignantController {
         }
         if (newQuizBtn != null) {
             newQuizBtn.getStyleClass().remove("sidebar-button-active");
+        }
+        if (forumBtn != null) {
+            forumBtn.getStyleClass().remove("sidebar-button-active");
+        }
+        if (messagesBtn != null) {
+            messagesBtn.getStyleClass().remove("sidebar-button-active");
         }
     }
 }
