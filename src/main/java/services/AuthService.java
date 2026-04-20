@@ -1,7 +1,9 @@
 package services;
 
 import entities.Utilisateur;
+import jakarta.mail.MessagingException;
 import utils.DBConnection;
+import utils.AppSecrets;
 import utils.UserSession;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
@@ -17,6 +19,7 @@ public class AuthService {
 
     private final UtilisateurService utilisateurService = new UtilisateurService();
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private final MailService mailService = new MailService();
 
     public Utilisateur authenticate(String email, String password) throws SQLException {
         Utilisateur utilisateur = utilisateurService.findByEmail(email);
@@ -34,10 +37,15 @@ public class AuthService {
         return null;
     }
 
-    public boolean requestPasswordReset(String email) throws SQLException {
+    public boolean requestPasswordReset(String email) throws SQLException, MessagingException {
+        Utilisateur utilisateur = utilisateurService.findByEmail(email);
+        if (utilisateur == null) {
+            return false;
+        }
+
         String token = UUID.randomUUID().toString();
-        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(30);
-        String sql = "UPDATE utilisateur SET reset_token = ?, reset_token_expires_at = ? WHERE email = ?";
+        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(AppSecrets.getInt("password.reset.validityMinutes", 30));
+        String sql = "UPDATE utilisateur SET reset_token = ?, reset_token_expires_at = ? WHERE id = ?";
 
         try (Connection connection = DBConnection.getInstance().getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -46,16 +54,60 @@ public class AuthService {
             }
             ps.setString(1, token);
             ps.setTimestamp(2, Timestamp.valueOf(expiresAt));
-            ps.setString(3, email);
-            return ps.executeUpdate() > 0;
+            ps.setLong(3, utilisateur.getId());
+            boolean updated = ps.executeUpdate() > 0;
+            if (!updated) {
+                return false;
+            }
+
+            String baseUrl = AppSecrets.get("password.reset.baseUrl");
+            String separator = baseUrl.contains("?") ? "&" : "?";
+            String resetUrl = baseUrl + separator + "token=" + token;
+            mailService.sendPasswordResetEmail(utilisateur.getEmail(), utilisateur.getNomComplet(), resetUrl, expiresAt);
+            return true;
         }
     }
 
-    public boolean resetPassword(String email, String newPassword) throws SQLException {
-        String token = UUID.randomUUID().toString();
-        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(30);
+    public PasswordResetTokenData validateResetToken(String token) throws SQLException {
+        String sql = "SELECT id, email, prenom, nom, reset_token, reset_token_expires_at "
+                + "FROM utilisateur WHERE reset_token = ? AND reset_token_expires_at IS NOT NULL";
+
+        try (Connection connection = DBConnection.getInstance().getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql)) {
+            if (connection == null) {
+                throw new SQLException("Database connection is not available");
+            }
+            ps.setString(1, token);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    return null;
+                }
+
+                Timestamp expiresTimestamp = rs.getTimestamp("reset_token_expires_at");
+                LocalDateTime expiresAt = expiresTimestamp != null ? expiresTimestamp.toLocalDateTime() : null;
+                if (expiresAt == null || !expiresAt.isAfter(LocalDateTime.now())) {
+                    return null;
+                }
+
+                return new PasswordResetTokenData(
+                        rs.getLong("id"),
+                        rs.getString("email"),
+                        rs.getString("prenom") + " " + rs.getString("nom"),
+                        rs.getString("reset_token"),
+                        expiresAt
+                );
+            }
+        }
+    }
+
+    public boolean resetPassword(String token, String newPassword) throws SQLException {
+        PasswordResetTokenData tokenData = validateResetToken(token);
+        if (tokenData == null) {
+            return false;
+        }
+
         String hashedPassword = hashPassword(newPassword);
-        String sql = "UPDATE utilisateur SET mot_de_passe = ?, reset_token = ?, reset_token_expires_at = ? WHERE email = ?";
+        String sql = "UPDATE utilisateur SET mot_de_passe = ?, reset_token = NULL, reset_token_expires_at = NULL WHERE id = ?";
 
         try (Connection connection = DBConnection.getInstance().getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -63,9 +115,7 @@ public class AuthService {
                 throw new SQLException("Database connection is not available");
             }
             ps.setString(1, hashedPassword);
-            ps.setString(2, token);
-            ps.setTimestamp(3, Timestamp.valueOf(expiresAt));
-            ps.setString(4, email);
+            ps.setLong(2, tokenData.getUserId());
             return ps.executeUpdate() > 0;
         }
     }

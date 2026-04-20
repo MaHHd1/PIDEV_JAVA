@@ -8,6 +8,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.chart.PieChart;
@@ -15,23 +16,32 @@ import javafx.scene.chart.BarChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.DialogPane;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.MenuButton;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.util.Callback;
 import javafx.util.StringConverter;
+import services.AdminAssistantService;
 import services.AuthService;
 import services.UtilisateurService;
 import utils.SceneManager;
@@ -276,6 +286,7 @@ public class AdminDashboardController {
     private final FilteredList<UtilisateurRow> filteredRows = new FilteredList<>(masterRows, row -> true);
     private final UtilisateurService utilisateurService = new UtilisateurService();
     private final AuthService authService = new AuthService();
+    private final AdminAssistantService adminAssistantService = new AdminAssistantService();
     private Utilisateur editingUtilisateur;
 
     @FXML
@@ -343,6 +354,77 @@ public class AdminDashboardController {
     @FXML
     private void refreshData() {
         loadDashboardData();
+    }
+
+    @FXML
+    private void openAdminAssistant() {
+        Dialog<Void> dialog = new Dialog<>();
+        dialog.setTitle("Admin AI Assistant");
+        dialog.setHeaderText("Ask about the desktop app or live database.");
+
+        DialogPane dialogPane = dialog.getDialogPane();
+        dialogPane.getButtonTypes().add(ButtonType.CLOSE);
+        dialogPane.getStyleClass().add("assistant-dialog");
+        String stylesheet = getClass().getResource("/style.css") != null
+                ? getClass().getResource("/style.css").toExternalForm()
+                : null;
+        if (stylesheet != null && !dialogPane.getStylesheets().contains(stylesheet)) {
+            dialogPane.getStylesheets().add(stylesheet);
+        }
+
+        Label titleLabel = new Label("Admin AI Assistant");
+        titleLabel.getStyleClass().add("assistant-title");
+
+        Label helperLabel = new Label("Ask about users, modules, forums, messages, login, password reset, or database data.");
+        helperLabel.getStyleClass().add("assistant-helper");
+        helperLabel.setWrapText(true);
+
+        VBox conversationBox = new VBox(12);
+        conversationBox.getStyleClass().add("assistant-conversation");
+        appendAssistantMessage(
+                conversationBox,
+                "Hi. I can answer admin questions about the existing desktop app and the current database. I also respond to simple greetings locally."
+        );
+
+        ScrollPane conversationPane = new ScrollPane(conversationBox);
+        conversationPane.setFitToWidth(true);
+        conversationPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        conversationPane.getStyleClass().add("assistant-scroll");
+
+        TextArea inputArea = new TextArea();
+        inputArea.setWrapText(true);
+        inputArea.setPromptText("Example: How many rows are in utilisateur? What does the reset password flow do?");
+        inputArea.setPrefRowCount(4);
+        inputArea.getStyleClass().add("assistant-input");
+
+        Label statusLabel = new Label("Scope is limited to existing app functionality and live database info.");
+        statusLabel.getStyleClass().add("status-label");
+        statusLabel.setWrapText(true);
+
+        Button sendButton = new Button("Ask AI");
+        sendButton.getStyleClass().add("primary-button");
+        sendButton.setDefaultButton(true);
+        sendButton.setOnAction(event -> submitAdminAssistantQuestion(inputArea, conversationBox, conversationPane, statusLabel, sendButton));
+
+        Button closeButton = new Button("Close");
+        closeButton.getStyleClass().add("secondary-button");
+        closeButton.setOnAction(event -> dialog.close());
+
+        HBox actions = new HBox(10, closeButton, sendButton);
+        actions.setAlignment(Pos.CENTER_RIGHT);
+        actions.getStyleClass().add("assistant-actions");
+
+        VBox hero = new VBox(6, titleLabel, helperLabel);
+        hero.getStyleClass().add("assistant-hero");
+
+        VBox content = new VBox(14, hero, conversationPane, inputArea, statusLabel, actions);
+        content.setPadding(new Insets(18));
+        content.getStyleClass().add("assistant-shell");
+        VBox.setVgrow(conversationPane, Priority.ALWAYS);
+        dialogPane.setContent(content);
+        dialogPane.setPrefSize(820, 680);
+
+        dialog.show();
     }
 
     @FXML
@@ -993,6 +1075,78 @@ public class AdminDashboardController {
         alert.setHeaderText(title);
         alert.setContentText(message);
         alert.showAndWait();
+    }
+
+    private void submitAdminAssistantQuestion(TextArea inputArea, VBox conversationBox, ScrollPane conversationPane, Label statusLabel, Button sendButton) {
+        String question = inputArea.getText() == null ? "" : inputArea.getText().trim();
+        if (question.isEmpty()) {
+            statusLabel.setText("Enter a question first.");
+            return;
+        }
+
+        appendAdminMessage(conversationBox, question);
+        conversationPane.layout();
+        conversationPane.setVvalue(1.0);
+        inputArea.clear();
+        sendButton.setDisable(true);
+        statusLabel.setText("Generating reply...");
+
+        Task<String> task = new Task<>() {
+            @Override
+            protected String call() throws Exception {
+                return adminAssistantService.answer(question);
+            }
+        };
+
+        task.setOnSucceeded(event -> {
+            appendAssistantMessage(conversationBox, task.getValue());
+            conversationPane.layout();
+            conversationPane.setVvalue(1.0);
+            statusLabel.setText("Reply generated.");
+            sendButton.setDisable(false);
+        });
+        task.setOnFailed(event -> {
+            Throwable error = task.getException();
+            appendAssistantMessage(
+                    conversationBox,
+                    "I couldn't generate a reply right now. Check the API key permissions in app-secrets.properties or ask a greeting such as hi or hello for the local fallback."
+            );
+            conversationPane.layout();
+            conversationPane.setVvalue(1.0);
+            statusLabel.setText("Assistant error: " + (error != null ? error.getMessage() : "Unknown error"));
+            sendButton.setDisable(false);
+        });
+
+        Thread worker = new Thread(task);
+        worker.setDaemon(true);
+        worker.start();
+    }
+
+    private void appendAdminMessage(VBox conversationBox, String message) {
+        conversationBox.getChildren().add(createAssistantBubble("Admin", message, true));
+    }
+
+    private void appendAssistantMessage(VBox conversationBox, String message) {
+        conversationBox.getChildren().add(createAssistantBubble("Assistant", message, false));
+    }
+
+    private Node createAssistantBubble(String sender, String message, boolean adminMessage) {
+        Label senderLabel = new Label(sender);
+        senderLabel.getStyleClass().add("assistant-bubble-sender");
+
+        Label messageLabel = new Label(message);
+        messageLabel.setWrapText(true);
+        messageLabel.setMaxWidth(Region.USE_PREF_SIZE);
+        messageLabel.getStyleClass().add(adminMessage ? "assistant-admin-bubble" : "assistant-ai-bubble");
+
+        VBox bubble = new VBox(5, senderLabel, messageLabel);
+        bubble.setMaxWidth(540);
+        bubble.setFillWidth(true);
+
+        HBox row = new HBox(bubble);
+        row.setAlignment(adminMessage ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
+        row.getStyleClass().add("assistant-row");
+        return row;
     }
 
     private String formatDateTime(LocalDateTime value) {

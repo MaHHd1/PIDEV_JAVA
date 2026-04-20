@@ -1,9 +1,9 @@
 package utils;
 
 import javafx.fxml.FXMLLoader;
+import javafx.stage.Stage;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.stage.Stage;
 
 import java.io.IOException;
 
@@ -28,5 +28,14 @@ public final class SceneManager {
         primaryStage.setTitle(title);
         primaryStage.setScene(scene);
         primaryStage.show();
+    }
+
+    public static void bringToFront() {
+        if (primaryStage == null) {
+            return;
+        }
+        primaryStage.show();
+        primaryStage.toFront();
+        primaryStage.requestFocus();
     }
 }
