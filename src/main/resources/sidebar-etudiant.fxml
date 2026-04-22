@@ -27,6 +27,7 @@
     </VBox>
     <Button fx:id="overviewBtn" maxWidth="1.7976931348623157E308" onAction="#handleOverview" styleClass="sidebar-button" text="Vue d'ensemble" />
     <Button fx:id="myCoursesBtn" maxWidth="1.7976931348623157E308" onAction="#handleMyCourses" styleClass="sidebar-button" text="Mes cours" />
+    <Button fx:id="aiAssistantBtn" maxWidth="1.7976931348623157E308" onAction="#handleAiAssistant" styleClass="sidebar-button" text="AI Assistant" />
     <Button fx:id="allCoursesBtn" maxWidth="1.7976931348623157E308" onAction="#handleAllCourses" styleClass="sidebar-button" text="Tous les cours" />
     <Button fx:id="profileBtn" maxWidth="1.7976931348623157E308" onAction="#handleProfileHub" styleClass="sidebar-button" text="Mon profil" />
     <Button fx:id="changePasswordBtn" maxWidth="1.7976931348623157E308" onAction="#handleChangePassword" styleClass="sidebar-button" text="Changer mot de passe" />
@@ -40,4 +41,3 @@
     <Label styleClass="sidebar-foot" text="Espace etudiant" />
     <Button fx:id="deconnexionBtn" maxWidth="1.7976931348623157E308" onAction="#handleDeconnexion" styleClass="secondary-button" text="Deconnexion" />
 </VBox>
-

@@ -131,12 +131,7 @@ public class ContenuService implements IService<Contenu> {
         ps.setTimestamp(9, timestampOf(contenu.getDateAjout()));
         ps.setInt(10, contenu.getNombreVues());
         ps.setString(11, contenu.getFormat());
-        String serializedResources = serializeList(contenu.getRessources());
-        if (serializedResources == null) {
-            ps.setNull(12, java.sql.Types.VARCHAR);
-        } else {
-            ps.setString(12, serializedResources);
-        }
+        ps.setString(12, serializeList(contenu.getRessources()));
     }
 
     private Contenu mapContenu(ResultSet rs) throws SQLException {
@@ -175,24 +170,92 @@ public class ContenuService implements IService<Contenu> {
     }
 
     private String serializeList(List<String> values) {
-        if (values == null || values.isEmpty()) {
-            return null;
-        }
-        String serialized = values.stream()
+        List<String> normalizedValues = values == null
+                ? List.of()
+                : values.stream()
                 .map(String::trim)
                 .filter(value -> !value.isEmpty())
-                .collect(Collectors.joining(","));
-        return serialized.isEmpty() ? null : serialized;
+                .collect(Collectors.toList());
+        if (normalizedValues.isEmpty()) {
+            return "[]";
+        }
+
+        StringBuilder builder = new StringBuilder("[");
+        for (int i = 0; i < normalizedValues.size(); i++) {
+            if (i > 0) {
+                builder.append(',');
+            }
+            builder.append('"').append(escapeJson(normalizedValues.get(i))).append('"');
+        }
+        builder.append(']');
+        return builder.toString();
     }
 
     private List<String> deserializeList(String values) {
         if (values == null || values.isBlank()) {
             return new ArrayList<>();
         }
-        return Arrays.stream(values.split(","))
-                .map(String::trim)
-                .filter(value -> !value.isEmpty())
-                .collect(Collectors.toCollection(ArrayList::new));
+
+        String trimmed = values.trim();
+        if (!trimmed.startsWith("[")) {
+            return Arrays.stream(trimmed.split(","))
+                    .map(String::trim)
+                    .filter(value -> !value.isEmpty())
+                    .collect(Collectors.toCollection(ArrayList::new));
+        }
+
+        List<String> result = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        boolean inString = false;
+        boolean escaping = false;
+
+        for (int i = 0; i < trimmed.length(); i++) {
+            char currentChar = trimmed.charAt(i);
+            if (!inString) {
+                if (currentChar == '"') {
+                    inString = true;
+                    current.setLength(0);
+                }
+                continue;
+            }
+
+            if (escaping) {
+                switch (currentChar) {
+                    case 'n' -> current.append('\n');
+                    case 'r' -> current.append('\r');
+                    case 't' -> current.append('\t');
+                    case '"' -> current.append('"');
+                    case '\\' -> current.append('\\');
+                    default -> current.append(currentChar);
+                }
+                escaping = false;
+                continue;
+            }
+
+            if (currentChar == '\\') {
+                escaping = true;
+                continue;
+            }
+
+            if (currentChar == '"') {
+                result.add(current.toString());
+                inString = false;
+                continue;
+            }
+
+            current.append(currentChar);
+        }
+
+        return result;
+    }
+
+    private String escapeJson(String value) {
+        return value
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\r", "\\r")
+                .replace("\n", "\\n")
+                .replace("\t", "\\t");
     }
 
     private void requireId(Integer id, String action) throws SQLException {

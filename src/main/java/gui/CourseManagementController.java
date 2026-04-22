@@ -31,6 +31,7 @@ import utils.UserSession;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -39,6 +40,7 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
@@ -234,6 +236,8 @@ public class CourseManagementController implements MainControllerAware {
     private File selectedContentPdfFile;
     private File selectedContentPptFile;
     private File selectedContentVideoFile;
+    private boolean syncingCourseSelection;
+    private boolean syncingContentSelection;
 
     private MainLayoutEnseignantController mainController;
 
@@ -308,6 +312,9 @@ public class CourseManagementController implements MainControllerAware {
         courseStatusColumn.setCellValueFactory(new PropertyValueFactory<>("statut"));
         courseTable.setItems(filteredCourses);
         courseTable.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
+            if (syncingCourseSelection) {
+                return;
+            }
             selectedCours = newValue;
             editingCours = newValue;
             if (newValue == null) {
@@ -328,6 +335,9 @@ public class CourseManagementController implements MainControllerAware {
         contentOrderColumn.setCellValueFactory(new PropertyValueFactory<>("ordreAffichage"));
         contentTable.setItems(filteredContents);
         contentTable.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
+            if (syncingContentSelection) {
+                return;
+            }
             editingContenu = newValue;
             if (newValue != null) {
                 selectCourseForContent(newValue);
@@ -682,7 +692,7 @@ public class CourseManagementController implements MainControllerAware {
         }
 
         try {
-            persistSelectedContentFiles();
+            List<String> fileWarnings = persistSelectedContentFiles();
             Contenu contenu = contenuFormHelper.buildContenu(
                     editingContenu,
                     contentCourseCombo.getValue(),
@@ -705,16 +715,23 @@ public class CourseManagementController implements MainControllerAware {
             );
             if (editingContenu == null) {
                 contenuService.create(contenu);
-                contentStatusLabel.setText("Contenu cree avec succes.");
+                contentStatusLabel.setText(fileWarnings.isEmpty()
+                        ? "Contenu cree avec succes."
+                        : "Contenu cree avec succes. Certains fichiers sont restes a leur emplacement d'origine.");
             } else {
                 contenuService.update(contenu);
-                contentStatusLabel.setText("Contenu mis a jour.");
+                contentStatusLabel.setText(fileWarnings.isEmpty()
+                        ? "Contenu mis a jour."
+                        : "Contenu mis a jour. Certains fichiers sont restes a leur emplacement d'origine.");
+            }
+            if (!fileWarnings.isEmpty()) {
+                showWarning(String.join("\n", fileWarnings));
             }
             selectedCours = contenu.getCours();
             loadContents();
             hideContentForm();
             resetContentForm();
-        } catch (SQLException e) {
+        } catch (SQLException | IOException e) {
             showError("Enregistrement contenu impossible: " + e.getMessage());
         }
     }
@@ -929,15 +946,20 @@ public class CourseManagementController implements MainControllerAware {
             courseModuleCombo.setValue(null);
             return;
         }
-        selectedModule = modules.stream()
+        Module resolvedModule = modules.stream()
                 .filter(module -> Objects.equals(module.getId(), cours.getModule().getId()))
                 .findFirst()
                 .orElse(cours.getModule());
+        boolean moduleChanged = selectedModule == null
+                || !Objects.equals(selectedModule.getId(), resolvedModule.getId());
+        selectedModule = resolvedModule;
         courseModuleCombo.getItems().stream()
                 .filter(module -> Objects.equals(module.getId(), cours.getModule().getId()))
                 .findFirst()
                 .ifPresent(courseModuleCombo::setValue);
-        applyCourseFilter();
+        if (moduleChanged) {
+            applyCourseFilter();
+        }
     }
 
     private void selectCourseForContent(Contenu contenu) {
@@ -945,15 +967,20 @@ public class CourseManagementController implements MainControllerAware {
             contentCourseCombo.setValue(null);
             return;
         }
-        selectedCours = courses.stream()
+        Cours resolvedCourse = courses.stream()
                 .filter(cours -> Objects.equals(cours.getId(), contenu.getCours().getId()))
                 .findFirst()
                 .orElse(contenu.getCours());
+        boolean courseChanged = selectedCours == null
+                || !Objects.equals(selectedCours.getId(), resolvedCourse.getId());
+        selectedCours = resolvedCourse;
         contentCourseCombo.getItems().stream()
                 .filter(cours -> Objects.equals(cours.getId(), contenu.getCours().getId()))
                 .findFirst()
                 .ifPresent(contentCourseCombo::setValue);
-        applyContentFilter();
+        if (courseChanged) {
+            applyContentFilter();
+        }
     }
 
     private void resetModuleForm() {
@@ -1033,32 +1060,74 @@ public class CourseManagementController implements MainControllerAware {
         return stage != null ? fileChooser.showOpenDialog(stage) : null;
     }
 
-    private void persistSelectedContentFiles() {
+    private List<String> persistSelectedContentFiles() throws IOException {
+        List<String> warnings = new ArrayList<>();
         if (selectedContentPdfFile != null) {
-            contentPdfField.setText(saveUploadedContentFile(selectedContentPdfFile));
+            contentPdfField.setText(saveUploadedContentFile(selectedContentPdfFile, "PDF", warnings));
         }
         if (selectedContentPptFile != null) {
-            contentPptField.setText(saveUploadedContentFile(selectedContentPptFile));
+            contentPptField.setText(saveUploadedContentFile(selectedContentPptFile, "PPT", warnings));
         }
         if (selectedContentVideoFile != null) {
-            contentVideoField.setText(saveUploadedContentFile(selectedContentVideoFile));
+            contentVideoField.setText(saveUploadedContentFile(selectedContentVideoFile, "video", warnings));
+        }
+        return warnings;
+    }
+
+    private String saveUploadedContentFile(File sourceFile, String resourceLabel, List<String> warnings) throws IOException {
+        Path sourcePath = sourceFile.toPath().toAbsolutePath().normalize();
+        Path uploadDir = Paths.get("uploads").toAbsolutePath().normalize();
+
+        if (sourcePath.startsWith(uploadDir)) {
+            return sourcePath.toString();
+        }
+
+        if (!Files.exists(uploadDir)) {
+            Files.createDirectories(uploadDir);
+        }
+
+        if (hasInsufficientSpace(uploadDir, sourcePath)) {
+            warnings.add(buildInsufficientSpaceWarning(resourceLabel, sourcePath));
+            return sourcePath.toString();
+        }
+
+        String filename = System.currentTimeMillis() + "_" + sourceFile.getName();
+        Path targetPath = uploadDir.resolve(filename);
+
+        try {
+            Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+            return Paths.get("uploads").resolve(filename).toString();
+        } catch (FileSystemException e) {
+            if (isInsufficientSpaceError(e)) {
+                warnings.add(buildInsufficientSpaceWarning(resourceLabel, sourcePath));
+                return sourcePath.toString();
+            }
+            throw e;
         }
     }
 
-    private String saveUploadedContentFile(File sourceFile) {
-        try {
-            Path uploadDir = Paths.get("uploads");
-            if (!Files.exists(uploadDir)) {
-                Files.createDirectories(uploadDir);
-            }
+    private boolean hasInsufficientSpace(Path uploadDir, Path sourcePath) throws IOException {
+        long fileSize = Files.size(sourcePath);
+        long usableSpace = Files.getFileStore(uploadDir).getUsableSpace();
+        return fileSize > 0 && usableSpace < fileSize;
+    }
 
-            String filename = System.currentTimeMillis() + "_" + sourceFile.getName();
-            Path targetPath = uploadDir.resolve(filename);
-            Files.copy(sourceFile.toPath(), targetPath, StandardCopyOption.REPLACE_EXISTING);
-            return targetPath.toString();
-        } catch (IOException e) {
-            throw new RuntimeException("Erreur lors de la sauvegarde du fichier: " + e.getMessage(), e);
+    private boolean isInsufficientSpaceError(IOException exception) {
+        String message = exception.getMessage();
+        if (message == null || message.isBlank()) {
+            return false;
         }
+        String normalized = message.toLowerCase(Locale.ROOT);
+        return normalized.contains("espace insuffisant")
+                || normalized.contains("not enough space")
+                || normalized.contains("insufficient disk space");
+    }
+
+    private String buildInsufficientSpaceWarning(String resourceLabel, Path sourcePath) {
+        return "Espace insuffisant dans le dossier uploads. Le fichier "
+                + resourceLabel
+                + " sera conserve avec son chemin local: "
+                + sourcePath;
     }
 
     private void showModuleForm(String title) {
@@ -1101,13 +1170,35 @@ public class CourseManagementController implements MainControllerAware {
     }
 
     private void applyCourseFilter() {
-        filteredCourses.setAll(
-                courses.stream()
-                        .filter(cours -> selectedModule == null
-                                || selectedModule.getId() == null
-                                || (cours.getModule() != null && Objects.equals(cours.getModule().getId(), selectedModule.getId())))
-                        .toList()
-        );
+        List<Cours> nextCourses = courses.stream()
+                .filter(cours -> selectedModule == null
+                        || selectedModule.getId() == null
+                        || (cours.getModule() != null && Objects.equals(cours.getModule().getId(), selectedModule.getId())))
+                .toList();
+
+        syncingCourseSelection = true;
+        try {
+            filteredCourses.setAll(nextCourses);
+            if (selectedCours != null && selectedCours.getId() != null) {
+                Cours matchingCourse = filteredCourses.stream()
+                        .filter(cours -> Objects.equals(cours.getId(), selectedCours.getId()))
+                        .findFirst()
+                        .orElse(null);
+                if (matchingCourse != null) {
+                    courseTable.getSelectionModel().select(matchingCourse);
+                    selectedCours = matchingCourse;
+                    editingCours = matchingCourse;
+                } else {
+                    courseTable.getSelectionModel().clearSelection();
+                    selectedCours = null;
+                    editingCours = null;
+                }
+            } else {
+                courseTable.getSelectionModel().clearSelection();
+            }
+        } finally {
+            syncingCourseSelection = false;
+        }
 
         if (selectedModule == null) {
             courseFilterLabel.setText("Cours de tous les modules.");
@@ -1122,23 +1213,37 @@ public class CourseManagementController implements MainControllerAware {
                     : ". Selectionnez un cours pour afficher ses contenus."));
         }
 
-        if (selectedCours != null && selectedCours.getId() != null) {
-            boolean exists = filteredCourses.stream().anyMatch(cours -> Objects.equals(cours.getId(), selectedCours.getId()));
-            if (!exists) {
-                selectedCours = null;
-            }
-        }
         applyContentFilter();
     }
 
     private void applyContentFilter() {
-        filteredContents.setAll(
-                contents.stream()
-                        .filter(contenu -> selectedCours == null
-                                || selectedCours.getId() == null
-                                || (contenu.getCours() != null && Objects.equals(contenu.getCours().getId(), selectedCours.getId())))
-                        .toList()
-        );
+        List<Contenu> nextContents = contents.stream()
+                .filter(contenu -> selectedCours == null
+                        || selectedCours.getId() == null
+                        || (contenu.getCours() != null && Objects.equals(contenu.getCours().getId(), selectedCours.getId())))
+                .toList();
+
+        syncingContentSelection = true;
+        try {
+            filteredContents.setAll(nextContents);
+            if (editingContenu != null && editingContenu.getId() != null) {
+                Contenu matchingContent = filteredContents.stream()
+                        .filter(contenu -> Objects.equals(contenu.getId(), editingContenu.getId()))
+                        .findFirst()
+                        .orElse(null);
+                if (matchingContent != null) {
+                    contentTable.getSelectionModel().select(matchingContent);
+                    editingContenu = matchingContent;
+                } else {
+                    contentTable.getSelectionModel().clearSelection();
+                    editingContenu = null;
+                }
+            } else {
+                contentTable.getSelectionModel().clearSelection();
+            }
+        } finally {
+            syncingContentSelection = false;
+        }
 
         if (selectedCours == null) {
             contentFilterLabel.setText("Contenus de tous les cours.");
@@ -1151,6 +1256,14 @@ public class CourseManagementController implements MainControllerAware {
     private void showError(String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Erreur");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    private void showWarning(String message) {
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setTitle("Avertissement");
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();

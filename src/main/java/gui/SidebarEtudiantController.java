@@ -23,6 +23,9 @@ public class SidebarEtudiantController {
     private Button myCoursesBtn;
 
     @FXML
+    private Button aiAssistantBtn;
+
+    @FXML
     private Button allCoursesBtn;
 
     @FXML
@@ -98,6 +101,13 @@ public class SidebarEtudiantController {
     private void handleMyCourses() {
         if (mainController != null) {
             mainController.showMyCourses();
+        }
+    }
+
+    @FXML
+    private void handleAiAssistant() {
+        if (mainController != null) {
+            mainController.showStudentCourseAssistant();
         }
     }
 
@@ -187,6 +197,9 @@ public class SidebarEtudiantController {
         }
         if (allCoursesBtn != null) {
             allCoursesBtn.getStyleClass().remove("sidebar-button-active");
+        }
+        if (aiAssistantBtn != null) {
+            aiAssistantBtn.getStyleClass().remove("sidebar-button-active");
         }
         if (profileBtn != null) {
             profileBtn.getStyleClass().remove("sidebar-button-active");

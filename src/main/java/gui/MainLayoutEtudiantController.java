@@ -98,6 +98,10 @@ public class MainLayoutEtudiantController {
         }
     }
 
+    public void showStudentCourseAssistant() {
+        StudentCourseAssistantDialog.open(null);
+    }
+
     public void showStudentCourseContent(Cours cours) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/student-course-content.fxml"));

@@ -2,10 +2,13 @@ package gui;
 
 import entities.Contenu;
 import entities.Cours;
+import entities.Etudiant;
+import entities.Utilisateur;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -270,11 +273,16 @@ public class StudentCourseContentController implements MainControllerAwareEtudia
         if (isActionableElement(contenu, typeValue)) {
             Hyperlink action = new Hyperlink(actionLabel(typeValue));
             action.getStyleClass().add("course-element-action");
-            action.setOnAction(event -> openContent(contenu));
+            action.setOnAction(event -> openContent(contenu, typeValue));
             row.getChildren().add(action);
         }
 
         return row;
+    }
+
+    @FXML
+    private void handleOpenCourseAssistant() {
+        StudentCourseAssistantDialog.open(cours);
     }
 
     @FXML
@@ -292,10 +300,11 @@ public class StudentCourseContentController implements MainControllerAwareEtudia
     }
 
     private void openContent(Contenu contenu) {
-        String target = contenu.getUrlContenu();
-        if ((target == null || target.isBlank()) && contenu.getRessources() != null && !contenu.getRessources().isEmpty()) {
-            target = contenu.getRessources().get(0);
-        }
+        openContent(contenu, null);
+    }
+
+    private void openContent(Contenu contenu, String requestedType) {
+        String target = resolveTargetForType(contenu, requestedType);
         if (target == null || target.isBlank()) {
             return;
         }
@@ -323,15 +332,41 @@ public class StudentCourseContentController implements MainControllerAwareEtudia
         if (contenu.getUrlContenu() != null && !contenu.getUrlContenu().isBlank()) {
             return contenu.getUrlContenu();
         }
-        if (contenu.getRessources() != null && !contenu.getRessources().isEmpty()) {
-            return contenu.getRessources().get(0);
+        if (!contenu.getRessourcesForDisplay().isEmpty()) {
+            return contenu.getRessourcesForDisplay().get(0);
         }
         return "Ressource integree a consulter dans la plateforme.";
     }
 
     private boolean hasResource(Contenu contenu) {
         return (contenu.getUrlContenu() != null && !contenu.getUrlContenu().isBlank())
-                || (contenu.getRessources() != null && !contenu.getRessources().isEmpty());
+                || !contenu.getRessourcesForDisplay().isEmpty()
+                || !contenu.getTypedRessources().isEmpty();
+    }
+
+    private String resolveTargetForType(Contenu contenu, String requestedType) {
+        String normalizedType = requestedType == null ? "" : requestedType.trim().toLowerCase(Locale.ROOT);
+        if (!normalizedType.isEmpty()) {
+            String typedTarget = contenu.getTypedResource(normalizedType);
+            if (!typedTarget.isBlank()) {
+                return typedTarget;
+            }
+        }
+
+        String primaryTarget = contenu.getUrlContenu();
+        if (primaryTarget != null && !primaryTarget.isBlank()) {
+            return primaryTarget;
+        }
+
+        if (!contenu.getRessourcesForDisplay().isEmpty()) {
+            return contenu.getRessourcesForDisplay().get(0);
+        }
+
+        if (!contenu.getTypedRessources().isEmpty()) {
+            return contenu.getTypedRessources().values().iterator().next();
+        }
+
+        return null;
     }
 
     private boolean isActionableElement(Contenu contenu, String typeValue) {

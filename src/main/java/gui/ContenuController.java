@@ -15,6 +15,7 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class ContenuController {
@@ -205,7 +206,14 @@ public class ContenuController {
         target.setNombreVues(parseIntegerOrZero(vuesField.getText()));
         target.setFormat(nullableText(formatField.getText()));
         target.setUrlContenu(resolvePrimaryUrl(urlField, pdfField, pptField, videoField, lienField, quizField));
-        target.setRessources(parseCommaSeparated(ressourcesArea.getText()));
+        target.setRessources(buildStoredResources(
+                ressourcesArea.getText(),
+                pdfField,
+                pptField,
+                videoField,
+                lienField,
+                quizField
+        ));
         return target;
     }
 
@@ -253,11 +261,12 @@ public class ContenuController {
         vuesField.setText(String.valueOf(contenu.getNombreVues()));
         formatField.setText(contenu.getFormat());
 
-        String pdf = contenu.hasType("pdf") ? safeText(contenu.getUrlContenu()) : "";
-        String ppt = contenu.hasType("ppt") ? safeText(contenu.getUrlContenu()) : "";
-        String video = contenu.hasType("video") ? safeText(contenu.getUrlContenu()) : "";
-        String lien = contenu.hasType("lien") ? safeText(contenu.getUrlContenu()) : "";
-        String quiz = contenu.hasType("quiz") ? safeText(contenu.getUrlContenu()) : "";
+        Map<String, String> typedResources = contenu.getTypedRessources();
+        String pdf = contenu.hasType("pdf") ? resolveFieldValue(contenu, typedResources, "pdf") : "";
+        String ppt = contenu.hasType("ppt") ? resolveFieldValue(contenu, typedResources, "ppt") : "";
+        String video = contenu.hasType("video") ? resolveFieldValue(contenu, typedResources, "video") : "";
+        String lien = contenu.hasType("lien") ? resolveFieldValue(contenu, typedResources, "lien") : "";
+        String quiz = contenu.hasType("quiz") ? resolveFieldValue(contenu, typedResources, "quiz") : "";
 
         urlField.setText(!pdf.isEmpty() || !ppt.isEmpty() || !video.isEmpty() || !lien.isEmpty() || !quiz.isEmpty()
                 ? ""
@@ -267,7 +276,7 @@ public class ContenuController {
         videoField.setText(video);
         lienField.setText(lien);
         quizField.setText(quiz);
-        ressourcesArea.setText(contenu.getRessources() != null ? String.join(", ", contenu.getRessources()) : "");
+        ressourcesArea.setText(String.join(", ", contenu.getVisibleRessources()));
     }
 
     public void clearForm(
@@ -336,6 +345,90 @@ public class ContenuController {
             }
         }
         return null;
+    }
+
+    private List<String> buildStoredResources(
+            String rawResources,
+            TextField pdfField,
+            TextField pptField,
+            TextField videoField,
+            TextField lienField,
+            TextField quizField
+    ) {
+        List<String> storedResources = new ArrayList<>(parseCommaSeparated(rawResources));
+        addTypedResource(storedResources, "pdf", pdfField);
+        addTypedResource(storedResources, "ppt", pptField);
+        addTypedResource(storedResources, "video", videoField);
+        addTypedResource(storedResources, "lien", lienField);
+        addTypedResource(storedResources, "quiz", quizField);
+        return storedResources;
+    }
+
+    private void addTypedResource(List<String> storedResources, String type, TextField field) {
+        String value = nullableText(field.getText());
+        if (value == null) {
+            return;
+        }
+
+        String encoded = Contenu.encodeTypedResource(type, value);
+        if (!encoded.isEmpty()) {
+            storedResources.add(encoded);
+        }
+    }
+
+    private String resolveFieldValue(Contenu contenu, Map<String, String> typedResources, String type) {
+        String typedValue = typedResources.getOrDefault(type, "");
+        if (!typedValue.isBlank()) {
+            return typedValue;
+        }
+        return matchesPrimaryResourceType(contenu, type) ? safeText(contenu.getUrlContenu()) : "";
+    }
+
+    private boolean matchesPrimaryResourceType(Contenu contenu, String type) {
+        String primaryUrl = safeText(contenu.getUrlContenu());
+        if (primaryUrl.isEmpty()) {
+            return false;
+        }
+
+        String detectedType = detectTypeFromValue(primaryUrl);
+        if (!detectedType.isEmpty()) {
+            return Objects.equals(detectedType, type);
+        }
+        return Objects.equals(primaryTypedField(contenu), type);
+    }
+
+    private String primaryTypedField(Contenu contenu) {
+        for (String type : contenu.getTypeContenuList()) {
+            if (List.of("pdf", "ppt", "video", "lien", "quiz").contains(type)) {
+                return type;
+            }
+        }
+        return "";
+    }
+
+    private String detectTypeFromValue(String value) {
+        String normalized = safeText(value).toLowerCase();
+        if (normalized.isEmpty()) {
+            return "";
+        }
+        if (normalized.endsWith(".pdf")) {
+            return "pdf";
+        }
+        if (normalized.endsWith(".ppt") || normalized.endsWith(".pptx")) {
+            return "ppt";
+        }
+        if (normalized.startsWith("http://") || normalized.startsWith("https://")) {
+            return "lien";
+        }
+        if (normalized.endsWith(".mp4")
+                || normalized.endsWith(".avi")
+                || normalized.endsWith(".mov")
+                || normalized.endsWith(".mkv")
+                || normalized.endsWith(".wmv")
+                || normalized.endsWith(".webm")) {
+            return "video";
+        }
+        return "";
     }
 
     private boolean isHttpUrl(String value) {
