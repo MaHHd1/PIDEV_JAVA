@@ -131,7 +131,12 @@ public class ContenuService implements IService<Contenu> {
         ps.setTimestamp(9, timestampOf(contenu.getDateAjout()));
         ps.setInt(10, contenu.getNombreVues());
         ps.setString(11, contenu.getFormat());
-        ps.setString(12, serializeList(contenu.getRessources()));
+        String serializedResources = serializeList(contenu.getRessources());
+        if (serializedResources == null) {
+            ps.setNull(12, java.sql.Types.VARCHAR);
+        } else {
+            ps.setString(12, serializedResources);
+        }
     }
 
     private Contenu mapContenu(ResultSet rs) throws SQLException {
@@ -171,13 +176,13 @@ public class ContenuService implements IService<Contenu> {
 
     private String serializeList(List<String> values) {
         if (values == null || values.isEmpty()) {
-            return "";
+            return null;
         }
         String serialized = values.stream()
                 .map(String::trim)
                 .filter(value -> !value.isEmpty())
                 .collect(Collectors.joining(","));
-        return serialized.isEmpty() ? "" : serialized;
+        return serialized.isEmpty() ? null : serialized;
     }
 
     private List<String> deserializeList(String values) {

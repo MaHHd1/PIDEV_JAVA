@@ -37,24 +37,42 @@ public class DBConnection {
         try {
             if (connection == null || connection.isClosed()) {
                 connection = DriverManager.getConnection(URL, USER, PASSWORD);
-                System.out.println("Database connection established.");
+                System.out.println("✅ Database connection established successfully.");
             }
         } catch (SQLException e) {
-            System.err.println("Failed to connect to database: " + e.getMessage());
+            System.err.println("❌ Failed to connect to database: " + e.getMessage());
+            connection = null;
         }
     }
 
     public Connection getConnection() {
-        connect();
+        try {
+            if (connection == null || connection.isClosed()) {
+                connect();
+            }
+        } catch (SQLException e) {
+            System.err.println("❌ Error checking connection status: " + e.getMessage());
+            connection = null;
+        }
         return connection;
     }
 
     public static boolean verifyConnection() {
         try {
             Connection connection = getInstance().getConnection();
-            return connection != null && connection.isValid(2);
+            if (connection == null) {
+                System.err.println("❌ Database connection is null");
+                return false;
+            }
+            boolean isValid = connection.isValid(2);
+            if (isValid) {
+                System.out.println("✅ Database connection is valid");
+            } else {
+                System.err.println("❌ Database connection is not valid");
+            }
+            return isValid;
         } catch (SQLException e) {
-            System.err.println("Database connection verification failed: " + e.getMessage());
+            System.err.println("❌ Database connection verification failed: " + e.getMessage());
             return false;
         }
     }
@@ -72,10 +90,10 @@ public class DBConnection {
         try {
             if (!instance.connection.isClosed()) {
                 instance.connection.close();
-                System.out.println("Database connection closed.");
+                System.out.println("✅ Database connection closed successfully.");
             }
         } catch (SQLException e) {
-            System.err.println("Error while closing database connection: " + e.getMessage());
+            System.err.println("❌ Error while closing database connection: " + e.getMessage());
         }
     }
 }

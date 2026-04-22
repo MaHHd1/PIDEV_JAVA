@@ -1,0 +1,1158 @@
+package gui;
+
+import entities.Contenu;
+import entities.Cours;
+import entities.Enseignant;
+import entities.Module;
+import entities.Utilisateur;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.DatePicker;
+import javafx.scene.control.Label;
+import javafx.scene.control.Button;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
+import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
+import services.ContenuService;
+import services.CoursService;
+import services.ModuleService;
+import utils.UserSession;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.sql.SQLException;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+public class CourseManagementController implements MainControllerAware {
+
+    @FXML
+    private TabPane managementTabPane;
+    @FXML
+    private Tab modulesTab;
+    @FXML
+    private Tab coursesTab;
+    @FXML
+    private Tab contentsTab;
+    @FXML
+    private Label navigationStatusLabel;
+    @FXML
+    private Label courseFilterLabel;
+    @FXML
+    private Label contentFilterLabel;
+    @FXML
+    private Button moduleNewButton;
+    @FXML
+    private Button moduleEditButton;
+    @FXML
+    private Button moduleOpenCoursesButton;
+    @FXML
+    private Button moduleDeleteButton;
+    @FXML
+    private VBox moduleFormPanel;
+    @FXML
+    private VBox courseFormPanel;
+    @FXML
+    private VBox contentFormPanel;
+    @FXML
+    private Label moduleFormTitleLabel;
+    @FXML
+    private Label courseFormTitleLabel;
+    @FXML
+    private Label contentFormTitleLabel;
+
+    @FXML
+    private TableView<Module> moduleTable;
+    @FXML
+    private TableColumn<Module, String> moduleTitleColumn;
+    @FXML
+    private TableColumn<Module, String> moduleStatusColumn;
+    @FXML
+    private TableColumn<Module, Integer> moduleOrderColumn;
+    @FXML
+    private TextField moduleTitleField;
+    @FXML
+    private TextArea moduleDescriptionArea;
+    @FXML
+    private TextField moduleOrderField;
+    @FXML
+    private TextArea moduleObjectivesArea;
+    @FXML
+    private TextField moduleDurationField;
+    @FXML
+    private DatePicker modulePublicationDatePicker;
+    @FXML
+    private ComboBox<String> moduleStatusCombo;
+    @FXML
+    private TextArea moduleResourcesArea;
+    @FXML
+    private Label moduleStatusLabel;
+
+    @FXML
+    private TableView<Cours> courseTable;
+    @FXML
+    private TableColumn<Cours, String> courseCodeColumn;
+    @FXML
+    private TableColumn<Cours, String> courseTitleColumn;
+    @FXML
+    private TableColumn<Cours, String> courseModuleColumn;
+    @FXML
+    private TableColumn<Cours, String> courseStatusColumn;
+    @FXML
+    private TextField courseCodeField;
+    @FXML
+    private TextField courseTitleField;
+    @FXML
+    private TextArea courseDescriptionArea;
+    @FXML
+    private ComboBox<Module> courseModuleCombo;
+    @FXML
+    private TextField courseLevelField;
+    @FXML
+    private TextField courseCreditsField;
+    @FXML
+    private TextField courseLanguageField;
+    @FXML
+    private DatePicker courseStartDatePicker;
+    @FXML
+    private DatePicker courseEndDatePicker;
+    @FXML
+    private ComboBox<String> courseStatusCombo;
+    @FXML
+    private TextField courseImageUrlField;
+    @FXML
+    private TextArea coursePrerequisitesArea;
+    @FXML
+    private Label courseStatusLabel;
+
+    @FXML
+    private TableView<Contenu> contentTable;
+    @FXML
+    private TableColumn<Contenu, String> contentTitleColumn;
+    @FXML
+    private TableColumn<Contenu, String> contentCourseColumn;
+    @FXML
+    private TableColumn<Contenu, String> contentTypeColumn;
+    @FXML
+    private TableColumn<Contenu, Integer> contentOrderColumn;
+    @FXML
+    private ComboBox<Cours> contentCourseCombo;
+    @FXML
+    private CheckBox contentVideoCheck;
+    @FXML
+    private CheckBox contentPdfCheck;
+    @FXML
+    private CheckBox contentPptCheck;
+    @FXML
+    private CheckBox contentTextCheck;
+    @FXML
+    private CheckBox contentQuizCheck;
+    @FXML
+    private CheckBox contentLinkCheck;
+    @FXML
+    private VBox contentPdfBox;
+    @FXML
+    private VBox contentPptBox;
+    @FXML
+    private VBox contentVideoBox;
+    @FXML
+    private VBox contentLinkBox;
+    @FXML
+    private VBox contentQuizBox;
+    @FXML
+    private TextField contentTitleField;
+    @FXML
+    private TextField contentUrlField;
+    @FXML
+    private TextArea contentDescriptionArea;
+    @FXML
+    private TextField contentDurationField;
+    @FXML
+    private TextField contentOrderField;
+    @FXML
+    private ComboBox<String> contentPublicCombo;
+    @FXML
+    private DatePicker contentAddedDatePicker;
+    @FXML
+    private TextField contentViewsField;
+    @FXML
+    private TextField contentFormatField;
+    @FXML
+    private TextArea contentResourcesArea;
+    @FXML
+    private TextField contentPdfField;
+    @FXML
+    private TextField contentPptField;
+    @FXML
+    private TextField contentVideoField;
+    @FXML
+    private TextField contentLinkField;
+    @FXML
+    private TextField contentQuizField;
+    @FXML
+    private Label contentStatusLabel;
+
+    private final ModuleService moduleService = new ModuleService();
+    private final CoursService coursService = new CoursService();
+    private final ContenuService contenuService = new ContenuService();
+
+    private final ModuleController moduleFormHelper = new ModuleController();
+    private final CoursController coursFormHelper = new CoursController();
+    private final ContenuController contenuFormHelper = new ContenuController();
+
+    private final ObservableList<Module> modules = FXCollections.observableArrayList();
+    private final ObservableList<Cours> courses = FXCollections.observableArrayList();
+    private final ObservableList<Contenu> contents = FXCollections.observableArrayList();
+    private final ObservableList<Cours> filteredCourses = FXCollections.observableArrayList();
+    private final ObservableList<Contenu> filteredContents = FXCollections.observableArrayList();
+
+    private Module editingModule;
+    private Cours editingCours;
+    private Contenu editingContenu;
+    private Module selectedModule;
+    private Cours selectedCours;
+    private Long currentTeacherId;
+    private boolean moduleReadOnly;
+    private File selectedContentPdfFile;
+    private File selectedContentPptFile;
+    private File selectedContentVideoFile;
+
+    private MainLayoutEnseignantController mainController;
+
+    @FXML
+    public void initialize() {
+        Utilisateur currentUser = UserSession.getCurrentUser();
+        if (currentUser instanceof Enseignant enseignant && enseignant.getId() != null) {
+            currentTeacherId = enseignant.getId();
+        }
+        moduleReadOnly = currentTeacherId != null;
+
+        setupModuleTable();
+        setupCourseTable();
+        setupContentTable();
+        setupCombos();
+        configureRoleMode();
+        resetModuleForm();
+        resetCourseForm();
+        resetContentForm();
+        hideModuleForm();
+        hideCourseForm();
+        hideContentForm();
+        loadAllData();
+    }
+
+    @Override
+    public void setMainController(MainLayoutEnseignantController controller) {
+        this.mainController = controller;
+    }
+
+    private void configureRoleMode() {
+        if (!moduleReadOnly) {
+            return;
+        }
+        if (moduleNewButton != null) {
+            moduleNewButton.setVisible(false);
+            moduleNewButton.setManaged(false);
+        }
+        if (moduleEditButton != null) {
+            moduleEditButton.setVisible(false);
+            moduleEditButton.setManaged(false);
+        }
+        if (moduleDeleteButton != null) {
+            moduleDeleteButton.setVisible(false);
+            moduleDeleteButton.setManaged(false);
+        }
+        hideModuleForm();
+    }
+
+    private void setupModuleTable() {
+        moduleTitleColumn.setCellValueFactory(new PropertyValueFactory<>("titreModule"));
+        moduleStatusColumn.setCellValueFactory(new PropertyValueFactory<>("statut"));
+        moduleOrderColumn.setCellValueFactory(new PropertyValueFactory<>("ordreAffichage"));
+        moduleTable.setItems(modules);
+        moduleTable.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
+            editingModule = newValue;
+            selectedModule = newValue;
+            if (newValue == null) {
+                applyCourseFilter();
+                return;
+            }
+            applyCourseFilter();
+        });
+    }
+
+    private void setupCourseTable() {
+        courseCodeColumn.setCellValueFactory(new PropertyValueFactory<>("codeCours"));
+        courseTitleColumn.setCellValueFactory(new PropertyValueFactory<>("titre"));
+        courseModuleColumn.setCellValueFactory(cell -> new javafx.beans.property.SimpleStringProperty(
+                cell.getValue().getModule() != null ? cell.getValue().getModule().getTitreModule() : "-"
+        ));
+        courseStatusColumn.setCellValueFactory(new PropertyValueFactory<>("statut"));
+        courseTable.setItems(filteredCourses);
+        courseTable.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
+            selectedCours = newValue;
+            editingCours = newValue;
+            if (newValue == null) {
+                applyContentFilter();
+                return;
+            }
+            selectModuleForCourse(newValue);
+            applyContentFilter();
+        });
+    }
+
+    private void setupContentTable() {
+        contentTitleColumn.setCellValueFactory(new PropertyValueFactory<>("titre"));
+        contentCourseColumn.setCellValueFactory(cell -> new javafx.beans.property.SimpleStringProperty(
+                cell.getValue().getCours() != null ? cell.getValue().getCours().getTitre() : "-"
+        ));
+        contentTypeColumn.setCellValueFactory(new PropertyValueFactory<>("typeContenu"));
+        contentOrderColumn.setCellValueFactory(new PropertyValueFactory<>("ordreAffichage"));
+        contentTable.setItems(filteredContents);
+        contentTable.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
+            editingContenu = newValue;
+            if (newValue != null) {
+                selectCourseForContent(newValue);
+            }
+        });
+    }
+
+    private void setupCombos() {
+        moduleFormHelper.configureFormDefaults(moduleStatusCombo, modulePublicationDatePicker);
+        coursFormHelper.configureFormDefaults(courseStatusCombo, courseStartDatePicker, courseEndDatePicker);
+        contenuFormHelper.configureFormDefaults(
+                contentVideoCheck,
+                contentPdfCheck,
+                contentPptCheck,
+                contentTextCheck,
+                contentQuizCheck,
+                contentLinkCheck,
+                contentPublicCombo,
+                contentAddedDatePicker
+        );
+        configureContentTypeVisibility();
+
+        courseModuleCombo.setCellFactory(param -> new javafx.scene.control.ListCell<>() {
+            @Override
+            protected void updateItem(Module item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : item.getTitreModule());
+            }
+        });
+        courseModuleCombo.setButtonCell(new javafx.scene.control.ListCell<>() {
+            @Override
+            protected void updateItem(Module item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? "Choisir un module" : item.getTitreModule());
+            }
+        });
+
+        contentCourseCombo.setCellFactory(param -> new javafx.scene.control.ListCell<>() {
+            @Override
+            protected void updateItem(Cours item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : item.getTitre());
+            }
+        });
+        contentCourseCombo.setButtonCell(new javafx.scene.control.ListCell<>() {
+            @Override
+            protected void updateItem(Cours item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? "Choisir un cours" : item.getTitre());
+            }
+        });
+    }
+
+    private void configureContentTypeVisibility() {
+        contentPdfCheck.selectedProperty().addListener((obs, oldValue, newValue) -> updateContentTypeVisibility());
+        contentPptCheck.selectedProperty().addListener((obs, oldValue, newValue) -> updateContentTypeVisibility());
+        contentVideoCheck.selectedProperty().addListener((obs, oldValue, newValue) -> updateContentTypeVisibility());
+        contentLinkCheck.selectedProperty().addListener((obs, oldValue, newValue) -> updateContentTypeVisibility());
+        contentQuizCheck.selectedProperty().addListener((obs, oldValue, newValue) -> updateContentTypeVisibility());
+        updateContentTypeVisibility();
+    }
+
+    private void updateContentTypeVisibility() {
+        toggleNode(contentPdfBox, contentPdfCheck.isSelected());
+        toggleNode(contentPptBox, contentPptCheck.isSelected());
+        toggleNode(contentVideoBox, contentVideoCheck.isSelected());
+        toggleNode(contentLinkBox, contentLinkCheck.isSelected());
+        toggleNode(contentQuizBox, contentQuizCheck.isSelected());
+    }
+
+    private void toggleNode(VBox node, boolean visible) {
+        if (node == null) {
+            return;
+        }
+        node.setVisible(visible);
+        node.setManaged(visible);
+    }
+
+    private void loadAllData() {
+        loadModules();
+        loadCourses();
+        loadContents();
+    }
+
+    private void loadModules() {
+        try {
+            modules.setAll(moduleService.getAll());
+            courseModuleCombo.setItems(FXCollections.observableArrayList(modules));
+            if (selectedModule != null && selectedModule.getId() != null) {
+                selectedModule = modules.stream()
+                        .filter(module -> Objects.equals(module.getId(), selectedModule.getId()))
+                        .findFirst()
+                        .orElse(null);
+            }
+            applyCourseFilter();
+        } catch (SQLException e) {
+            showError("Chargement modules impossible: " + e.getMessage());
+        }
+    }
+
+    private void loadCourses() {
+        try {
+            List<Cours> loadedCourses;
+            if (currentTeacherId != null) {
+                loadedCourses = coursService.getByTeacherId(currentTeacherId);
+                if (loadedCourses.isEmpty()) {
+                    loadedCourses = coursService.getAll();
+                }
+            } else {
+                loadedCourses = coursService.getAll();
+            }
+            courses.setAll(loadedCourses);
+            contentCourseCombo.setItems(FXCollections.observableArrayList(courses));
+            if (selectedCours != null && selectedCours.getId() != null) {
+                selectedCours = courses.stream()
+                        .filter(cours -> Objects.equals(cours.getId(), selectedCours.getId()))
+                        .findFirst()
+                        .orElse(null);
+            }
+            applyCourseFilter();
+        } catch (SQLException e) {
+            showError("Chargement cours impossible: " + e.getMessage());
+        }
+    }
+
+    private void loadContents() {
+        try {
+            List<Contenu> loadedContents = new ArrayList<>();
+            for (Cours cours : courses) {
+                if (cours.getId() != null) {
+                    loadedContents.addAll(contenuService.getByCoursId(cours.getId()));
+                }
+            }
+            contents.setAll(loadedContents);
+            applyContentFilter();
+        } catch (SQLException e) {
+            showError("Chargement contenus impossible: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    private void handleNewModule() {
+        if (moduleReadOnly) {
+            showError("Les modules sont en lecture seule pour l'enseignant.");
+            return;
+        }
+        resetModuleForm();
+        showModuleForm("Nouveau module");
+        managementTabPane.getSelectionModel().select(modulesTab);
+    }
+
+    @FXML
+    private void handleSaveModule() {
+        if (moduleReadOnly) {
+            showError("Les modules sont en lecture seule pour l'enseignant.");
+            return;
+        }
+        Map<String, String> errors = moduleFormHelper.validateModuleForm(
+                moduleTitleField,
+                moduleDescriptionArea,
+                moduleOrderField,
+                moduleObjectivesArea,
+                moduleDurationField,
+                moduleStatusCombo
+        );
+        if (!errors.isEmpty()) {
+            showError(String.join("\n", errors.values()));
+            return;
+        }
+
+        try {
+            Module module = moduleFormHelper.buildModule(
+                    editingModule,
+                    moduleTitleField,
+                    moduleDescriptionArea,
+                    moduleOrderField,
+                    moduleObjectivesArea,
+                    moduleDurationField,
+                    modulePublicationDatePicker,
+                    moduleStatusCombo,
+                    moduleResourcesArea
+            );
+            if (editingModule == null) {
+                moduleService.create(module);
+                moduleStatusLabel.setText("Module cree avec succes.");
+            } else {
+                moduleService.update(module);
+                moduleStatusLabel.setText("Module mis a jour.");
+            }
+            selectedModule = module;
+            loadModules();
+            hideModuleForm();
+            resetModuleForm();
+        } catch (SQLException e) {
+            showError("Enregistrement module impossible: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    private void handleDeleteModule() {
+        if (moduleReadOnly) {
+            showError("Les modules sont en lecture seule pour l'enseignant.");
+            return;
+        }
+        if (editingModule == null || editingModule.getId() == null) {
+            showError("Selectionnez un module a supprimer.");
+            return;
+        }
+        try {
+            moduleService.delete(editingModule.getId());
+            selectedModule = null;
+            selectedCours = null;
+            moduleStatusLabel.setText("Module supprime.");
+            loadAllData();
+            hideModuleForm();
+            resetModuleForm();
+        } catch (SQLException e) {
+            showError("Suppression module impossible: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    private void handleNewCourse() {
+        resetCourseForm();
+        if (selectedModule != null) {
+            courseModuleCombo.setValue(selectedModule);
+        }
+        showCourseForm("Nouveau cours");
+        managementTabPane.getSelectionModel().select(coursesTab);
+    }
+
+    @FXML
+    private void handleSaveCourse() {
+        Map<String, String> errors = coursFormHelper.validateCoursForm(
+                courseCodeField,
+                courseTitleField,
+                courseDescriptionArea,
+                courseLevelField,
+                courseCreditsField,
+                courseLanguageField,
+                courseStartDatePicker,
+                courseEndDatePicker,
+                courseStatusCombo,
+                courseImageUrlField,
+                coursePrerequisitesArea
+        );
+        if (courseModuleCombo.getValue() == null) {
+            errors.put("module", "Choisissez un module pour le cours.");
+        }
+        if (!errors.isEmpty()) {
+            showError(String.join("\n", errors.values()));
+            return;
+        }
+
+        try {
+            Cours cours = coursFormHelper.buildCours(
+                    editingCours,
+                    courseModuleCombo.getValue(),
+                    courseCodeField,
+                    courseTitleField,
+                    courseDescriptionArea,
+                    courseLevelField,
+                    courseCreditsField,
+                    courseLanguageField,
+                    courseStartDatePicker,
+                    courseEndDatePicker,
+                    courseStatusCombo,
+                    courseImageUrlField,
+                    coursePrerequisitesArea
+            );
+            if (editingCours == null) {
+                if (currentTeacherId != null) {
+                    coursService.createForTeacher(cours, currentTeacherId);
+                } else {
+                    coursService.create(cours);
+                }
+                courseStatusLabel.setText("Cours cree avec succes.");
+            } else {
+                if (currentTeacherId != null) {
+                    coursService.updateForTeacher(cours, currentTeacherId);
+                } else {
+                    coursService.update(cours);
+                }
+                courseStatusLabel.setText("Cours mis a jour.");
+            }
+            selectedModule = cours.getModule();
+            selectedCours = cours;
+            loadCourses();
+            loadContents();
+            hideCourseForm();
+            resetCourseForm();
+        } catch (SQLException e) {
+            showError("Enregistrement cours impossible: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    private void handleDeleteCourse() {
+        if (editingCours == null || editingCours.getId() == null) {
+            showError("Selectionnez un cours a supprimer.");
+            return;
+        }
+        try {
+            coursService.delete(editingCours.getId());
+            selectedCours = null;
+            courseStatusLabel.setText("Cours supprime.");
+            loadCourses();
+            loadContents();
+            hideCourseForm();
+            resetCourseForm();
+        } catch (SQLException e) {
+            showError("Suppression cours impossible: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    private void handleNewContent() {
+        resetContentForm();
+        if (selectedCours != null) {
+            contentCourseCombo.setValue(selectedCours);
+        }
+        showContentForm("Nouveau contenu");
+        managementTabPane.getSelectionModel().select(contentsTab);
+    }
+
+    @FXML
+    private void handleSaveContent() {
+        List<String> selectedTypes = selectedContentTypes();
+        Map<String, String> errors = contenuFormHelper.validateContenuForm(
+                selectedTypes,
+                contentTitleField,
+                contentDescriptionArea,
+                contentDurationField,
+                contentOrderField,
+                contentPublicCombo,
+                contentViewsField,
+                contentFormatField,
+                contentResourcesArea,
+                contentUrlField,
+                contentPdfField,
+                contentPptField,
+                contentVideoField,
+                contentLinkField,
+                contentQuizField
+        );
+        if (contentCourseCombo.getValue() == null) {
+            errors.put("cours", "Choisissez un cours pour le contenu.");
+        }
+        if (!errors.isEmpty()) {
+            showError(String.join("\n", errors.values()));
+            return;
+        }
+
+        try {
+            persistSelectedContentFiles();
+            Contenu contenu = contenuFormHelper.buildContenu(
+                    editingContenu,
+                    contentCourseCombo.getValue(),
+                    selectedTypes,
+                    contentTitleField,
+                    contentUrlField,
+                    contentDescriptionArea,
+                    contentDurationField,
+                    contentOrderField,
+                    contentPublicCombo,
+                    contentAddedDatePicker,
+                    contentViewsField,
+                    contentFormatField,
+                    contentResourcesArea,
+                    contentPdfField,
+                    contentPptField,
+                    contentVideoField,
+                    contentLinkField,
+                    contentQuizField
+            );
+            if (editingContenu == null) {
+                contenuService.create(contenu);
+                contentStatusLabel.setText("Contenu cree avec succes.");
+            } else {
+                contenuService.update(contenu);
+                contentStatusLabel.setText("Contenu mis a jour.");
+            }
+            selectedCours = contenu.getCours();
+            loadContents();
+            hideContentForm();
+            resetContentForm();
+        } catch (SQLException e) {
+            showError("Enregistrement contenu impossible: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    private void handleDeleteContent() {
+        if (editingContenu == null || editingContenu.getId() == null) {
+            showError("Selectionnez un contenu a supprimer.");
+            return;
+        }
+        try {
+            contenuService.delete(editingContenu.getId());
+            contentStatusLabel.setText("Contenu supprime.");
+            loadContents();
+            hideContentForm();
+            resetContentForm();
+        } catch (SQLException e) {
+            showError("Suppression contenu impossible: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    private void handleEditModule() {
+        if (moduleReadOnly) {
+            showError("Les modules sont en lecture seule pour l'enseignant.");
+            return;
+        }
+        if (editingModule == null) {
+            showError("Selectionnez un module a modifier.");
+            return;
+        }
+        moduleFormHelper.populateForm(
+                editingModule,
+                moduleTitleField,
+                moduleDescriptionArea,
+                moduleOrderField,
+                moduleObjectivesArea,
+                moduleDurationField,
+                modulePublicationDatePicker,
+                moduleStatusCombo,
+                moduleResourcesArea
+        );
+        moduleStatusLabel.setText("Edition du module #" + editingModule.getId());
+        showModuleForm("Modifier module");
+        managementTabPane.getSelectionModel().select(modulesTab);
+    }
+
+    @FXML
+    private void handleOpenModuleCourses() {
+        Module module = moduleTable.getSelectionModel().getSelectedItem();
+        if (module == null) {
+            showError("Selectionnez un module pour afficher ses cours.");
+            return;
+        }
+        selectedModule = module;
+        applyCourseFilter();
+        resetCourseForm();
+        managementTabPane.getSelectionModel().select(coursesTab);
+    }
+
+    @FXML
+    private void handleEditCourse() {
+        if (editingCours == null) {
+            showError("Selectionnez un cours a modifier.");
+            return;
+        }
+        coursFormHelper.populateForm(
+                editingCours,
+                courseCodeField,
+                courseTitleField,
+                courseDescriptionArea,
+                courseLevelField,
+                courseCreditsField,
+                courseLanguageField,
+                courseStartDatePicker,
+                courseEndDatePicker,
+                courseStatusCombo,
+                courseImageUrlField,
+                coursePrerequisitesArea
+        );
+        selectModuleForCourse(editingCours);
+        courseStatusLabel.setText("Edition du cours #" + editingCours.getId());
+        showCourseForm("Modifier cours");
+        managementTabPane.getSelectionModel().select(coursesTab);
+    }
+
+    @FXML
+    private void handleOpenCourseContents() {
+        Cours cours = courseTable.getSelectionModel().getSelectedItem();
+        if (cours == null) {
+            showError("Selectionnez un cours pour afficher ses contenus.");
+            return;
+        }
+        selectedCours = cours;
+        applyContentFilter();
+        resetContentForm();
+        managementTabPane.getSelectionModel().select(contentsTab);
+    }
+
+    @FXML
+    private void handleEditContent() {
+        if (editingContenu == null) {
+            showError("Selectionnez un contenu a modifier.");
+            return;
+        }
+        contenuFormHelper.populateForm(
+                editingContenu,
+                contentVideoCheck,
+                contentPdfCheck,
+                contentPptCheck,
+                contentTextCheck,
+                contentQuizCheck,
+                contentLinkCheck,
+                contentTitleField,
+                contentUrlField,
+                contentDescriptionArea,
+                contentDurationField,
+                contentOrderField,
+                contentPublicCombo,
+                contentAddedDatePicker,
+                contentViewsField,
+                contentFormatField,
+                contentResourcesArea,
+                contentPdfField,
+                contentPptField,
+                contentVideoField,
+                contentLinkField,
+                contentQuizField
+        );
+        selectCourseForContent(editingContenu);
+        contentStatusLabel.setText("Edition du contenu #" + editingContenu.getId());
+        showContentForm("Modifier contenu");
+        managementTabPane.getSelectionModel().select(contentsTab);
+    }
+
+    @FXML
+    private void handleCancelModule() {
+        hideModuleForm();
+        resetModuleForm();
+    }
+
+    @FXML
+    private void handleCancelCourse() {
+        hideCourseForm();
+        resetCourseForm();
+    }
+
+    @FXML
+    private void handleCancelContent() {
+        hideContentForm();
+        resetContentForm();
+    }
+
+    @FXML
+    private void handleBrowseContentPdf() {
+        File file = chooseFile("Choisir un fichier PDF", new FileChooser.ExtensionFilter("Fichiers PDF", "*.pdf"));
+        if (file != null) {
+            selectedContentPdfFile = file;
+            contentPdfField.setText(file.getAbsolutePath());
+        }
+    }
+
+    @FXML
+    private void handleBrowseContentPpt() {
+        File file = chooseFile(
+                "Choisir un fichier PowerPoint",
+                new FileChooser.ExtensionFilter("Fichiers PowerPoint", "*.ppt", "*.pptx")
+        );
+        if (file != null) {
+            selectedContentPptFile = file;
+            contentPptField.setText(file.getAbsolutePath());
+        }
+    }
+
+    @FXML
+    private void handleBrowseContentVideo() {
+        File file = chooseFile(
+                "Choisir une video",
+                new FileChooser.ExtensionFilter("Fichiers video", "*.mp4", "*.avi", "*.mov", "*.mkv", "*.wmv", "*.webm")
+        );
+        if (file != null) {
+            selectedContentVideoFile = file;
+            contentVideoField.setText(file.getAbsolutePath());
+        }
+    }
+
+    private List<String> selectedContentTypes() {
+        List<String> types = new ArrayList<>();
+        if (contentVideoCheck.isSelected()) {
+            types.add("video");
+        }
+        if (contentPdfCheck.isSelected()) {
+            types.add("pdf");
+        }
+        if (contentPptCheck.isSelected()) {
+            types.add("ppt");
+        }
+        if (contentTextCheck.isSelected()) {
+            types.add("texte");
+        }
+        if (contentQuizCheck.isSelected()) {
+            types.add("quiz");
+        }
+        if (contentLinkCheck.isSelected()) {
+            types.add("lien");
+        }
+        return types;
+    }
+
+    private void selectModuleForCourse(Cours cours) {
+        if (cours.getModule() == null || cours.getModule().getId() == null) {
+            courseModuleCombo.setValue(null);
+            return;
+        }
+        selectedModule = modules.stream()
+                .filter(module -> Objects.equals(module.getId(), cours.getModule().getId()))
+                .findFirst()
+                .orElse(cours.getModule());
+        courseModuleCombo.getItems().stream()
+                .filter(module -> Objects.equals(module.getId(), cours.getModule().getId()))
+                .findFirst()
+                .ifPresent(courseModuleCombo::setValue);
+        applyCourseFilter();
+    }
+
+    private void selectCourseForContent(Contenu contenu) {
+        if (contenu.getCours() == null || contenu.getCours().getId() == null) {
+            contentCourseCombo.setValue(null);
+            return;
+        }
+        selectedCours = courses.stream()
+                .filter(cours -> Objects.equals(cours.getId(), contenu.getCours().getId()))
+                .findFirst()
+                .orElse(contenu.getCours());
+        contentCourseCombo.getItems().stream()
+                .filter(cours -> Objects.equals(cours.getId(), contenu.getCours().getId()))
+                .findFirst()
+                .ifPresent(contentCourseCombo::setValue);
+        applyContentFilter();
+    }
+
+    private void resetModuleForm() {
+        editingModule = null;
+        moduleFormHelper.clearForm(
+                moduleTitleField,
+                moduleDescriptionArea,
+                moduleOrderField,
+                moduleObjectivesArea,
+                moduleDurationField,
+                modulePublicationDatePicker,
+                moduleStatusCombo,
+                moduleResourcesArea
+        );
+        moduleStatusLabel.setText("Nouveau module.");
+    }
+
+    private void resetCourseForm() {
+        editingCours = null;
+        coursFormHelper.clearForm(
+                courseCodeField,
+                courseTitleField,
+                courseDescriptionArea,
+                courseLevelField,
+                courseCreditsField,
+                courseLanguageField,
+                courseStartDatePicker,
+                courseEndDatePicker,
+                courseStatusCombo,
+                courseImageUrlField,
+                coursePrerequisitesArea
+        );
+        courseModuleCombo.setValue(selectedModule);
+        courseStatusLabel.setText("Nouveau cours.");
+    }
+
+    private void resetContentForm() {
+        editingContenu = null;
+        selectedContentPdfFile = null;
+        selectedContentPptFile = null;
+        selectedContentVideoFile = null;
+        contenuFormHelper.clearForm(
+                contentVideoCheck,
+                contentPdfCheck,
+                contentPptCheck,
+                contentTextCheck,
+                contentQuizCheck,
+                contentLinkCheck,
+                contentTitleField,
+                contentUrlField,
+                contentDescriptionArea,
+                contentDurationField,
+                contentOrderField,
+                contentPublicCombo,
+                contentAddedDatePicker,
+                contentViewsField,
+                contentFormatField,
+                contentResourcesArea,
+                contentPdfField,
+                contentPptField,
+                contentVideoField,
+                contentLinkField,
+                contentQuizField
+        );
+        contentCourseCombo.setValue(selectedCours);
+        contentStatusLabel.setText("Nouveau contenu.");
+    }
+
+    private File chooseFile(String title, FileChooser.ExtensionFilter extensionFilter) {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle(title);
+        fileChooser.getExtensionFilters().add(extensionFilter);
+
+        Stage stage = contentTitleField != null && contentTitleField.getScene() != null
+                ? (Stage) contentTitleField.getScene().getWindow()
+                : null;
+        return stage != null ? fileChooser.showOpenDialog(stage) : null;
+    }
+
+    private void persistSelectedContentFiles() {
+        if (selectedContentPdfFile != null) {
+            contentPdfField.setText(saveUploadedContentFile(selectedContentPdfFile));
+        }
+        if (selectedContentPptFile != null) {
+            contentPptField.setText(saveUploadedContentFile(selectedContentPptFile));
+        }
+        if (selectedContentVideoFile != null) {
+            contentVideoField.setText(saveUploadedContentFile(selectedContentVideoFile));
+        }
+    }
+
+    private String saveUploadedContentFile(File sourceFile) {
+        try {
+            Path uploadDir = Paths.get("uploads");
+            if (!Files.exists(uploadDir)) {
+                Files.createDirectories(uploadDir);
+            }
+
+            String filename = System.currentTimeMillis() + "_" + sourceFile.getName();
+            Path targetPath = uploadDir.resolve(filename);
+            Files.copy(sourceFile.toPath(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+            return targetPath.toString();
+        } catch (IOException e) {
+            throw new RuntimeException("Erreur lors de la sauvegarde du fichier: " + e.getMessage(), e);
+        }
+    }
+
+    private void showModuleForm(String title) {
+        if (moduleReadOnly) {
+            return;
+        }
+        moduleFormPanel.setManaged(true);
+        moduleFormPanel.setVisible(true);
+        moduleFormTitleLabel.setText(title);
+    }
+
+    private void hideModuleForm() {
+        moduleFormPanel.setVisible(false);
+        moduleFormPanel.setManaged(false);
+        moduleFormTitleLabel.setText("Formulaire module");
+    }
+
+    private void showCourseForm(String title) {
+        courseFormPanel.setManaged(true);
+        courseFormPanel.setVisible(true);
+        courseFormTitleLabel.setText(title);
+    }
+
+    private void hideCourseForm() {
+        courseFormPanel.setVisible(false);
+        courseFormPanel.setManaged(false);
+        courseFormTitleLabel.setText("Formulaire cours");
+    }
+
+    private void showContentForm(String title) {
+        contentFormPanel.setManaged(true);
+        contentFormPanel.setVisible(true);
+        contentFormTitleLabel.setText(title);
+    }
+
+    private void hideContentForm() {
+        contentFormPanel.setVisible(false);
+        contentFormPanel.setManaged(false);
+        contentFormTitleLabel.setText("Formulaire contenu");
+    }
+
+    private void applyCourseFilter() {
+        filteredCourses.setAll(
+                courses.stream()
+                        .filter(cours -> selectedModule == null
+                                || selectedModule.getId() == null
+                                || (cours.getModule() != null && Objects.equals(cours.getModule().getId(), selectedModule.getId())))
+                        .toList()
+        );
+
+        if (selectedModule == null) {
+            courseFilterLabel.setText("Cours de tous les modules.");
+            navigationStatusLabel.setText(moduleReadOnly
+                    ? "Selectionnez un module pour afficher vos cours, puis un cours pour afficher ses contenus."
+                    : "Selectionnez un module pour afficher ses cours, puis un cours pour afficher ses contenus.");
+        } else {
+            courseFilterLabel.setText("Cours du module: " + selectedModule.getTitreModule());
+            navigationStatusLabel.setText("Module actif: " + selectedModule.getTitreModule()
+                    + (moduleReadOnly
+                    ? ". Vous pouvez creer et modifier vos cours et contenus."
+                    : ". Selectionnez un cours pour afficher ses contenus."));
+        }
+
+        if (selectedCours != null && selectedCours.getId() != null) {
+            boolean exists = filteredCourses.stream().anyMatch(cours -> Objects.equals(cours.getId(), selectedCours.getId()));
+            if (!exists) {
+                selectedCours = null;
+            }
+        }
+        applyContentFilter();
+    }
+
+    private void applyContentFilter() {
+        filteredContents.setAll(
+                contents.stream()
+                        .filter(contenu -> selectedCours == null
+                                || selectedCours.getId() == null
+                                || (contenu.getCours() != null && Objects.equals(contenu.getCours().getId(), selectedCours.getId())))
+                        .toList()
+        );
+
+        if (selectedCours == null) {
+            contentFilterLabel.setText("Contenus de tous les cours.");
+        } else {
+            contentFilterLabel.setText("Contenus du cours: " + selectedCours.getTitre());
+            navigationStatusLabel.setText("Cours actif: " + selectedCours.getTitre() + ". Vous pouvez maintenant gerer ses contenus.");
+        }
+    }
+
+    private void showError(String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Erreur");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+}
