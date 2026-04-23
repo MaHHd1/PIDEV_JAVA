@@ -46,6 +46,7 @@
             <Button maxWidth="1.7976931348623157E308" onAction="#showStatsPage" styleClass="sidebar-button" text="Statistics" />
             <Button maxWidth="1.7976931348623157E308" onAction="#showCreatePage" styleClass="sidebar-button" text="Add User" />
             <Button maxWidth="1.7976931348623157E308" onAction="#showModulesPage" styleClass="sidebar-button" text="Modules" />
+            <Button maxWidth="1.7976931348623157E308" onAction="#showCourseStatisticsPage" styleClass="sidebar-button" text="Statistiques cours" />
             <Button maxWidth="1.7976931348623157E308" onAction="#showEvenementsPage" styleClass="sidebar-button" text="Evenements" />
             <Button maxWidth="1.7976931348623157E308" onAction="#showForumPage" styleClass="sidebar-button" text="Forums" />
             <Button maxWidth="1.7976931348623157E308" onAction="#showMessagePage" styleClass="sidebar-button" text="Messages" />
@@ -340,6 +341,23 @@
                     </Label>
                 </VBox>
                 <StackPane fx:id="modulesContentPane" VBox.vgrow="ALWAYS" />
+            </VBox>
+
+            <VBox fx:id="courseStatisticsSection" managed="false" spacing="18.0" visible="false">
+                <VBox spacing="10.0">
+                    <styleClass>
+                        <String fx:value="hero-banner" />
+                        <String fx:value="admin-stats-banner" />
+                    </styleClass>
+                    <Label styleClass="eyebrow" text="Cours" />
+                    <Label text="Indicateurs des cours et modules dans un espace dedie a l'analyse pedagogique." wrapText="true">
+                        <styleClass>
+                            <String fx:value="hero-title" />
+                            <String fx:value="small-hero" />
+                        </styleClass>
+                    </Label>
+                </VBox>
+                <StackPane fx:id="courseStatisticsContentPane" VBox.vgrow="ALWAYS" />
             </VBox>
 
             <VBox fx:id="evenementsSection" managed="false" spacing="18.0" visible="false">

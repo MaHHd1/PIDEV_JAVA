@@ -110,6 +110,12 @@ public class AdminDashboardController {
     private javafx.scene.layout.StackPane modulesContentPane;
 
     @FXML
+    private VBox courseStatisticsSection;
+
+    @FXML
+    private javafx.scene.layout.StackPane courseStatisticsContentPane;
+
+    @FXML
     private VBox evenementsSection;
 
     @FXML
@@ -287,6 +293,7 @@ public class AdminDashboardController {
     private final UtilisateurService utilisateurService = new UtilisateurService();
     private final AuthService authService = new AuthService();
     private final AdminAssistantService adminAssistantService = new AdminAssistantService();
+    private AdminCourseStatisticsController adminCourseStatisticsController;
     private Utilisateur editingUtilisateur;
 
     @FXML
@@ -301,35 +308,46 @@ public class AdminDashboardController {
 
     @FXML
     private void showUsersPage() {
-        setSectionVisibility(true, false, false, false, false, false, false);
+        setSectionVisibility(true, false, false, false, false, false, false, false);
         sectionTitleLabel.setText("User Registry");
         sectionSubtitleLabel.setText("Filter, inspect, edit, and remove platform users.");
     }
 
     @FXML
     private void showStatsPage() {
-        setSectionVisibility(false, true, false, false, false, false, false);
+        setSectionVisibility(false, true, false, false, false, false, false, false);
         sectionTitleLabel.setText("Statistics");
         sectionSubtitleLabel.setText("Track role distribution and system-level user activity.");
     }
 
     @FXML
     private void showCreatePage() {
-        setSectionVisibility(false, false, true, false, false, false, false);
+        setSectionVisibility(false, false, true, false, false, false, false, false);
         updateCreateSectionHeader();
     }
 
     @FXML
     private void showModulesPage() {
-        setSectionVisibility(false, false, false, true, false, false, false);
+        setSectionVisibility(false, false, false, true, false, false, false, false);
         sectionTitleLabel.setText("Modules");
         sectionSubtitleLabel.setText("Manage modules, courses, and content without leaving the admin dashboard.");
         loadModulesContent();
     }
 
     @FXML
+    private void showCourseStatisticsPage() {
+        setSectionVisibility(false, false, false, false, true, false, false, false);
+        sectionTitleLabel.setText("Statistiques cours");
+        sectionSubtitleLabel.setText("Analysez les vues, le temps passe et la performance de chaque cours et module.");
+        loadCourseStatisticsContent();
+        if (adminCourseStatisticsController != null) {
+            adminCourseStatisticsController.refreshStats();
+        }
+    }
+
+    @FXML
     private void showEvenementsPage() {
-        setSectionVisibility(false, false, false, false, true, false, false);
+        setSectionVisibility(false, false, false, false, false, true, false, false);
         sectionTitleLabel.setText("Evenements");
         sectionSubtitleLabel.setText("Manage the event module inside the current admin dashboard template.");
         loadEvenementsContent();
@@ -337,7 +355,7 @@ public class AdminDashboardController {
 
     @FXML
     private void showForumPage() {
-        setSectionVisibility(false, false, false, false, false, true, false);
+        setSectionVisibility(false, false, false, false, false, false, true, false);
         sectionTitleLabel.setText("Forums");
         sectionSubtitleLabel.setText("Integrated forum work from dev-ahmed adapted to the current admin dashboard.");
         loadForumContent();
@@ -345,7 +363,7 @@ public class AdminDashboardController {
 
     @FXML
     private void showMessagePage() {
-        setSectionVisibility(false, false, false, false, false, false, true);
+        setSectionVisibility(false, false, false, false, false, false, false, true);
         sectionTitleLabel.setText("Messages");
         sectionSubtitleLabel.setText("Integrated messaging work from dev-ahmed inside the current admin workspace.");
         loadMessageContent();
@@ -353,6 +371,10 @@ public class AdminDashboardController {
 
     @FXML
     private void refreshData() {
+        if (courseStatisticsSection != null && courseStatisticsSection.isVisible() && adminCourseStatisticsController != null) {
+            adminCourseStatisticsController.refreshStats();
+            return;
+        }
         loadDashboardData();
     }
 
@@ -978,6 +1000,7 @@ public class AdminDashboardController {
             boolean statsVisible,
             boolean createVisible,
             boolean modulesVisible,
+            boolean courseStatisticsVisible,
             boolean evenementsVisible,
             boolean forumVisible,
             boolean messageVisible
@@ -991,6 +1014,10 @@ public class AdminDashboardController {
         if (modulesSection != null) {
             modulesSection.setVisible(modulesVisible);
             modulesSection.setManaged(modulesVisible);
+        }
+        if (courseStatisticsSection != null) {
+            courseStatisticsSection.setVisible(courseStatisticsVisible);
+            courseStatisticsSection.setManaged(courseStatisticsVisible);
         }
         if (evenementsSection != null) {
             evenementsSection.setVisible(evenementsVisible);
@@ -1016,6 +1043,23 @@ public class AdminDashboardController {
             modulesContentPane.getChildren().setAll(content);
         } catch (IOException e) {
             showError("Modules load failed", e.getMessage());
+        }
+    }
+
+    private void loadCourseStatisticsContent() {
+        if (courseStatisticsContentPane == null) {
+            return;
+        }
+        if (!courseStatisticsContentPane.getChildren().isEmpty()) {
+            return;
+        }
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/admin-course-statistics.fxml"));
+            Node content = loader.load();
+            adminCourseStatisticsController = loader.getController();
+            courseStatisticsContentPane.getChildren().setAll(content);
+        } catch (IOException e) {
+            showError("Course statistics load failed", e.getMessage());
         }
     }
 
