@@ -102,6 +102,13 @@ public class MainLayoutEnseignantController {
         }
     }
 
+    public void showTeacherCourseStatistics() {
+        loadContent("/teacher-course-statistics.fxml");
+        if (sidebarController != null) {
+            sidebarController.setActiveButton("statistics");
+        }
+    }
+
     public void showTeacherCourseForm(Cours cours) {
         editingCourse = cours;
         loadContent("/teacher-course-form.fxml");

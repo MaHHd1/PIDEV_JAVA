@@ -27,6 +27,7 @@
     </VBox>
     <Button fx:id="overviewBtn" maxWidth="1.7976931348623157E308" onAction="#handleOverview" styleClass="sidebar-button" text="Vue d'ensemble" />
     <Button fx:id="coursesBtn" maxWidth="1.7976931348623157E308" onAction="#handleCourseManagement" styleClass="sidebar-button" text="Mes cours" />
+    <Button fx:id="statisticsBtn" maxWidth="1.7976931348623157E308" onAction="#handleStatistics" styleClass="sidebar-button" text="Statistiques" />
     <Button fx:id="teacherStudentsBtn" maxWidth="1.7976931348623157E308" onAction="#handleStudentProfiles" styleClass="sidebar-button" text="Mes etudiants" />
     <Button fx:id="profileBtn" maxWidth="1.7976931348623157E308" onAction="#handleProfileHub" styleClass="sidebar-button" text="Mon profil" />
     <Button fx:id="studentProfilesBtn" maxWidth="1.7976931348623157E308" onAction="#handleStudentProfilesHub" styleClass="sidebar-button" text="Profils etudiants" />

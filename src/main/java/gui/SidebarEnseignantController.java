@@ -23,6 +23,9 @@ public class SidebarEnseignantController {
     private Button teacherStudentsBtn;
 
     @FXML
+    private Button statisticsBtn;
+
+    @FXML
     private Button newCourseBtn;
 
     @FXML
@@ -97,6 +100,13 @@ public class SidebarEnseignantController {
     private void handleStudentProfiles() {
         if (mainController != null) {
             mainController.showTeacherStudents();
+        }
+    }
+
+    @FXML
+    private void handleStatistics() {
+        if (mainController != null) {
+            mainController.showTeacherCourseStatistics();
         }
     }
 
@@ -180,6 +190,7 @@ public class SidebarEnseignantController {
 
         Button activeBtn = switch (buttonId) {
             case "overview" -> overviewBtn;
+            case "statistics" -> statisticsBtn;
             case "students" -> teacherStudentsBtn;
             case "new_course" -> newCourseBtn;
             case "profile" -> profileBtn;
@@ -206,6 +217,9 @@ public class SidebarEnseignantController {
         }
         if (teacherStudentsBtn != null) {
             teacherStudentsBtn.getStyleClass().remove("sidebar-button-active");
+        }
+        if (statisticsBtn != null) {
+            statisticsBtn.getStyleClass().remove("sidebar-button-active");
         }
         if (newCourseBtn != null) {
             newCourseBtn.getStyleClass().remove("sidebar-button-active");
