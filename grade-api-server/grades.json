@@ -1,0 +1,21 @@
+[
+  {
+    "scoreId": 12,
+    "action": "CREATE",
+    "soumissionId": 12,
+    "studentId": "ETU26245",
+    "note": 5,
+    "noteSur": 20,
+    "pourcentage": 25,
+    "mention": "Insuffisant",
+    "commentaire": "13",
+    "statut": "corrige",
+    "dateCorrection": "2026-04-22T19:26:46.2518944",
+    "evaluation": {
+      "id": 27,
+      "titre": "plsql",
+      "type": "projet"
+    },
+    "syncedAt": "2026-04-22T18:26:46.285Z"
+  }
+]
