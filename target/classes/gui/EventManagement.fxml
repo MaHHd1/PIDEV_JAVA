@@ -3,35 +3,52 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.Insets?>
+<?import java.net.URL?>
 
-<VBox alignment="CENTER" spacing="20.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="gui.EventManagementController">
-    <padding>
-        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
-    </padding>
+<AnchorPane xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="gui.EventManagementController">
+    <stylesheets>
+        <URL value="@style.css" />
+    </stylesheets>
 
-    <Label text="Gestion des Événements" style="-font-size: 24px; -fx-font-weight: bold;" />
+    <VBox alignment="TOP_CENTER" spacing="20.0" styleClass="dashboard-content" AnchorPane.topAnchor="0.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0">
+        <padding>
+            <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+        </padding>
 
-    <GridPane hgap="10" vgap="10">
-        <Label text="Titre:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
-        <TextField fx:id="titreField" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+        <HBox alignment="CENTER" spacing="20">
+            <Label text="Gestion des Événements" styleClass="page-title" HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+            <Button text="Déconnexion" onAction="#handleLogout" styleClass="danger-button" />
+        </HBox>
 
-        <Label text="Lieu:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
-        <TextField fx:id="lieuField" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+        <HBox spacing="15" alignment="CENTER" styleClass="search-container">
+            <Label text="Rechercher:" styleClass="form-label" />
+            <TextField fx:id="searchField" promptText="Titre ou Lieu..." prefWidth="350" styleClass="input-field" />
+            <Region HBox.hgrow="ALWAYS" />
+            <HBox spacing="10" fx:id="adminActions">
+                <Button fx:id="btnAjouter" text="➕ Ajouter" onAction="#handleAjouter" styleClass="primary-button" />
+                <Button fx:id="btnModifier" text="✏️ Modifier" onAction="#handleModifier" styleClass="button" />
+                <Button fx:id="btnSupprimer" text="🗑️ Supprimer" onAction="#handleSupprimer" styleClass="danger-button" />
+            </HBox>
+            <HBox spacing="10" fx:id="userActions" managed="false" visible="false">
+                <Button fx:id="btnParticiper" text="🤝 Participer" onAction="#handleParticiper" styleClass="primary-button" />
+            </HBox>
+        </HBox>
 
-        <Label text="Type:" GridPane.columnIndex="0" GridPane.rowIndex="2" />
-        <TextField fx:id="typeField" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-    </GridPane>
+        <TableView fx:id="eventTable" VBox.vgrow="ALWAYS" styleClass="table-view">
+            <columns>
+                <TableColumn fx:id="colTitre" text="Titre" prefWidth="200" />
+                <TableColumn fx:id="colLieu" text="Lieu" prefWidth="150" />
+                <TableColumn fx:id="colType" text="Type" prefWidth="120" />
+                <TableColumn fx:id="colDateDebut" text="Date Début" prefWidth="130" />
+                <TableColumn fx:id="colDateFin" text="Date Fin" prefWidth="130" />
+            </columns>
+        </TableView>
 
-    <HBox spacing="10" alignment="CENTER">
-        <Button text="Ajouter" onAction="#handleAjouter" />
-        <Button text="Vider" onAction="#handleVider" />
-    </HBox>
-
-    <TableView fx:id="eventTable" VBox.vgrow="ALWAYS">
-        <columns>
-            <TableColumn fx:id="colTitre" text="Titre" prefWidth="150" />
-            <TableColumn fx:id="colLieu" text="Lieu" prefWidth="150" />
-            <TableColumn fx:id="colType" text="Type" prefWidth="100" />
-        </columns>
-    </TableView>
-</VBox>
+        <HBox spacing="15" alignment="CENTER" styleClass="padding-md">
+            <Button fx:id="btnParticipations" text="📋 Liste Participations" onAction="#handleVoirParticipations" styleClass="button" />
+            <Button fx:id="btnPDF" text="📊 Export PDF" onAction="#handleExportPDF" styleClass="button-success" />
+            <Button fx:id="btnStats" text="📈 Statistiques" onAction="#handleVoirStats" styleClass="button-warning" />
+            <Button fx:id="btnQR" text="📱 QR Code" onAction="#handleGenerateQR" styleClass="secondary-button" />
+        </HBox>
+    </VBox>
+</AnchorPane>

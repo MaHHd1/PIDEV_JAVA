@@ -13,10 +13,10 @@ public class TestFX extends Application {
     @Override
     public void start(Stage primaryStage) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/gui/EventManagement.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/gui/RoleSelection.fxml"));
             Parent root = loader.load();
             Scene scene = new Scene(root);
-            primaryStage.setTitle("Gestion des Événements");
+            primaryStage.setTitle("Système de Gestion des Événements");
             primaryStage.setScene(scene);
             primaryStage.show();
         } catch (IOException e) {

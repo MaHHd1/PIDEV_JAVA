@@ -1,8 +1,14 @@
-C:\Users\Mega-PC\Desktop\Project3A2\src\main\java\gui\AfficherPersonne.java
-C:\Users\Mega-PC\Desktop\Project3A2\src\main\java\main\TestFX.java
-C:\Users\Mega-PC\Desktop\Project3A2\src\main\java\services\IService.java
-C:\Users\Mega-PC\Desktop\Project3A2\src\main\java\utils\MyConnection.java
-C:\Users\Mega-PC\Desktop\Project3A2\src\main\java\gui\AjouterPersonne.java
-C:\Users\Mega-PC\Desktop\Project3A2\src\main\java\services\PersonService.java
-C:\Users\Mega-PC\Desktop\Project3A2\src\main\java\entities\Person.java
-C:\Users\Mega-PC\Desktop\Project3A2\src\main\java\main\TestJDBC.java
+C:\Users\msi\Desktop\esprit 3eme\pi java\WorkshopJAVAFX-main\src\main\java\entities\Evenement.java
+C:\Users\msi\Desktop\esprit 3eme\pi java\WorkshopJAVAFX-main\src\main\java\entities\ParticipationEvenement.java
+C:\Users\msi\Desktop\esprit 3eme\pi java\WorkshopJAVAFX-main\src\main\java\gui\EventManagementController.java
+C:\Users\msi\Desktop\esprit 3eme\pi java\WorkshopJAVAFX-main\src\main\java\gui\ParticipationManagementController.java
+C:\Users\msi\Desktop\esprit 3eme\pi java\WorkshopJAVAFX-main\src\main\java\gui\RoleSelectionController.java
+C:\Users\msi\Desktop\esprit 3eme\pi java\WorkshopJAVAFX-main\src\main\java\main\Main.java
+C:\Users\msi\Desktop\esprit 3eme\pi java\WorkshopJAVAFX-main\src\main\java\main\TestFX.java
+C:\Users\msi\Desktop\esprit 3eme\pi java\WorkshopJAVAFX-main\src\main\java\main\TestJDBC.java
+C:\Users\msi\Desktop\esprit 3eme\pi java\WorkshopJAVAFX-main\src\main\java\module-info.java
+C:\Users\msi\Desktop\esprit 3eme\pi java\WorkshopJAVAFX-main\src\main\java\services\EvenementService.java
+C:\Users\msi\Desktop\esprit 3eme\pi java\WorkshopJAVAFX-main\src\main\java\services\IService.java
+C:\Users\msi\Desktop\esprit 3eme\pi java\WorkshopJAVAFX-main\src\main\java\services\ParticipationEvenementService.java
+C:\Users\msi\Desktop\esprit 3eme\pi java\WorkshopJAVAFX-main\src\main\java\utils\MyConnection.java
+C:\Users\msi\Desktop\esprit 3eme\pi java\WorkshopJAVAFX-main\src\main\java\utils\UserSession.java

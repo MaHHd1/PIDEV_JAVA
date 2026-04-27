@@ -99,4 +99,15 @@ public class EvenementService implements IService<Evenement> {
         }
         return evenements;
     }
+    public java.util.Map<String, Integer> getEventCountByType() throws SQLException {
+        String SQL = "SELECT type_evenement, COUNT(*) as count FROM evenement GROUP BY type_evenement";
+        java.util.Map<String, Integer> stats = new java.util.HashMap<>();
+        try (Statement stm = conn.createStatement();
+             ResultSet rs = stm.executeQuery(SQL)) {
+            while (rs.next()) {
+                stats.put(rs.getString("type_evenement"), rs.getInt("count"));
+            }
+        }
+        return stats;
+    }
 }

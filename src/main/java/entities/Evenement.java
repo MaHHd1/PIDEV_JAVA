@@ -17,6 +17,17 @@ public class Evenement {
 
     public Evenement() {}
 
+    public Evenement(String titre, String lieu, String type_evenement, LocalDateTime date_debut, LocalDateTime date_fin) {
+        this.titre = titre;
+        this.lieu = lieu;
+        this.type_evenement = type_evenement;
+        this.date_debut = date_debut;
+        this.date_fin = date_fin;
+        this.description = "";
+        this.statut = "En attente";
+        this.visibilite = "Public";
+    }
+
     public Evenement(int id, int createur_id, String titre, String description, String type_evenement, LocalDateTime date_debut, LocalDateTime date_fin, String lieu, int capacite_max, String statut, String visibilite) {
         this.id = id;
         this.createur_id = createur_id;
