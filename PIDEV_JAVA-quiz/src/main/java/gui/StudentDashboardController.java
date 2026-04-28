@@ -29,6 +29,11 @@ import javafx.scene.layout.VBox;
 import services.ContenuService;
 import services.CoursService;
 import utils.SceneManager;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.util.Duration;
+import services.NotificationService;
+
 import utils.UserSession;
 
 import java.io.IOException;
@@ -56,6 +61,7 @@ public class StudentDashboardController {
     @FXML private Label currentUserNameLabel;
     @FXML private Label currentUserRoleLabel;
     @FXML private MenuButton profileMenuButton;
+    @FXML private MenuButton notificationMenuButton;
 
     @FXML private VBox overviewSection;
     @FXML private VBox myCoursesSection;
@@ -170,6 +176,11 @@ public class StudentDashboardController {
         configureAllCoursesTable();
         configureContenusTable();
         refreshStudentData();
+        
+        if (notificationMenuButton != null) {
+            utils.NotificationUIHelper.setupNotificationMenu(notificationMenuButton);
+        }
+        
         showOverviewPage();
     }
 

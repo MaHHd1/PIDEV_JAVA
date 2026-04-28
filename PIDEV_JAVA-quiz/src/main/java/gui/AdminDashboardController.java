@@ -72,6 +72,9 @@ public class AdminDashboardController {
     private MenuButton profileMenuButton;
 
     @FXML
+    private MenuButton notificationMenuButton;
+
+    @FXML
     private Label totalUsersLabel;
 
     @FXML
@@ -729,6 +732,11 @@ public class AdminDashboardController {
         configureModuleTable();
         configureCoursTable();
         configureContenuTable();
+        
+        if (notificationMenuButton != null) {
+            utils.NotificationUIHelper.setupNotificationMenu(notificationMenuButton);
+        }
+
         showUsersPage();
         loadDashboardData();
         loadModulesData();

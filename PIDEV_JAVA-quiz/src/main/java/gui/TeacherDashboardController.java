@@ -62,6 +62,7 @@ public class TeacherDashboardController {
     @FXML private Label currentUserNameLabel;
     @FXML private Label currentUserRoleLabel;
     @FXML private MenuButton profileMenuButton;
+    @FXML private MenuButton notificationMenuButton;
     @FXML private VBox overviewSection;
     @FXML private VBox coursesSection;
     @FXML private VBox coursesBrowseSection;
@@ -249,6 +250,11 @@ public class TeacherDashboardController {
         configureCourseForm();
         loadModules();
         refreshTeacherData();
+
+        if (notificationMenuButton != null) {
+            utils.NotificationUIHelper.setupNotificationMenu(notificationMenuButton);
+        }
+
         showOverviewPage();
     }
 
