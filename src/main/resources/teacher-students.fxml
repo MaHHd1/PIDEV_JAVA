@@ -29,11 +29,13 @@
     <VBox spacing="10.0" styleClass="panel-card" VBox.vgrow="ALWAYS">
         <TableView fx:id="studentsTable" VBox.vgrow="ALWAYS">
             <columns>
-                <TableColumn fx:id="matriculeColumn" prefWidth="130.0" text="Matricule" />
-                <TableColumn fx:id="nameColumn" prefWidth="220.0" text="Nom complet" />
-                <TableColumn fx:id="emailColumn" prefWidth="220.0" text="Email" />
-                <TableColumn fx:id="levelColumn" prefWidth="130.0" text="Niveau" />
-                <TableColumn fx:id="specialiteColumn" prefWidth="180.0" text="Specialisation" />
+                <TableColumn fx:id="matriculeColumn" prefWidth="120.0" text="Matricule" />
+                <TableColumn fx:id="nameColumn" prefWidth="200.0" text="Nom complet" />
+                <TableColumn fx:id="emailColumn" prefWidth="210.0" text="Email" />
+                <TableColumn fx:id="levelColumn" prefWidth="120.0" text="Niveau" />
+                <TableColumn fx:id="specialiteColumn" prefWidth="170.0" text="Specialisation" />
+                <TableColumn fx:id="timeSpentColumn" prefWidth="130.0" text="Temps passe" />
+                <TableColumn fx:id="lastLoginColumn" prefWidth="170.0" text="Derniere connexion" />
             </columns>
         </TableView>
     </VBox>

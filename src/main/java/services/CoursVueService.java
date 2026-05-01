@@ -12,8 +12,12 @@ import java.util.Map;
 
 public class CoursVueService {
 
-    private Connection getConnection() {
-        return DBConnection.getInstance().getConnection();
+    private Connection getConnection() throws SQLException {
+        Connection connection = DBConnection.getInstance().getConnection();
+        if (connection == null) {
+            throw new SQLException("Database connection is not available");
+        }
+        return connection;
     }
 
     public void recordUniqueView(long studentId, int courseId) throws SQLException {

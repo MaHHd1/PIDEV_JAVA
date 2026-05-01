@@ -33,7 +33,7 @@
                 </VBox>
                 <HBox alignment="CENTER_LEFT" spacing="12.0" styleClass="panel-card">
                     <children>
-                        <Label styleClass="panel-title" text="Parcours admin" />
+                        <Label fx:id="managementModeLabel" styleClass="panel-title" text="Parcours admin" />
                         <Label fx:id="navigationStatusLabel" text="Selectionnez un module pour afficher ses cours, puis un cours pour afficher ses contenus." wrapText="true" HBox.hgrow="ALWAYS" />
                     </children>
                 </HBox>
@@ -136,10 +136,11 @@
                                         </HBox>
                                         <TableView fx:id="courseTable" prefHeight="320.0">
                                             <columns>
-                                                <TableColumn fx:id="courseCodeColumn" prefWidth="150.0" text="Code" />
-                                                <TableColumn fx:id="courseTitleColumn" prefWidth="300.0" text="Titre" />
-                                                <TableColumn fx:id="courseModuleColumn" prefWidth="230.0" text="Module" />
-                                                <TableColumn fx:id="courseStatusColumn" prefWidth="140.0" text="Statut" />
+                                                <TableColumn fx:id="courseCodeColumn" prefWidth="140.0" text="Code" />
+                                                <TableColumn fx:id="courseTitleColumn" prefWidth="280.0" text="Titre" />
+                                                <TableColumn fx:id="courseModuleColumn" prefWidth="220.0" text="Module" />
+                                                <TableColumn fx:id="courseStatusColumn" prefWidth="120.0" text="Statut" />
+                                                <TableColumn fx:id="courseViewsColumn" prefWidth="100.0" text="Vues" />
                                             </columns>
                                         </TableView>
                                     </children>

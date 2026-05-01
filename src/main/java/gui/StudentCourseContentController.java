@@ -6,6 +6,7 @@ import entities.Etudiant;
 import entities.Utilisateur;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
@@ -20,11 +21,15 @@ import services.CoursService;
 import java.awt.Desktop;
 import java.io.File;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Locale;
 
 public class StudentCourseContentController implements MainControllerAwareEtudiant {
@@ -306,25 +311,40 @@ public class StudentCourseContentController implements MainControllerAwareEtudia
     private void openContent(Contenu contenu, String requestedType) {
         String target = resolveTargetForType(contenu, requestedType);
         if (target == null || target.isBlank()) {
+            showOpenError("Aucune ressource n'est associee a ce contenu.");
+            return;
+        }
+
+        if (!Desktop.isDesktopSupported()) {
+            showOpenError("L'ouverture automatique n'est pas disponible sur cette machine.");
             return;
         }
 
         try {
-            if (!Desktop.isDesktopSupported()) {
+            Desktop desktop = Desktop.getDesktop();
+            if (isWebTarget(target)) {
+                if (!desktop.isSupported(Desktop.Action.BROWSE)) {
+                    showOpenError("Le navigateur par defaut n'est pas disponible sur cette machine.");
+                    return;
+                }
+                desktop.browse(URI.create(target.trim()));
                 return;
             }
-            Desktop desktop = Desktop.getDesktop();
-            if (target.startsWith("http://") || target.startsWith("https://")) {
-                desktop.browse(URI.create(target));
-            } else {
-                File file = new File(target);
-                if (file.exists()) {
-                    desktop.open(file);
-                } else {
-                    desktop.browse(URI.create(target));
-                }
+
+            Path resourcePath = resolveResourcePath(target);
+            if (resourcePath == null) {
+                showOpenError("Fichier introuvable: " + target);
+                return;
             }
-        } catch (Exception ignored) {
+
+            if (!desktop.isSupported(Desktop.Action.OPEN)) {
+                showOpenError("L'ouverture de fichiers n'est pas disponible sur cette machine.");
+                return;
+            }
+
+            desktop.open(resourcePath.toFile());
+        } catch (Exception e) {
+            showOpenError("Impossible d'ouvrir la ressource: " + e.getMessage());
         }
     }
 
@@ -367,6 +387,112 @@ public class StudentCourseContentController implements MainControllerAwareEtudia
         }
 
         return null;
+    }
+
+    private boolean isWebTarget(String target) {
+        String normalized = target == null ? "" : target.trim().toLowerCase(Locale.ROOT);
+        return normalized.startsWith("http://") || normalized.startsWith("https://");
+    }
+
+    private Path resolveResourcePath(String target) {
+        if (target == null || target.isBlank()) {
+            return null;
+        }
+
+        String normalizedTarget = target.trim();
+        if (normalizedTarget.toLowerCase(Locale.ROOT).startsWith("file:/")) {
+            try {
+                Path fileUriPath = Paths.get(URI.create(normalizedTarget)).normalize();
+                if (Files.exists(fileUriPath)) {
+                    return fileUriPath;
+                }
+            } catch (Exception ignored) {
+            }
+        }
+
+        Path path = Paths.get(normalizedTarget.replace("\\", "/"));
+        for (Path candidate : buildResourceCandidates(path)) {
+            if (Files.exists(candidate) && Files.isRegularFile(candidate)) {
+                return candidate.normalize();
+            }
+        }
+
+        return null;
+    }
+
+    private List<Path> buildResourceCandidates(Path path) {
+        LinkedHashSet<Path> candidates = new LinkedHashSet<>();
+
+        if (path.isAbsolute()) {
+            candidates.add(path.normalize());
+        }
+
+        String filename = path.getFileName() != null ? path.getFileName().toString() : "";
+        Path trimmedUploadsPath = trimLeadingUploads(path);
+
+        for (Path baseDir : collectLookupDirectories()) {
+            candidates.add(baseDir.resolve(path).normalize());
+
+            if (trimmedUploadsPath != null) {
+                candidates.add(baseDir.resolve(trimmedUploadsPath).normalize());
+            }
+
+            if (!filename.isBlank()) {
+                candidates.add(baseDir.resolve(filename).normalize());
+                candidates.add(baseDir.resolve("uploads").resolve(filename).normalize());
+                candidates.add(baseDir.resolve("public").resolve("uploads").resolve(filename).normalize());
+                candidates.add(baseDir.resolve("src").resolve("main").resolve("resources").resolve("uploads").resolve(filename).normalize());
+                candidates.add(baseDir.resolve("target").resolve("classes").resolve("uploads").resolve(filename).normalize());
+            }
+        }
+
+        return List.copyOf(candidates);
+    }
+
+    private List<Path> collectLookupDirectories() {
+        LinkedHashSet<Path> directories = new LinkedHashSet<>();
+        addDirectoryAndParents(directories, Paths.get("").toAbsolutePath().normalize(), 6);
+        addDirectoryAndParents(directories, resolveClassLocationDirectory(), 6);
+        return List.copyOf(directories);
+    }
+
+    private void addDirectoryAndParents(LinkedHashSet<Path> directories, Path start, int maxLevels) {
+        Path current = start;
+        int level = 0;
+        while (current != null && level < maxLevels) {
+            directories.add(current.normalize());
+            current = current.getParent();
+            level++;
+        }
+    }
+
+    private Path resolveClassLocationDirectory() {
+        try {
+            URI location = StudentCourseContentController.class.getProtectionDomain().getCodeSource().getLocation().toURI();
+            Path classLocation = Paths.get(location).toAbsolutePath().normalize();
+            return Files.isDirectory(classLocation) ? classLocation : classLocation.getParent();
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private Path trimLeadingUploads(Path path) {
+        if (path == null || path.getNameCount() < 2) {
+            return null;
+        }
+        String firstSegment = path.getName(0).toString();
+        if (!"uploads".equalsIgnoreCase(firstSegment)) {
+            return null;
+        }
+        return path.subpath(1, path.getNameCount());
+    }
+
+    private void showOpenError(String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Ouverture impossible");
+        alert.setHeaderText("La ressource n'a pas pu etre ouverte");
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 
     private boolean isActionableElement(Contenu contenu, String typeValue) {

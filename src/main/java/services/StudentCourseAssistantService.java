@@ -65,9 +65,9 @@ public class StudentCourseAssistantService {
             return "Aucun cours selectionne pour l'assistant.";
         }
 
-        String apiKey = AppSecrets.get("groq.apiKey");
+        String apiKey = resolveGroqApiKey();
         if (apiKey.isBlank()) {
-            throw new IOException("Groq API key is missing. Configure groq.apiKey in app-secrets.properties or environment variables.");
+            throw new IOException("Groq API key is missing. Configure groq.apiKey or groq.api.key in app-secrets.properties or environment variables.");
         }
 
         Cours freshCourse = coursService.getById(selectedCourse.getId());
@@ -75,8 +75,8 @@ public class StudentCourseAssistantService {
             return "Le cours selectionne est introuvable.";
         }
 
-        String endpoint = AppSecrets.get("groq.endpoint");
-        String model = AppSecrets.get("groq.model");
+        String endpoint = defaultIfBlank(AppSecrets.get("groq.endpoint"), "https://api.groq.com/openai/v1/chat/completions");
+        String model = defaultIfBlank(AppSecrets.get("groq.model"), "llama-3.3-70b-versatile");
         String context = buildCourseContext(freshCourse);
         String payload = buildPayload(model, question, freshCourse, context);
 
@@ -96,6 +96,14 @@ public class StudentCourseAssistantService {
         }
 
         return extractAssistantMessage(response.body());
+    }
+
+    private String resolveGroqApiKey() {
+        String apiKey = AppSecrets.get("groq.apiKey");
+        if (!apiKey.isBlank()) {
+            return apiKey;
+        }
+        return AppSecrets.get("groq.api.key");
     }
 
     private Optional<String> tryLocalReply(String question, Cours selectedCourse) {
@@ -437,6 +445,10 @@ public class StudentCourseAssistantService {
 
     private String nullToDash(String value) {
         return value == null || value.isBlank() ? "-" : value;
+    }
+
+    private String defaultIfBlank(String value, String fallback) {
+        return value == null || value.isBlank() ? fallback : value;
     }
 
     private String escapeJson(String value) {

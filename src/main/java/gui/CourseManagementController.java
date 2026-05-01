@@ -21,11 +21,14 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import services.ContenuService;
+import services.CourseContentNotificationService;
 import services.CoursService;
+import services.CoursVueService;
 import services.ModuleService;
 import utils.UserSession;
 
@@ -39,6 +42,7 @@ import java.nio.file.StandardCopyOption;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -54,6 +58,8 @@ public class CourseManagementController implements MainControllerAware {
     private Tab coursesTab;
     @FXML
     private Tab contentsTab;
+    @FXML
+    private Label managementModeLabel;
     @FXML
     private Label navigationStatusLabel;
     @FXML
@@ -118,6 +124,8 @@ public class CourseManagementController implements MainControllerAware {
     private TableColumn<Cours, String> courseModuleColumn;
     @FXML
     private TableColumn<Cours, String> courseStatusColumn;
+    @FXML
+    private TableColumn<Cours, Number> courseViewsColumn;
     @FXML
     private TextField courseCodeField;
     @FXML
@@ -214,7 +222,9 @@ public class CourseManagementController implements MainControllerAware {
 
     private final ModuleService moduleService = new ModuleService();
     private final CoursService coursService = new CoursService();
+    private final CoursVueService coursVueService = new CoursVueService();
     private final ContenuService contenuService = new ContenuService();
+    private final CourseContentNotificationService contentNotificationService = new CourseContentNotificationService();
 
     private final ModuleController moduleFormHelper = new ModuleController();
     private final CoursController coursFormHelper = new CoursController();
@@ -225,6 +235,7 @@ public class CourseManagementController implements MainControllerAware {
     private final ObservableList<Contenu> contents = FXCollections.observableArrayList();
     private final ObservableList<Cours> filteredCourses = FXCollections.observableArrayList();
     private final ObservableList<Contenu> filteredContents = FXCollections.observableArrayList();
+    private final Map<Integer, Integer> courseViewCounts = new HashMap<>();
 
     private Module editingModule;
     private Cours editingCours;
@@ -269,6 +280,14 @@ public class CourseManagementController implements MainControllerAware {
     }
 
     private void configureRoleMode() {
+        if (managementModeLabel != null) {
+            managementModeLabel.setText(moduleReadOnly ? "Parcours enseignant" : "Parcours admin");
+        }
+        if (navigationStatusLabel != null) {
+            navigationStatusLabel.setText(moduleReadOnly
+                    ? "Les modules sont geres par l'administration. Selectionnez un module pour afficher vos cours, puis un cours pour gerer ses contenus."
+                    : "Selectionnez un module pour afficher ses cours, puis un cours pour afficher ses contenus.");
+        }
         if (!moduleReadOnly) {
             return;
         }
@@ -283,6 +302,9 @@ public class CourseManagementController implements MainControllerAware {
         if (moduleDeleteButton != null) {
             moduleDeleteButton.setVisible(false);
             moduleDeleteButton.setManaged(false);
+        }
+        if (moduleOpenCoursesButton != null) {
+            moduleOpenCoursesButton.setText("Voir mes cours");
         }
         hideModuleForm();
     }
@@ -310,6 +332,7 @@ public class CourseManagementController implements MainControllerAware {
                 cell.getValue().getModule() != null ? cell.getValue().getModule().getTitreModule() : "-"
         ));
         courseStatusColumn.setCellValueFactory(new PropertyValueFactory<>("statut"));
+        courseViewsColumn.setCellValueFactory(cell -> new SimpleIntegerProperty(courseViewCount(cell.getValue())));
         courseTable.setItems(filteredCourses);
         courseTable.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
             if (syncingCourseSelection) {
@@ -450,6 +473,7 @@ public class CourseManagementController implements MainControllerAware {
                 loadedCourses = coursService.getAll();
             }
             courses.setAll(loadedCourses);
+            reloadCourseViewCounts();
             contentCourseCombo.setItems(FXCollections.observableArrayList(courses));
             if (selectedCours != null && selectedCours.getId() != null) {
                 selectedCours = courses.stream()
@@ -461,6 +485,36 @@ public class CourseManagementController implements MainControllerAware {
         } catch (SQLException e) {
             showError("Chargement cours impossible: " + e.getMessage());
         }
+    }
+
+    private void reloadCourseViewCounts() {
+        courseViewCounts.clear();
+        List<Integer> courseIds = courses.stream()
+                .map(Cours::getId)
+                .filter(Objects::nonNull)
+                .toList();
+        if (courseIds.isEmpty()) {
+            if (courseTable != null) {
+                courseTable.refresh();
+            }
+            return;
+        }
+
+        try {
+            courseViewCounts.putAll(coursVueService.getViewCountsByCourseIds(courseIds));
+        } catch (SQLException ignored) {
+        }
+
+        if (courseTable != null) {
+            courseTable.refresh();
+        }
+    }
+
+    private int courseViewCount(Cours cours) {
+        if (cours == null || cours.getId() == null) {
+            return 0;
+        }
+        return courseViewCounts.getOrDefault(cours.getId(), 0);
     }
 
     private void loadContents() {
@@ -713,26 +767,87 @@ public class CourseManagementController implements MainControllerAware {
                     contentLinkField,
                     contentQuizField
             );
+            CourseContentNotificationService.NotificationDispatchResult notificationResult =
+                    CourseContentNotificationService.NotificationDispatchResult.none();
             if (editingContenu == null) {
                 contenuService.create(contenu);
-                contentStatusLabel.setText(fileWarnings.isEmpty()
-                        ? "Contenu cree avec succes."
-                        : "Contenu cree avec succes. Certains fichiers sont restes a leur emplacement d'origine.");
+                notificationResult = notifyStudentsForNewContent(contenu);
+                contentStatusLabel.setText(buildCreatedContentMessage(fileWarnings, notificationResult));
             } else {
                 contenuService.update(contenu);
                 contentStatusLabel.setText(fileWarnings.isEmpty()
                         ? "Contenu mis a jour."
                         : "Contenu mis a jour. Certains fichiers sont restes a leur emplacement d'origine.");
             }
-            if (!fileWarnings.isEmpty()) {
-                showWarning(String.join("\n", fileWarnings));
-            }
+            showContentWarnings(fileWarnings, notificationResult);
             selectedCours = contenu.getCours();
             loadContents();
             hideContentForm();
             resetContentForm();
         } catch (SQLException | IOException e) {
             showError("Enregistrement contenu impossible: " + e.getMessage());
+        }
+    }
+
+    private CourseContentNotificationService.NotificationDispatchResult notifyStudentsForNewContent(Contenu contenu) {
+        try {
+            return contentNotificationService.notifyStudentsForNewContent(contenu, UserSession.getCurrentUser());
+        } catch (SQLException e) {
+            return CourseContentNotificationService.NotificationDispatchResult.failed(0, 0, e.getMessage());
+        }
+    }
+
+    private String buildCreatedContentMessage(
+            List<String> fileWarnings,
+            CourseContentNotificationService.NotificationDispatchResult notificationResult
+    ) {
+        StringBuilder message = new StringBuilder("Contenu cree avec succes.");
+        if (notificationResult.hasFailure()) {
+            if (notificationResult.getDeliveredCount() > 0) {
+                message.append(" ")
+                        .append(notificationResult.getDeliveredCount())
+                        .append("/")
+                        .append(notificationResult.getRecipientCount())
+                        .append(" email(s) ont ete envoyes.");
+            } else {
+                message.append(" Aucun email n'a ete envoye.");
+            }
+        } else if (notificationResult.hasRecipients()) {
+            message.append(" ")
+                    .append(notificationResult.getDeliveredCount())
+                    .append(notificationResult.getDeliveredCount() > 1 ? " emails ont ete envoyes." : " email a ete envoye.");
+        } else {
+            message.append(" Aucun etudiant inscrit a notifier.");
+        }
+        if (!fileWarnings.isEmpty()) {
+            message.append(" Certains fichiers sont restes a leur emplacement d'origine.");
+        }
+        return message.toString();
+    }
+
+    private void showContentWarnings(
+            List<String> fileWarnings,
+            CourseContentNotificationService.NotificationDispatchResult notificationResult
+    ) {
+        List<String> warnings = new ArrayList<>(fileWarnings);
+        if (notificationResult.hasFailure()) {
+            StringBuilder builder = new StringBuilder("Le contenu a ete cree, mais l'envoi des emails a echoue");
+            if (notificationResult.getRecipientCount() > 0) {
+                builder.append(" (")
+                        .append(notificationResult.getDeliveredCount())
+                        .append("/")
+                        .append(notificationResult.getRecipientCount())
+                        .append(" envoyes)");
+            }
+            if (!notificationResult.getErrorMessage().isBlank()) {
+                builder.append(": ").append(notificationResult.getErrorMessage());
+            } else {
+                builder.append(".");
+            }
+            warnings.add(builder.toString());
+        }
+        if (!warnings.isEmpty()) {
+            showWarning(String.join("\n", warnings));
         }
     }
 
@@ -1201,15 +1316,15 @@ public class CourseManagementController implements MainControllerAware {
         }
 
         if (selectedModule == null) {
-            courseFilterLabel.setText("Cours de tous les modules.");
+            courseFilterLabel.setText(moduleReadOnly ? "Vos cours sur tous les modules." : "Cours de tous les modules.");
             navigationStatusLabel.setText(moduleReadOnly
-                    ? "Selectionnez un module pour afficher vos cours, puis un cours pour afficher ses contenus."
+                    ? "Les modules sont geres par l'administration. Selectionnez un module pour afficher vos cours, puis un cours pour gerer ses contenus."
                     : "Selectionnez un module pour afficher ses cours, puis un cours pour afficher ses contenus.");
         } else {
-            courseFilterLabel.setText("Cours du module: " + selectedModule.getTitreModule());
+            courseFilterLabel.setText((moduleReadOnly ? "Vos cours du module: " : "Cours du module: ") + selectedModule.getTitreModule());
             navigationStatusLabel.setText("Module actif: " + selectedModule.getTitreModule()
                     + (moduleReadOnly
-                    ? ". Vous pouvez creer et modifier vos cours et contenus."
+                    ? ". Vous pouvez gerer vos cours et leurs contenus."
                     : ". Selectionnez un cours pour afficher ses contenus."));
         }
 
@@ -1249,7 +1364,7 @@ public class CourseManagementController implements MainControllerAware {
             contentFilterLabel.setText("Contenus de tous les cours.");
         } else {
             contentFilterLabel.setText("Contenus du cours: " + selectedCours.getTitre());
-            navigationStatusLabel.setText("Cours actif: " + selectedCours.getTitre() + ". Vous pouvez maintenant gerer ses contenus.");
+            navigationStatusLabel.setText("Cours actif: " + selectedCours.getTitre() + ". Vous pouvez maintenant gerer les contenus de ce cours.");
         }
     }
 
