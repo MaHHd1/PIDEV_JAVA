@@ -40,13 +40,18 @@ public final class AppSecrets {
 
     private static Properties loadProperties() {
         Properties properties = new Properties();
-        try (InputStream inputStream = AppSecrets.class.getResourceAsStream("/app-secrets.properties")) {
+        loadFromResource(properties, "/app-secrets.properties");
+        loadFromResource(properties, "/config.properties");
+        return properties;
+    }
+
+    private static void loadFromResource(Properties properties, String resourcePath) {
+        try (InputStream inputStream = AppSecrets.class.getResourceAsStream(resourcePath)) {
             if (inputStream != null) {
                 properties.load(inputStream);
             }
         } catch (IOException e) {
-            System.err.println("Unable to load app secrets: " + e.getMessage());
+            System.err.println("Unable to load configuration from " + resourcePath + ": " + e.getMessage());
         }
-        return properties;
     }
 }
