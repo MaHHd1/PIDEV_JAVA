@@ -10,15 +10,13 @@ import javafx.stage.Stage;
 import services.ParticipationEvenementService;
 import services.WeatherService;
 import utils.GroqService;
+import entities.Etudiant;
+import entities.Utilisateur;
+import utils.UserSession;
 import java.time.LocalDateTime;
 
 public class ParticipationFormController {
     @FXML private Label lblEventInfo;
-    @FXML private TextField nomField;
-    @FXML private TextField prenomField;
-    @FXML private TextField telField;
-    @FXML private TextField emailField;
-    @FXML private TextField anneeField;
     @FXML private TextArea descriptionField;
     @FXML private Label weatherLabel;
 
@@ -31,6 +29,7 @@ public class ParticipationFormController {
         this.selectedEvent = event;
         lblEventInfo.setText("Événement: " + event.getTitre() + " à " + event.getLieu());
         updateWeather();
+        handleAI(null); // Auto-generate AI description
     }
 
     private void updateWeather() {
@@ -44,24 +43,32 @@ public class ParticipationFormController {
 
     @FXML
     void handleAI(ActionEvent event) {
-        String nom = nomField.getText();
-        String prenom = prenomField.getText();
-        String annee = anneeField.getText();
-
-        if (nom.isEmpty() || prenom.isEmpty()) {
-            showAlert("Info", "Veuillez saisir votre nom et prénom pour personnaliser la description.");
+        Utilisateur user = UserSession.getCurrentUser();
+        if (user == null) {
+            descriptionField.setText("Connectez-vous pour générer une motivation personnalisée.");
             return;
         }
 
-        descriptionField.setText("Génération en cours...");
+        String nom = user.getNom();
+        String prenom = user.getPrenom();
+        String annee = (user instanceof Etudiant) ? ((Etudiant) user).getNiveauEtude() : "";
+
+        descriptionField.setText("Génération de votre motivation personnalisée...");
         new Thread(() -> {
             try {
-                String description = groqService.generateDescription(nom, prenom, annee, selectedEvent.getTitre(), selectedEvent.getType_evenement());
+                String description = GroqService.generateDescription(nom, prenom, annee, selectedEvent.getTitre(), selectedEvent.getType_evenement());
                 Platform.runLater(() -> descriptionField.setText(description));
             } catch (Exception e) {
                 Platform.runLater(() -> {
-                    descriptionField.setText("Erreur lors de la génération IA.");
-                    showAlert("Erreur IA", e.getMessage());
+                    String errorMsg = e.getMessage();
+                    if (errorMsg != null && errorMsg.contains("401")) {
+                        descriptionField.setText("Erreur : Clé API invalide ou expirée. Veuillez vérifier votre configuration.");
+                    } else if (errorMsg != null && errorMsg.contains("429")) {
+                        descriptionField.setText("Erreur : Trop de requêtes (Rate limit). Réessayez dans quelques instants.");
+                    } else {
+                        descriptionField.setText("L'IA est momentanément indisponible. Erreur : " + (errorMsg != null ? errorMsg : "Inconnue"));
+                    }
+                    System.err.println("Erreur IA: " + errorMsg);
                 });
             }
         }).start();
@@ -69,50 +76,54 @@ public class ParticipationFormController {
 
     @FXML
     void handleSave(ActionEvent event) {
-        if (nomField.getText().isEmpty() || prenomField.getText().isEmpty()) {
-            showAlert("Erreur", "Veuillez remplir les champs obligatoires.");
+        Utilisateur user = UserSession.getCurrentUser();
+        if (user == null) {
+            showAlert("Erreur", "Vous devez être connecté pour participer.");
             return;
         }
 
         ParticipationEvenement p = new ParticipationEvenement();
-        p.setNom(nomField.getText());
-        p.setPrenom(prenomField.getText());
-        p.setTelephone(telField.getText());
-        p.setEmail(emailField.getText());
-        p.setAnneeScolaire(anneeField.getText());
+        p.setNom(user.getNom());
+        p.setPrenom(user.getPrenom());
+        p.setEmail(user.getEmail());
+        
+        if (user instanceof Etudiant) {
+            p.setTelephone(((Etudiant) user).getTelephone());
+            p.setAnneeScolaire(((Etudiant) user).getNiveauEtude());
+        } else {
+            p.setTelephone("-");
+            p.setAnneeScolaire("-");
+        }
+
         p.setDescriptionParticipant(descriptionField.getText());
         p.setEvenement_id(selectedEvent.getId());
-        if (utils.UserSession.getCurrentUser() != null) {
-            p.setUtilisateur_id(utils.UserSession.getCurrentUser().getId().intValue());
-        } else {
-            p.setUtilisateur_id(1); // fallback
-        }
+        p.setUtilisateur_id(user.getId().intValue());
         p.setStatut("Confirmé");
         p.setDate_inscription(LocalDateTime.now());
 
         try {
             ps.create(p);
             
-            // Alerte spéciale météo
-            if (weatherLabel.getText().toLowerCase().contains("pluie") || weatherLabel.getText().toLowerCase().contains("rain")) {
-                showAlert("Inscription Confirmée", "Votre inscription est enregistrée ! ⚠️ Attention: De la pluie est prévue pour cet événement, n'oubliez pas votre parapluie !");
+            String weather = weatherLabel.getText().toLowerCase();
+            if (weather.contains("pluie") || weather.contains("rain") || weather.contains("orage") || weather.contains("storm")) {
+                showAlert("Inscription Confirmée", "Votre inscription est enregistrée ! ⚠️ Conseil météo : Mauvais temps prévu, n'oubliez pas vos vêtements adaptés !");
             } else {
-                showAlert("Succès", "Votre participation a été enregistrée avec succès !");
+                showAlert("Succès", "Votre participation à '" + selectedEvent.getTitre() + "' a été enregistrée !");
             }
 
-            ((Stage) nomField.getScene().getWindow()).close();
+            handleCancel(null);
         } catch (Exception e) {
-            if (e.getMessage() != null && e.getMessage().contains("Duplicate entry") && e.getMessage().contains("unique_participation")) {
+            if (e.getMessage() != null && (e.getMessage().contains("Duplicate entry") || e.getMessage().contains("unique_participation"))) {
                 showAlert("Déjà inscrit", "Vous êtes déjà inscrit à cet événement !");
             } else {
-                showAlert("Erreur", "Une erreur est survenue lors de l'enregistrement : " + e.getMessage());
+                showAlert("Erreur", "Impossible de s'inscrire : " + e.getMessage());
             }
         }
     }
 
     @FXML
     void handleCancel(ActionEvent event) {
-        ((Stage) nomField.getScene().getWindow()).close();
+        ((Stage) descriptionField.getScene().getWindow()).close();
     }
 
     private void showAlert(String title, String content) {

@@ -53,7 +53,29 @@ public class QuizService implements IService<Quiz> {
 
     @Override
     public void delete(int id) throws SQLException {
-        try (PreparedStatement ps = getConnection().prepareStatement("DELETE FROM quiz WHERE id = ?")) {
+        Connection conn = getConnection();
+        
+        // 1. Supprimer les résultats du quiz
+        try (PreparedStatement ps = conn.prepareStatement("DELETE FROM resultat_quiz WHERE quiz_id = ?")) {
+            ps.setInt(1, id);
+            ps.executeUpdate();
+        }
+
+        // 2. Supprimer les réponses des questions de ce quiz
+        String deleteResponses = "DELETE FROM reponse WHERE question_id IN (SELECT id FROM question WHERE quiz_id = ?)";
+        try (PreparedStatement ps = conn.prepareStatement(deleteResponses)) {
+            ps.setInt(1, id);
+            ps.executeUpdate();
+        }
+
+        // 3. Supprimer les questions associées
+        try (PreparedStatement ps = conn.prepareStatement("DELETE FROM question WHERE quiz_id = ?")) {
+            ps.setInt(1, id);
+            ps.executeUpdate();
+        }
+
+        // 4. Enfin, supprimer le quiz
+        try (PreparedStatement ps = conn.prepareStatement("DELETE FROM quiz WHERE id = ?")) {
             ps.setInt(1, id);
             ps.executeUpdate();
         }

@@ -17,6 +17,10 @@ import javafx.stage.Stage;
 import services.EvenementService;
 import utils.UserSession;
 import java.io.IOException;
+import java.util.List;
+import javafx.stage.FileChooser;
+import java.io.File;
+import utils.PDFExporter;
 
 public class EventManagementController {
 
@@ -167,8 +171,27 @@ public class EventManagementController {
 
     @FXML
     void handleExportPDF(ActionEvent event) {
-        // Logique PDF (déjà implémentée dans ParticipationManagement mais peut être adaptée ici)
-        showAlert("PDF", "Exportation PDF lancée...");
+        List<Evenement> currentList = eventTable.getItems();
+        if (currentList.isEmpty()) {
+            showAlert("Info", "La liste est vide.");
+            return;
+        }
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Enregistrer la liste des événements PDF");
+        fileChooser.setInitialFileName("Evenements.pdf");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF Files", "*.pdf"));
+
+        File file = fileChooser.showSaveDialog(eventTable.getScene().getWindow());
+        if (file != null) {
+            try {
+                PDFExporter.exportEventList(currentList, file.getAbsolutePath());
+                showAlert("Succès", "Le PDF a été généré avec succès !");
+            } catch (Exception e) {
+                showAlert("Erreur", "Erreur lors de la génération du PDF: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
     }
 
     @FXML

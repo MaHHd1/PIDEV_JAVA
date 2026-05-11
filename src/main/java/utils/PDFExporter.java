@@ -137,6 +137,58 @@ public class PDFExporter {
                     .setFontSize(10)
                     .setFontColor(new DeviceRgb(128, 128, 128))
                     .setTextAlignment(TextAlignment.RIGHT));
+    }
+
+    public static void exportEventList(List<Evenement> events, String filePath) throws IOException {
+        try (PdfWriter writer = new PdfWriter(filePath);
+             PdfDocument pdf = new PdfDocument(writer);
+             Document document = new Document(pdf)) {
+
+            // Header "NovaLearn"
+            document.add(new Paragraph("NovaLearn")
+                    .setFontSize(28)
+                    .setBold()
+                    .setFontColor(TURQUOISE)
+                    .setTextAlignment(TextAlignment.RIGHT));
+
+            // Title
+            document.add(new Paragraph("Registre des Événements")
+                    .setFontSize(22)
+                    .setBold()
+                    .setFontColor(DARK));
+
+            document.add(new Paragraph(" "));
+
+            Table table = new Table(UnitValue.createPercentArray(new float[]{3, 3, 2, 2, 2}))
+                    .useAllAvailableWidth();
+
+            // Header
+            String[] headers = {"Titre", "Lieu", "Type", "Début", "Fin"};
+            for (String h : headers) {
+                table.addHeaderCell(new Cell()
+                        .add(new Paragraph(h).setBold())
+                        .setBackgroundColor(TURQUOISE)
+                        .setFontColor(WHITE)
+                        .setPadding(8));
+            }
+
+            // Body
+            for (Evenement e : events) {
+                table.addCell(new Cell().add(new Paragraph(e.getTitre())).setPadding(6));
+                table.addCell(new Cell().add(new Paragraph(e.getLieu())).setPadding(6));
+                table.addCell(new Cell().add(new Paragraph(e.getType_evenement())).setPadding(6));
+                table.addCell(new Cell().add(new Paragraph(e.getDate_debut() != null ? e.getDate_debut().toString().replace("T", " ") : "-")).setPadding(6));
+                table.addCell(new Cell().add(new Paragraph(e.getDate_fin() != null ? e.getDate_fin().toString().replace("T", " ") : "-")).setPadding(6));
+            }
+
+            document.add(table);
+
+            // Footer
+            document.add(new Paragraph(" "));
+            document.add(new Paragraph("Généré par NovaLearn Management System le " + java.time.LocalDate.now())
+                    .setFontSize(10)
+                    .setFontColor(new DeviceRgb(128, 128, 128))
+                    .setTextAlignment(TextAlignment.RIGHT));
         }
     }
 }
