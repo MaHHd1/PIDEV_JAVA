@@ -1,76 +1,88 @@
-# PIDEV_JAVA
+# 🎓 NovaLearn - Plateforme de Gestion Éducative Intelligente
 
-JavaFX desktop application for user management with role-based dashboards for administrators, teachers, and students.
+**NovaLearn** est une application desktop JavaFX robuste et moderne conçue pour la gestion complète d'une institution éducative. Elle intègre des fonctionnalités avancées comme la génération de contenu par IA, des prévisions météo en temps réel et des outils analytiques puissants.
 
-## Features
+---
 
-- Login screen with role-based navigation
-- Admin dashboard for user management and statistics
-- Teacher dashboard with profile view, student profile list, and password change
-- Student dashboard with profile view and password change
-- Forgot password screen
-- MySQL-backed user data
+## 🚀 Fonctionnalités Clés
 
-## Tech Stack
+### 📅 Gestion des Événements
+- **Catalogue d'Événements** : Liste complète avec filtrage par type.
+- **Participation Intelligente** : 
+  - ✨ **Motivation par IA** : Génération automatique de lettre de motivation via l'API Groq (Llama 3).
+  - 🌡️ **Prévisions Météo** : Affichage en temps réel des conditions météo sur le lieu de l'événement pour conseiller les participants.
+- **Export PDF** : Génération de rapports professionnels pour les listes d'événements et de participations.
 
-- Java 17
-- JavaFX 21
-- Maven
-- MySQL Connector/J
-- Java Persistence API
-- Java Validation API
+### 📝 Gestion des Quiz & Cours
+- **Quiz Interactifs** : Création et passage de quiz avec différents types de questions.
+- **Résultats & Feedback** : Suivi des notes et correction automatique.
 
-## Project Structure
+### 👥 Gestion des Utilisateurs
+- **Multi-Rôles** : Tableaux de bord dédiés pour Administrateurs, Enseignants et Étudiants.
+- **Sécurité** : Authentification sécurisée, hachage des mots de passe et gestion des sessions.
+- **Profils** : Gestion complète des données personnelles (matricule, niveau d'étude, etc.).
 
-- `src/main/java/entities`: user entities
-- `src/main/java/gui`: JavaFX controllers
-- `src/main/java/services`: authentication and data services
-- `src/main/java/utils`: database, scene, and session helpers
-- `src/main/resources/gui`: FXML views and shared CSS
+### 📊 Statistiques & Analytics
+- **Dashboards Visuels** : Graphiques (PieChart, BarChart) pour analyser la répartition des événements et le taux de participation.
 
-## Requirements
+---
 
-- JDK 17
-- Maven
-- MySQL running locally
-- PHP available at `C:\xampp\php\php.exe`
+## 🛠️ Stack Technique
 
-Password hashing and verification currently use PHP from XAMPP inside `AuthService`.
+- **Langage** : Java 17+
+- **Interface Graphique** : JavaFX 21
+- **Base de Données** : MySQL (JDBC)
+- **IA** : API Groq (Modèle Llama 3.1)
+- **APIs Externes** : OpenWeatherMap (Météo)
+- **Rapports** : iTextPDF
+- **Build Tool** : Maven
 
-## Database Configuration
+---
 
-The app currently connects with these defaults from `DBConnection`:
+## ⚙️ Installation & Configuration
 
-- Host: `127.0.0.1`
-- Port: `3306`
-- Database: `gestion_utilisateur`
-- User: `root`
-- Password: empty
+### 1. Prérequis
+- Java JDK 17 ou supérieur.
+- Maven.
+- MySQL Server.
 
-Update `src/main/java/utils/DBConnection.java` if your local database settings are different.
+### 2. Base de Données
+Importez le schéma SQL dans votre base de données locale (nom par défaut : `gestion_utilisateur`).
+Configurez l'accès dans `src/main/java/utils/DBConnection.java`.
 
-## Run
+### 3. Secrets & Clés API
+Copiez le fichier d'exemple et renommez-le :
+```bash
+cp src/main/resources/app-secrets.properties.example src/main/resources/app-secrets.properties
+```
+Remplissez les informations suivantes dans `app-secrets.properties` :
+- `groq.apiKey` : Votre clé API Groq pour l'IA.
+- `mail.appPassword` : Mot de passe d'application pour l'envoi d'emails.
+- Les accès DB si différents du défaut.
 
-Using Maven:
+---
 
+## 🏃 Lancement
+
+Exécutez la commande suivante à la racine du projet :
 ```bash
 mvn javafx:run
 ```
 
-If Maven is not installed globally, install Maven first or add a Maven wrapper to the project.
+---
 
-## Entry Point
+## 📁 Structure du Projet
 
-Application entry point:
+- `src/main/java/entities` : Modèles de données (Utilisateur, Evenement, Participation, Quiz...).
+- `src/main/java/services` : Logique métier et accès DB (EvenementService, AuthService...).
+- `src/main/java/gui` : Contrôleurs JavaFX pour les vues.
+- `src/main/java/utils` : Utilitaires (IA, Météo, PDF, Session).
+- `src/main/resources/gui` : Fichiers FXML et CSS.
 
-- `src/main/java/main/Main.java`
+---
 
-The app opens the login screen first:
+## 🤝 Contribution
+Ce projet a été réalisé dans le cadre du module PIDEV. Toute contribution est la bienvenue via Pull Requests.
 
-- `src/main/resources/gui/login.fxml`
-
-## Notes
-
-- This repository currently contains the `user` branch in the remote.
-- There was no `main` branch in the repo at the time this README was added.
-- Adding this README does not damage your work. It is just another tracked file committed with your project history.
+---
+**NovaLearn** - *Apprendre plus intelligemment.*
